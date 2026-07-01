@@ -1,0 +1,18 @@
+{
+    "Dashboard": true,
+    "Category": true,
+    "Role": true,
+    "User": true,
+    "Team": true,
+    "Layanan": true,
+    "Menu": true,
+    "Keunggulan": true,
+    "SiteSetting": true,
+    "Post": true,
+    "Generator": true,
+    "Banner": true,
+    "Hero": true,
+    "Klien": true,
+    "Faq": true,
+    "Paket": true
+}

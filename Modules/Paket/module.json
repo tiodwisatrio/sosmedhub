@@ -1,0 +1,11 @@
+{
+    "name": "Paket",
+    "alias": "paket",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Paket\\Providers\\PaketServiceProvider"
+    ],
+    "files": []
+}

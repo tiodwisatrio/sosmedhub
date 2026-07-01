@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/layanan",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Layanan\\": "app/",
+            "Modules\\Layanan\\Database\\Factories\\": "database/factories/",
+            "Modules\\Layanan\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Layanan\\Tests\\": "tests/"
+        }
+    }
+}

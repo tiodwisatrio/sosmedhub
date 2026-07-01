@@ -1,0 +1,11 @@
+{
+    "name": "Layanan",
+    "alias": "layanan",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Layanan\\Providers\\LayananServiceProvider"
+    ],
+    "files": []
+}
