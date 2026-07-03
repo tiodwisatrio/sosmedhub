@@ -5,12 +5,14 @@ namespace Modules\SiteSetting\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Storage;
 use Modules\SiteSetting\Http\Requests\UpdateSiteSettingRequest;
 use Modules\SiteSetting\Models\SiteSetting;
+use Modules\SiteSetting\Services\SiteSettingService;
 
 class SiteSettingController extends Controller implements HasMiddleware
 {
+    public function __construct(private SiteSettingService $service) {}
+
     public static function middleware(): array
     {
         return [
@@ -31,16 +33,12 @@ class SiteSettingController extends Controller implements HasMiddleware
         $setting = SiteSetting::current();
         $data = $request->safe()->except(['logo_atas', 'logo_bawah', 'icon', 'og_image']);
 
-        foreach (['logo_atas', 'logo_bawah', 'icon', 'og_image'] as $field) {
-            if ($request->hasFile($field)) {
-                if ($setting->$field) {
-                    Storage::disk('public')->delete($setting->$field);
-                }
-                $data[$field] = $request->file($field)->store('site-settings', 'public');
-            }
-        }
-
-        $setting->update($data);
+        $this->service->update($setting, $data, [
+            'logo_atas' => $request->file('logo_atas'),
+            'logo_bawah' => $request->file('logo_bawah'),
+            'icon' => $request->file('icon'),
+            'og_image' => $request->file('og_image'),
+        ]);
 
         return redirect()->route('admin.site-settings.index')
             ->with('success', 'Pengaturan berhasil disimpan.');

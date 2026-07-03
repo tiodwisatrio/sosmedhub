@@ -35,9 +35,13 @@ test('navbar selalu di atas elemen lain yang juga z-50 seperti indikator scroll-
 test('navbar tidak bergantung pada Alpine.js yang tidak dimuat di halaman ini', function () {
     $content = $this->get('/')->assertOk()->getContent();
 
-    expect($content)->not->toContain('x-data')
-        ->and($content)->not->toContain('x-show')
-        ->and($content)->not->toContain('x-cloak');
+    // Cek pemakaian direktif Alpine sungguhan (atribut HTML), bukan sekadar
+    // substring — Livewire menyuntik CSS selector `[x-cloak]` di setiap
+    // halaman begitu ada komponen Livewire lain yang pernah dirender dalam
+    // proses test yang sama, walau halaman ini sendiri tidak memakai Alpine.
+    expect($content)->not->toMatch('/\sx-data=/')
+        ->and($content)->not->toMatch('/\sx-show=/')
+        ->and($content)->not->toMatch('/\sx-cloak(\s|>|=)/');
 });
 
 test('section layanan di homepage tidak pakai lebar/tinggi fixed piksel', function () {

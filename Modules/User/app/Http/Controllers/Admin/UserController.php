@@ -6,13 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Storage;
 use Modules\User\Http\Requests\StoreUserRequest;
 use Modules\User\Http\Requests\UpdateUserRequest;
+use Modules\User\Services\UserService;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller implements HasMiddleware
 {
+    public function __construct(private UserService $service) {}
+
     public static function middleware(): array
     {
         return [
@@ -26,7 +28,7 @@ class UserController extends Controller implements HasMiddleware
     public function index()
     {
         $users = User::with('roles')
-            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'developer'))
+            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'developer'))
             ->latest()
             ->paginate(15);
 
@@ -42,24 +44,9 @@ class UserController extends Controller implements HasMiddleware
 
     public function store(StoreUserRequest $request)
     {
-        $data = [
-            'name'              => $request->name,
-            'email'             => $request->email,
-            'phone'             => $request->phone,
-            'status'            => $request->status,
-            'password'          => $request->password,
-            'email_verified_at' => now(),
-        ];
+        $data = $request->safe()->only(['name', 'email', 'phone', 'status', 'password']);
 
-        if ($request->hasFile('avatar')) {
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
-
-        $user = User::create($data);
-
-        if ($request->filled('role')) {
-            $user->assignRole($request->role);
-        }
+        $this->service->store($data, $request->file('avatar'), $request->role);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Pengguna berhasil ditambahkan.');
@@ -79,27 +66,19 @@ class UserController extends Controller implements HasMiddleware
     {
         abort_if($user->hasRole('developer'), 403);
 
-        $user->name   = $request->name;
-        $user->email  = $request->email;
-        $user->phone  = $request->phone;
-        $user->status = $request->status;
+        $data = $request->safe()->only(['name', 'email', 'phone', 'status']);
 
         if ($request->filled('password')) {
-            $user->password = $request->password;
+            $data['password'] = $request->password;
         }
 
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
-        }
-
-        $user->save();
-
-        if ($request->has('role')) {
-            $user->syncRoles($request->filled('role') ? [$request->role] : []);
-        }
+        $this->service->update(
+            $user,
+            $data,
+            $request->file('avatar'),
+            $request->has('role'),
+            $request->role
+        );
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Pengguna berhasil diperbarui.');
