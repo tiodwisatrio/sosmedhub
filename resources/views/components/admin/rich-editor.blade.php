@@ -16,12 +16,11 @@
         </label>
     @endif
 
-    <div
+    <textarea
+        name="{{ $name }}"
         id="{{ $editorId }}"
-        class="rounded-md border {{ $hasError ? 'border-danger' : 'border-border' }} bg-white text-sm text-slate-800 min-h-[180px] focus-within:ring-1 {{ $hasError ? 'focus-within:ring-danger/20' : 'focus-within:ring-primary/20' }} transition-colors"
-    >{!! old($name, $value) !!}</div>
-
-    <input type="hidden" name="{{ $name }}" id="input-{{ $name }}" value="{{ old($name, $value) }}">
+        class="rounded-md border {{ $hasError ? 'border-danger' : 'border-border' }} bg-white text-sm text-slate-800 w-full"
+    >{{ old($name, $value) }}</textarea>
 
     @if($hint && !$hasError)
         <p class="mt-1.5 text-xs text-slate-400">{{ $hint }}</p>
@@ -34,21 +33,19 @@
 
 @once
     @push('scripts')
-        <script src="https://cdn.ckeditor.com/ckeditor5/43.3.1/classic/ckeditor.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js" referrerpolicy="origin"></script>
     @endpush
 @endonce
 
 @push('scripts')
 <script>
-    ClassicEditor
-        .create(document.getElementById('{{ $editorId }}'), {
-            toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|',
-                      'bulletedList', 'numberedList', '|', 'blockQuote', 'link', '|', 'undo', 'redo'],
-        })
-        .then(editor => {
-            editor.model.document.on('change:data', () => {
-                document.getElementById('input-{{ $name }}').value = editor.getData();
-            });
-        });
+    tinymce.init({
+        selector: '#{{ $editorId }}',
+        height: 260,
+        menubar: false,
+        license_key: 'gpl',
+        plugins: 'lists link',
+        toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | blockquote link',
+    });
 </script>
 @endpush

@@ -4,6 +4,7 @@ namespace Modules\Post\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mews\Purifier\Facades\Purifier;
 use Modules\Post\Models\Post;
 
 class PostService
@@ -11,6 +12,7 @@ class PostService
     public function store(array $data, ?UploadedFile $image): Post
     {
         $data['slug'] = Post::generateSlug($data['title']);
+        $data['content'] = Purifier::clean($data['content'] ?? '');
 
         if ($image) {
             $data['image'] = $image->store('posts', 'public');
@@ -22,6 +24,7 @@ class PostService
     public function update(Post $post, array $data, ?UploadedFile $image): void
     {
         $data['slug'] = Post::generateSlug($data['title'], $post->id);
+        $data['content'] = Purifier::clean($data['content'] ?? '');
 
         if ($image) {
             if ($post->image) {

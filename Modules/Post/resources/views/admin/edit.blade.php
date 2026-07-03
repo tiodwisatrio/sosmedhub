@@ -32,7 +32,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Konten <span class="text-slate-400 font-normal">(opsional)</span></label>
-                    <x-admin.textarea name="content" placeholder="Isi konten post...">{{ old('content', $post->content) }}</x-admin.textarea>
+                    <x-admin.rich-editor name="content" :value="old('content', $post->content)" />
                     @error('content') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
 
