@@ -1,5 +1,7 @@
 <?php
 
+namespace Modules\Keunggulan\Http\Requests;
+
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreKeunggulanRequest extends FormRequest

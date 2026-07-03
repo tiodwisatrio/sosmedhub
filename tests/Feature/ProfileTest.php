@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Volt;
 
 test('profile page is displayed', function () {
@@ -12,9 +13,7 @@ test('profile page is displayed', function () {
 
     $response
         ->assertOk()
-        ->assertSeeVolt('profile.update-profile-information-form')
-        ->assertSeeVolt('profile.update-password-form')
-        ->assertSeeVolt('profile.delete-user-form');
+        ->assertSeeVolt('profile.update-profile-information-form');
 });
 
 test('profile information can be updated', function () {
@@ -25,11 +24,9 @@ test('profile information can be updated', function () {
     $component = Volt::test('profile.update-profile-information-form')
         ->set('name', 'Test User')
         ->set('email', 'test@example.com')
-        ->call('updateProfileInformation');
+        ->call('save');
 
-    $component
-        ->assertHasNoErrors()
-        ->assertNoRedirect();
+    $component->assertHasNoErrors();
 
     $user->refresh();
 
@@ -46,44 +43,43 @@ test('email verification status is unchanged when the email address is unchanged
     $component = Volt::test('profile.update-profile-information-form')
         ->set('name', 'Test User')
         ->set('email', $user->email)
-        ->call('updateProfileInformation');
+        ->call('save');
 
-    $component
-        ->assertHasNoErrors()
-        ->assertNoRedirect();
+    $component->assertHasNoErrors();
 
     $this->assertNotNull($user->refresh()->email_verified_at);
 });
 
-test('user can delete their account', function () {
+test('profile information form also updates the password when provided', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    $component = Volt::test('profile.delete-user-form')
-        ->set('password', 'password')
-        ->call('deleteUser');
+    $component = Volt::test('profile.update-profile-information-form')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->set('current_password', 'password')
+        ->set('password', 'new-password')
+        ->set('password_confirmation', 'new-password')
+        ->call('save');
 
-    $component
-        ->assertHasNoErrors()
-        ->assertRedirect('/');
+    $component->assertHasNoErrors();
 
-    $this->assertGuest();
-    $this->assertNull($user->fresh());
+    $this->assertTrue(Hash::check('new-password', $user->fresh()->password));
 });
 
-test('correct password must be provided to delete account', function () {
+test('current password must be correct to change password', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    $component = Volt::test('profile.delete-user-form')
-        ->set('password', 'wrong-password')
-        ->call('deleteUser');
+    $component = Volt::test('profile.update-profile-information-form')
+        ->set('name', $user->name)
+        ->set('email', $user->email)
+        ->set('current_password', 'wrong-password')
+        ->set('password', 'new-password')
+        ->set('password_confirmation', 'new-password')
+        ->call('save');
 
-    $component
-        ->assertHasErrors('password')
-        ->assertNoRedirect();
-
-    $this->assertNotNull($user->fresh());
+    $component->assertHasErrors('current_password');
 });

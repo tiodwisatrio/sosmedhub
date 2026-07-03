@@ -59,16 +59,16 @@ test('users can not authenticate with invalid password', function () {
     $this->assertGuest();
 });
 
-test('navigation menu can be rendered', function () {
+test('dashboard redirects to the admin dashboard and renders the admin layout', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user);
 
-    $response = $this->get('/dashboard');
+    $this->get('/dashboard')->assertRedirect('/admin/dashboard');
 
-    $response
+    $this->get('/admin/dashboard')
         ->assertOk()
-        ->assertSeeVolt('layout.navigation');
+        ->assertSee('toggleSidebar()', false);
 });
 
 test('users can logout', function () {
