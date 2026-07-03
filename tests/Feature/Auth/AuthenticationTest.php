@@ -27,6 +27,22 @@ test('users can authenticate using the login screen', function () {
     $this->assertAuthenticated();
 });
 
+test('inactive users can not authenticate', function () {
+    $user = User::factory()->create(['status' => 0]);
+
+    $component = Volt::test('pages.auth.login')
+        ->set('form.email', $user->email)
+        ->set('form.password', 'password');
+
+    $component->call('login');
+
+    $component
+        ->assertHasErrors()
+        ->assertNoRedirect();
+
+    $this->assertGuest();
+});
+
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
