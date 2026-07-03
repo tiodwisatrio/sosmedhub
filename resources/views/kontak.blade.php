@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kontak — {{ $siteSetting->app_name ?? config('app.name') }}</title>
+    <x-seo-meta title="Kontak" description="Hubungi kami untuk informasi lebih lanjut." />
     @if ($siteSetting->icon)
         <link rel="icon" type="image/x-icon" href="{{ Storage::url($siteSetting->icon) }}">
     @endif

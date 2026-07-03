@@ -44,6 +44,7 @@
                     <li><a href="{{ url('/') }}" class="hover:text-white transition-colors">Beranda</a></li>
                     <li><a href="{{ url('/').'#tentang-kami' }}" class="hover:text-white transition-colors">Tentang Kami</a></li>
                     <li><a href="{{ route('layanan.index') }}" class="hover:text-white transition-colors">Layanan</a></li>
+                    <li><a href="{{ route('posts.index') }}" class="hover:text-white transition-colors">Post</a></li>
                     <li><a href="{{ route('kontak') }}" class="hover:text-white transition-colors">Kontak</a></li>
                 </ul>
             </div>

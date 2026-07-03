@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $siteSetting->app_name ?? config('app.name') }}</title>
+    <x-seo-meta :description="$siteSetting->deskripsi" />
     @if ($siteSetting->icon)
         <link rel="icon" type="image/x-icon" href="{{ Storage::url($siteSetting->icon) }}">
     @endif

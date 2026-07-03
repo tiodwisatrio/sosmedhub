@@ -21,7 +21,8 @@
         <div class="hidden md:flex items-center justify-center gap-8">
             <a href="/" class="nav-text text-sm font-medium">Beranda</a>
             <a href="tentang-kami" class="nav-text text-sm font-medium">Tentang Kami</a>
-            <a href="layanan" class="nav-text text-sm font-medium">Layanan</a>
+            <a href="{{ route('layanan.index') }}" class="nav-text text-sm font-medium">Layanan</a>
+            <a href="{{ route('posts.index') }}" class="nav-text text-sm font-medium">Post</a>
             <a href="{{ route('kontak') }}" class="nav-text text-sm font-medium">Kontak</a>
         </div>
 
