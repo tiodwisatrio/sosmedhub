@@ -9,15 +9,15 @@ class UpdateCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('category.edit') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'type'        => ['required', 'string', 'max:100'],
-            'name'        => ['required', 'string', 'max:255'],
-            'slug'        => ['required', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($this->category)],
+            'type' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($this->category)],
             'description' => ['nullable', 'string'],
         ];
     }

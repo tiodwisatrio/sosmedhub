@@ -8,7 +8,7 @@ class StorePaketRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('paket.create') ?? false;
     }
 
     public function rules(): array

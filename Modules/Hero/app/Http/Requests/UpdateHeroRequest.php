@@ -8,7 +8,7 @@ class UpdateHeroRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('hero.edit') ?? false;
     }
 
     public function rules(): array

@@ -8,7 +8,7 @@ class UpdatePaketRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('paket.edit') ?? false;
     }
 
     public function rules(): array

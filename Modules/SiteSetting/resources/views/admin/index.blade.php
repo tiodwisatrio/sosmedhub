@@ -125,11 +125,14 @@
                 <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Peta Lokasi</h2>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Embed Google Maps</label>
-                    <textarea name="iframe_map" rows="3"
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">URL Embed Google Maps</label>
+                    <input type="url" name="iframe_map" value="{{ old('iframe_map', $setting->iframe_map) }}"
                         class="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition font-mono text-xs"
-                        placeholder='<iframe src="https://www.google.com/maps/embed?..." ...></iframe>'>{{ old('iframe_map', $setting->iframe_map) }}</textarea>
-                    <p class="mt-1 text-xs text-slate-400">Tempel kode &lt;iframe&gt; dari Google Maps (Share &rarr; Sematkan peta).</p>
+                        placeholder="https://www.google.com/maps/embed?pb=...">
+                    <p class="mt-1 text-xs text-slate-400">
+                        Ambil dari Google Maps &rarr; Share &rarr; Sematkan peta &rarr; salin hanya isi atribut
+                        <code>src="..."</code> dari kode iframe-nya (bukan seluruh kode HTML-nya).
+                    </p>
                     @error('iframe_map') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
             </div>

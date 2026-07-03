@@ -8,7 +8,7 @@ class StoreHeroRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('hero.create') ?? false;
     }
 
     public function rules(): array

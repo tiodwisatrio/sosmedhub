@@ -22,7 +22,7 @@ class UpdateSiteSettingRequest extends FormRequest
             'logo_bawah' => ['nullable', 'image', 'max:2048'],
             'icon' => ['nullable', 'image', 'max:512'],
             'og_image' => ['nullable', 'image', 'max:2048'],
-            'iframe_map' => ['nullable', 'string'],
+            'iframe_map' => ['nullable', 'url', 'max:500', 'starts_with:https://www.google.com/maps/embed'],
             'instagram_nama' => ['nullable', 'string', 'max:100'],
             'instagram_link' => ['nullable', 'url', 'max:255'],
             'facebook_nama' => ['nullable', 'string', 'max:100'],
@@ -47,6 +47,14 @@ class UpdateSiteSettingRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('site-setting.edit') ?? false;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'iframe_map.starts_with' => 'Isi hanya URL embed Google Maps (harus diawali https://www.google.com/maps/embed).',
+            'iframe_map.url' => 'Isi harus berupa URL, bukan kode HTML.',
+        ];
     }
 }

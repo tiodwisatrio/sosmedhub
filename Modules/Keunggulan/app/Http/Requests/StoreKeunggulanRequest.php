@@ -6,7 +6,7 @@ class StoreKeunggulanRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('keunggulan.create') ?? false;
     }
 
     public function rules(): array

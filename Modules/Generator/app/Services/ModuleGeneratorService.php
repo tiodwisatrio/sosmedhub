@@ -255,6 +255,9 @@ class ModuleGeneratorService
 
     private function buildRequest(array $ctx, string $type): string
     {
+        $action = $type === 'Store' ? 'create' : 'edit';
+        $permission = "{$ctx['permission']}.{$action}";
+
         $rules = [];
         foreach ($ctx['fields'] as $f) {
             $rules[] = "            '{$f['name']}' => [".$this->validationRule($f).'],';
@@ -278,7 +281,7 @@ class ModuleGeneratorService
         {
             public function authorize(): bool
             {
-                return true;
+                return \$this->user()?->can('{$permission}') ?? false;
             }
 
             public function rules(): array

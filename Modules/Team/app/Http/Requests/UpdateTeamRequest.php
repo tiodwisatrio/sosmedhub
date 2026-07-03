@@ -8,18 +8,18 @@ class UpdateTeamRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('team.edit') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'image'       => ['nullable', 'image', 'max:2048'],
-            'keterangan'  => ['nullable', 'string'],
-            'status'      => ['required', 'in:0,1'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'keterangan' => ['nullable', 'string'],
+            'status' => ['required', 'in:0,1'],
         ];
     }
 }

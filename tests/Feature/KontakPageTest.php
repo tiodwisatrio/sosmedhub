@@ -10,7 +10,7 @@ test('halaman kontak menampilkan info dari site setting', function () {
         'no_telp' => '021123456',
         'no_whatsapp' => '081234567890',
         'email' => 'kontak@crafthink.test',
-        'iframe_map' => '<iframe src="https://www.google.com/maps/embed?test"></iframe>',
+        'iframe_map' => 'https://www.google.com/maps/embed?test',
     ]);
     View::share('siteSetting', $setting->fresh());
 
@@ -21,6 +21,19 @@ test('halaman kontak menampilkan info dari site setting', function () {
         ->assertSee('081234567890')
         ->assertSee('kontak@crafthink.test')
         ->assertSee('google.com/maps/embed', false);
+});
+
+test('halaman kontak tidak mengeksekusi html mentah walau iframe_map berisi payload berbahaya', function () {
+    $setting = SiteSetting::current();
+    $setting->update([
+        'iframe_map' => '<img src="x" onerror="alert(document.cookie)">',
+    ]);
+    View::share('siteSetting', $setting->fresh());
+
+    $this->get(route('kontak'))
+        ->assertOk()
+        ->assertDontSee('<img src="x" onerror="alert', false)
+        ->assertSee('&lt;img src=&quot;x&quot;', false);
 });
 
 test('halaman kontak tetap tampil walau field opsional kosong', function () {

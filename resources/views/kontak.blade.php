@@ -106,9 +106,10 @@
         {{-- Peta --}}
         <div class="rounded-2xl overflow-hidden bg-slate-100" style="aspect-ratio: 4 / 3;">
             @if ($siteSetting->iframe_map)
-                <div class="w-full h-full [&_iframe]:w-full [&_iframe]:h-full">
-                    {!! $siteSetting->iframe_map !!}
-                </div>
+                <iframe src="{{ $siteSetting->iframe_map }}"
+                        class="w-full h-full border-0"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
             @else
                 <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">
                     Peta belum tersedia.

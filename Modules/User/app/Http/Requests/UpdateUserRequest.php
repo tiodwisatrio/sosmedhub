@@ -9,20 +9,20 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('user.edit') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user')->id)],
-            'phone'                 => ['nullable', 'string', 'max:20'],
-            'avatar'                => ['nullable', 'image', 'max:2048'],
-            'status'                => ['required', 'boolean'],
-            'password'              => ['nullable', 'string', 'min:8', 'confirmed'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user')->id)],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
+            'status' => ['required', 'boolean'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['nullable', 'string'],
-            'role'                  => ['nullable', 'string', 'exists:roles,name'],
+            'role' => ['nullable', 'string', 'exists:roles,name'],
         ];
     }
 }

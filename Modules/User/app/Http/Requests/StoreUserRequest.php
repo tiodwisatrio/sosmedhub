@@ -8,19 +8,19 @@ class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('user.create') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone'    => ['nullable', 'string', 'max:20'],
-            'avatar'   => ['nullable', 'image', 'max:2048'],
-            'status'   => ['required', 'boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
+            'status' => ['required', 'boolean'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'string', 'exists:roles,name'],
+            'role' => ['required', 'string', 'exists:roles,name'],
         ];
     }
 }

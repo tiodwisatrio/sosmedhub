@@ -9,7 +9,7 @@ class GenerateModuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('generator.create') ?? false;
     }
 
     public function rules(): array

@@ -29,7 +29,7 @@ test('pengaturan situs bisa menyimpan deskripsi, sosmed, marketplace, dan iframe
         ->put(route('admin.site-settings.update'), [
             'app_name' => 'Crafthink Web',
             'deskripsi' => 'Agensi digital terpercaya.',
-            'iframe_map' => '<iframe src="https://www.google.com/maps/embed?test"></iframe>',
+            'iframe_map' => 'https://www.google.com/maps/embed?test',
             'instagram_nama' => '@crafthinkweb',
             'instagram_link' => 'https://instagram.com/crafthinkweb',
             'shopee_nama' => 'Toko Crafthink',
@@ -46,4 +46,20 @@ test('pengaturan situs bisa menyimpan deskripsi, sosmed, marketplace, dan iframe
         ->and($setting->instagram_link)->toBe('https://instagram.com/crafthinkweb')
         ->and($setting->shopee_nama)->toBe('Toko Crafthink')
         ->and($setting->shopee_link)->toBe('https://shopee.co.id/crafthinkweb');
+});
+
+test('pengaturan situs menolak iframe map yang bukan url embed google maps', function () {
+    $this->actingAs(siteSettingEditor())
+        ->put(route('admin.site-settings.update'), [
+            'app_name' => 'Crafthink Web',
+            'iframe_map' => '<img src="x" onerror="alert(document.cookie)">',
+        ])
+        ->assertSessionHasErrors('iframe_map');
+
+    $this->actingAs(siteSettingEditor())
+        ->put(route('admin.site-settings.update'), [
+            'app_name' => 'Crafthink Web',
+            'iframe_map' => 'https://evil.example.com/maps/embed',
+        ])
+        ->assertSessionHasErrors('iframe_map');
 });

@@ -8,21 +8,21 @@ class StoreMenuRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('menu.create') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'label'          => ['required', 'string', 'max:100'],
-            'parent_id'      => ['nullable', 'exists:menus,id'],
-            'route_name'     => ['nullable', 'string', 'max:100'],
-            'route_params'   => ['nullable', 'string'],
+            'label' => ['required', 'string', 'max:100'],
+            'parent_id' => ['nullable', 'exists:menus,id'],
+            'route_name' => ['nullable', 'string', 'max:100'],
+            'route_params' => ['nullable', 'string'],
             'active_pattern' => ['nullable', 'string', 'max:150'],
-            'permission'     => ['nullable', 'string', 'max:100'],
-            'icon'           => ['nullable', 'string'],
-            'urutan'         => ['nullable', 'integer', 'min:0'],
-            'is_active'      => ['required', 'in:0,1'],
+            'permission' => ['nullable', 'string', 'max:100'],
+            'icon' => ['nullable', 'string'],
+            'urutan' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['required', 'in:0,1'],
         ];
     }
 }
