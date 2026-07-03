@@ -10,9 +10,11 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Volt::route('forgot-password', 'pages.auth.forgot-password')
+        ->middleware('throttle:6,1')
         ->name('password.request');
 
     Volt::route('reset-password/{token}', 'pages.auth.reset-password')
+        ->middleware('throttle:6,1')
         ->name('password.reset');
 });
 
@@ -24,7 +26,6 @@ Route::middleware('auth')->group(function () {
 
         return redirect('/');
     })->name('logout');
-
 
     Volt::route('verify-email', 'pages.auth.verify-email')
         ->name('verification.notice');

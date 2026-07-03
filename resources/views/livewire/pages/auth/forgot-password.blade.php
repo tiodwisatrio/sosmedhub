@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -16,6 +17,21 @@ new #[Layout('layouts.guest')] class extends Component
         $this->validate([
             'email' => ['required', 'string', 'email'],
         ]);
+
+        $throttleKey = 'forgot-password|'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 6)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            $this->addError('email', trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]));
+
+            return;
+        }
+
+        RateLimiter::hit($throttleKey, 60);
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we

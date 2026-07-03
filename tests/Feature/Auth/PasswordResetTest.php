@@ -27,6 +27,28 @@ test('reset password link can be requested', function () {
     Notification::assertSentTo($user, ResetPassword::class);
 });
 
+test('reset password link request is rate limited after too many attempts from the same ip', function () {
+    Notification::fake();
+
+    $users = User::factory()->count(7)->create();
+
+    foreach ($users->take(6) as $user) {
+        Volt::test('pages.auth.forgot-password')
+            ->set('email', $user->email)
+            ->call('sendPasswordResetLink')
+            ->assertHasNoErrors();
+    }
+
+    $blockedUser = $users->last();
+
+    Volt::test('pages.auth.forgot-password')
+        ->set('email', $blockedUser->email)
+        ->call('sendPasswordResetLink')
+        ->assertHasErrors('email');
+
+    Notification::assertSentTimes(ResetPassword::class, 6);
+});
+
 test('reset password screen can be rendered', function () {
     Notification::fake();
 
