@@ -38,36 +38,51 @@ Modules/
   Dashboard/
   Role/
   User/
-  Category/
+  Category/                    # Kategori generik, dipakai lintas modul via scopeOfType()
   Team/
   Layanan/
   Keunggulan/
   Menu/                        # Dynamic sidebar menu dari DB
   SiteSetting/                 # Konfigurasi situs (single-row)
-  # Product, Post, Media — belum dibangun
+  Banner/
+  Hero/
+  Klien/
+  Faq/
+  Paket/
+  Post/                        # Blog/artikel — admin CRUD + frontend + SEO + rich-editor
+  Generator/                   # Generator modul CRUD baru via UI (/admin/generator)
+  # Product, Media — belum dibangun
 ```
 
 ### Struktur tiap modul
 
 ```
 Modules/{Modul}/
-  Http/
-    Controllers/
-      Admin/                   # Controller admin
-      Frontend/                # Controller frontend (jika ada)
-    Requests/
-      Store{Model}Request.php
-      Update{Model}Request.php
-  Models/
-  Services/                    # Hanya jika ada business logic
-  Repositories/                # Hanya jika query kompleks & dipakai banyak tempat
-  Routes/web.php
-  Database/Migrations/
-  Resources/views/
+  app/
+    Http/
+      Controllers/
+        Admin/                 # Controller admin
+        Frontend/              # Controller frontend (jika ada)
+      Requests/
+        Store{Model}Request.php
+        Update{Model}Request.php
+    Models/
+    Services/                  # Hanya jika ada business logic (relasi/upload/kalkulasi)
+    Repositories/              # Hanya jika query kompleks & dipakai banyak tempat
+    Providers/{Modul}ServiceProvider.php
+  routes/web.php
+  database/migrations/
+  resources/views/
     admin/
     frontend/
-  Providers/{Modul}ServiceProvider.php
+  tests/
+    Feature/                   # Test milik modul ini — WAJIB taruh di sini, bukan di root
+    Unit/
 ```
+
+> Test yang spesifik untuk satu modul **wajib** ditaruh di `Modules/{Modul}/tests/Feature/`,
+> bukan di `tests/Feature/` root — supaya modul bisa dihapus/dipakai ulang di project lain
+> tanpa meninggalkan file test yang nyangkut (lihat bagian **Testing** di bawah).
 
 ---
 
@@ -122,7 +137,11 @@ Route::middleware(['auth'])->group(function () {
 |---|---|---|
 | Admin | `/admin/{resource}` | `admin.{resource}.{action}` |
 | Frontend | `/{resource}` | `{resource}.{action}` |
-| Auth | `/login`, `/register` | Breeze default |
+| Auth | `/login`, `/forgot-password`, dll | Breeze default |
+
+> Registrasi publik (`/register`) **sengaja dihapus** — CMS ini bukan aplikasi publik yang
+> boleh didaftar siapa saja. Akun baru cuma bisa dibuat lewat modul User oleh admin, atau
+> lewat seeder/tinker untuk akun `developer`.
 
 ---
 
@@ -181,6 +200,20 @@ class ProductController extends Controller implements HasMiddleware
 }
 ```
 
+### Form Request `authorize()` — WAJIB cek permission, bukan `return true`
+`HasMiddleware` di controller adalah satu-satunya penjaga akses kalau `authorize()` selalu
+`true` — kalau suatu route baru lupa didaftarkan middleware-nya, request itu langsung
+tanpa proteksi sama sekali. Setiap Form Request harus jadi lapisan kedua yang independen:
+
+```php
+public function authorize(): bool
+{
+    return $this->user()?->can('product.create') ?? false;
+}
+```
+Store → cek `.create`, Update → cek `.edit`. Modul yang dibuat lewat Generator
+otomatis dapat pola ini (lihat `ModuleGeneratorService::buildRequest()`).
+
 ### Seeder Permission
 Setiap modul baru wajib tambah permission-nya di `database/seeders/DatabaseSeeder.php`:
 ```php
@@ -237,6 +270,47 @@ return redirect()->route('admin.products.index')
 - Gambar disimpan di `storage/public/site-settings/`
 - Permission: `site-setting.view`, `site-setting.edit` (hanya 2, tidak ada create/delete)
 - Route: hanya `GET index` dan `PUT update` — tidak ada create/store/destroy
+- Field `iframe_map` **hanya menerima URL** embed Google Maps (`starts_with:https://www.google.com/maps/embed`),
+  BUKAN kode `<iframe>` mentah — tag-nya dibangun di server (`kontak.blade.php`), bukan `{!! !!}`
+  dari input user (celah XSS yang sudah pernah terjadi & ditutup).
+
+### Post (Blog/Artikel)
+- Field `content` pakai komponen `<x-admin.rich-editor>` (TinyMCE via CDN jsdelivr, tanpa API key —
+  `license_key: 'gpl'`). Toolbar dibatasi: heading H2–H4 saja (H1 dipakai judul post, jangan duplikat).
+- **Wajib** disanitasi pakai `mews/purifier` (`Purifier::clean()`) di `PostService::store()`/`update()`
+  sebelum disimpan — HTML dari editor tetap bisa disusupi `<script>` kalau tidak dibersihkan.
+  `config/purifier.php` → `HTML.Allowed` sudah ditambah `h2,h3,h4,blockquote` supaya format dari
+  toolbar tidak ikut hilang saat disanitasi.
+- Frontend: `/posts` (index, published only, paginate) dan `/posts/{post:slug}` (show, 404 kalau draft).
+- Pakai `SoftDeletes` seperti modul konten lain.
+
+### Generator (Module Builder)
+- `/admin/generator` — bikin modul CRUD baru (Model, Controller, Request, View, migration, route, seeder
+  permission) lewat form UI, tanpa nulis kode manual.
+- **Hanya untuk role `developer`** (`generator.view`, `generator.create`).
+- Field `label` di form **wajib** divalidasi ketat (`regex:/^[\p{L}\p{N} .,()\-]+$/u`) dan di-`e()`-escape
+  sebelum ditulis ke file view yang di-generate — kalau tidak, karakter `{`/`}`/`<` di label bisa jadi
+  Blade/PHP yang benar-benar dieksekusi saat view itu dirender (RCE, bukan sekadar XSS). **Jangan pernah
+  longgarkan validasi ini.**
+- Belum dikunci ke environment non-produksi — sebaiknya jangan dijalankan di server live.
+
+### Error Pages (`resources/views/errors/`)
+- 404, 403, 419, 429 — pakai `<x-navbar>`/`<x-footer>`, gaya visual sama dengan frontend publik,
+  plus `noindex,nofollow` dan `<x-seo-meta>`.
+- 500 — **sengaja tidak** pakai `$siteSetting`/Tailwind build/komponen apa pun (full inline CSS,
+  hardcode `config('app.name')`) supaya tidak ikut collapse kalau penyebab 500-nya sendiri masalah
+  database/asset.
+- 401, 503 belum dibuat.
+
+### SEO
+- `<x-seo-meta>` (`resources/views/components/seo-meta.blade.php`) — title, meta description, canonical,
+  Open Graph, Twitter Card. Fallback ke `SiteSetting::app_name/deskripsi/og_image` kalau halaman tidak
+  kasih nilai spesifik. Pasang di `<head>` tiap halaman frontend/error.
+- `/sitemap.xml` (route `sitemap`, `routes/web.php`) — pakai `spatie/laravel-sitemap`, generate dinamis
+  (bukan file statis): homepage, kontak, layanan, semua post published.
+- `/robots.txt` — dinamis juga (bukan file `public/robots.txt`), block `/admin`, `/login`, dll, arahkan
+  ke sitemap.
+- Post detail pakai JSON-LD `BlogPosting`.
 
 ---
 
@@ -254,11 +328,50 @@ return redirect()->route('admin.products.index')
 9. Modul Keunggulan
 10. Modul Menu
 11. Modul SiteSetting
+12. Modul Banner
+13. Modul Hero
+14. Modul Klien
+15. Modul Faq
+16. Modul Paket
+17. Modul Post (admin CRUD + frontend + SEO + rich-editor + sanitasi)
+18. Modul Generator (builder modul CRUD via UI)
+19. Halaman error kustom (404/403/419/429/500)
+20. SEO (meta tag, sitemap, robots.txt)
+21. Hardening security: hapus registrasi publik, cek `status` user saat login,
+    rate limit forgot-password, fix RCE Generator, fix stored XSS `iframe_map`,
+    `authorize()` cek permission asli di semua Form Request
 
 ### Belum Dibangun
 - Modul Product
-- Modul Post
 - Modul Media
+
+### Diketahui belum ideal (bukan bug, keputusan yang ditunda)
+- Retensi data `SoftDeletes` belum ada strategi purge otomatis (data soft-deleted menumpuk
+  selamanya) — solusi yang direkomendasikan: `Illuminate\Database\Eloquent\Prunable` +
+  `php artisan model:prune` terjadwal, retensi ~30 hari. Belum diimplementasikan.
+- `.env.example` masih `APP_DEBUG=true` / `APP_ENV=local` — wajib diganti sebelum produksi.
+- Kredensial akun `developer` di `DatabaseSeeder.php` masih hardcode di source (bukan env var).
+- `SESSION_SECURE_COOKIE` belum dipaksa `true` — perlu diset manual di `.env` produksi.
+- Generator belum dikunci ke non-produksi (lihat bagian Generator di atas).
+
+---
+
+## Testing
+
+- Test yang menguji satu modul spesifik **wajib** ditaruh di `Modules/{Modul}/tests/Feature/`
+  (bukan `tests/Feature/` root) — mengikuti konvensi resmi `nwidart/laravel-modules`
+  (`php artisan module:make-test`). Tujuannya: modul bisa dihapus/dipakai ulang di project lain
+  tanpa meninggalkan file test yang nyangkut dan bikin seluruh suite crash.
+- Test lintas-modul/tidak dimiliki satu modul (layout admin, navbar/footer root, SEO cross-cutting,
+  Auth, Profile) tetap di `tests/Feature/` root.
+- `phpunit.xml` dan `tests/Pest.php` sudah di-set untuk men-scan kedua lokasi (glob pattern
+  `Modules/*/tests/Feature`) — kalau bikin modul baru, testnya otomatis ke-detect, tidak perlu
+  daftar manual lagi.
+- Helper function di test (`xxxManager()`, dsb) dideklarasikan `function` biasa di scope global
+  Pest — pastikan nama unik lintas file, tidak boleh ada duplikat.
+- Jalankan `php artisan test --compact --filter=NamaTest` setelah tiap perubahan, bukan cuma
+  test file yang baru diedit — banyak bug tersembunyi (mis. namespace hilang, migration nyasar)
+  baru ketahuan justru saat menulis test untuk modul yang belum pernah dites.
 
 ---
 
@@ -270,6 +383,10 @@ return redirect()->route('admin.products.index')
 - Jangan duplikasi Model antar modul — import langsung dari modulnya
 - Jangan buat helper function global jika bisa dijadikan method di Service atau Model
 - Jangan skip Form Request untuk validasi
+- Jangan `authorize()` selalu `return true` di Form Request — cek permission asli, jangan
+  cuma andalkan middleware controller (lihat bagian RBAC)
+- Jangan render field richtext/HTML dari input user dengan `{!! !!}` tanpa disanitasi
+  (`Purifier::clean()`) dulu saat disimpan
 
 ===
 

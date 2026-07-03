@@ -75,13 +75,20 @@ Modules/
 ├── Dashboard/                    # Halaman dashboard admin
 ├── Role/                         # Manajemen role & permission (RBAC)
 ├── User/                         # Manajemen user oleh admin
-├── Category/                     # Kategori konten (simple CRUD)
+├── Category/                     # Kategori generik, dipakai lintas modul via scopeOfType()
 ├── Team/                         # Data tim
 ├── Layanan/                      # Layanan perusahaan
 ├── Keunggulan/                   # Keunggulan perusahaan
 ├── Menu/                         # Dynamic sidebar menu dari database
 ├── SiteSetting/                  # Konfigurasi situs (single-row)
-└── (Product, Post, Media)        # Belum dibangun
+├── Banner/                       # Banner promosi
+├── Hero/                         # Section hero homepage
+├── Klien/                        # Logo klien/partner
+├── Faq/                          # FAQ
+├── Paket/                        # Paket harga/layanan
+├── Post/                         # Blog/artikel — admin CRUD + frontend + SEO + rich-editor
+├── Generator/                    # Generator modul CRUD baru via UI (/admin/generator)
+└── (Product, Media)              # Belum dibangun
 
 resources/
 ├── views/
@@ -151,7 +158,11 @@ Route::prefix('admin')
 |---|---|---|
 | Frontend | `/{resource}` | `/products` |
 | Admin | `/admin/{resource}` | `/admin/products` |
-| Auth | `/login`, `/register` | Breeze default |
+| Auth | `/login`, `/forgot-password`, dll | Breeze default |
+
+> **Registrasi publik (`/register`) sengaja dihapus.** CMS ini bukan aplikasi publik yang
+> boleh didaftar siapa saja — akun baru cuma dibuat lewat modul User oleh admin, atau
+> lewat seeder/tinker khusus untuk akun `developer`.
 
 ### 6.3 Named Route Convention
 
@@ -269,12 +280,27 @@ Permission::insert([
 
 ### 7.9 Penggunaan di Controller
 
-```php
-// Via middleware di route
-->middleware('permission:layanan.view')
+Project ini **tidak** pakai Policy class. Permission dicek dua lapis:
 
-// Via Policy di controller
-$this->authorize('create', Layanan::class);
+```php
+// Lapis 1 — HasMiddleware di controller (BUKAN middleware di route)
+class LayananController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:layanan.view', only: ['index', 'show']),
+            new Middleware('permission:layanan.create', only: ['create', 'store']),
+        ];
+    }
+}
+
+// Lapis 2 — authorize() di Form Request (independen dari middleware controller,
+// supaya tetap aman kalau ada route baru yang lupa didaftarkan middleware-nya)
+public function authorize(): bool
+{
+    return $this->user()?->can('layanan.create') ?? false;
+}
 ```
 
 ---
@@ -309,22 +335,20 @@ $this->authorize('create', Layanan::class);
 - Tidak memerlukan Service layer
 - Bisa dipakai oleh modul lain (Product, Post)
 
-### 8.6 Product (Relasi ke Category)
-- CRUD produk
-- Relasi `belongsTo` ke Category
-- Upload gambar produk (via Media module)
-- Menggunakan Service layer
+### 8.6 Product — belum dibangun
+- CRUD produk, relasi `belongsTo` ke Category, upload gambar, Service layer
 
-### 8.7 Post
-- CRUD artikel/blog
-- Relasi ke Category
-- Status: draft / published
-- Menggunakan Service layer
+### 8.7 Post (Blog/Artikel) — sudah dibangun
+- CRUD artikel, relasi `belongsTo` ke Category (`Category::ofType('post')`)
+- Status: `1` = published, `0` = draft. Pakai `SoftDeletes`.
+- Field `content` pakai rich-editor (TinyMCE via CDN, toolbar dibatasi heading H2–H4) —
+  **wajib** disanitasi `Purifier::clean()` di `PostService` sebelum disimpan
+- Frontend publik: `/posts` (index, published only) dan `/posts/{post:slug}` (detail, 404 kalau draft)
+- SEO: meta tag lengkap (`<x-seo-meta>`) + JSON-LD `BlogPosting`, masuk ke `/sitemap.xml`
+- Detail lengkap: [MODUL-POST.md](MODUL-POST.md)
 
-### 8.8 Media
-- Upload & manajemen file/gambar
-- Digunakan oleh modul lain
-- Simpan di `storage/app/public`
+### 8.8 Media — belum dibangun
+- Upload & manajemen file/gambar terpusat, dipakai modul lain, simpan di `storage/app/public`
 
 ### 8.9 Menu (Dynamic Sidebar)
 - Menu sidebar dikelola dari database via admin UI
@@ -336,11 +360,28 @@ $this->authorize('create', Layanan::class);
 
 ### 8.10 SiteSetting
 - Konfigurasi situs disimpan dalam **satu baris** di tabel `site_settings`
-- Field: `app_name`, `alamat`, `no_telp`, `no_whatsapp`, `email`, `logo_atas`, `logo_bawah`, `icon`
+- Field: `app_name`, `deskripsi`, `alamat`, `no_telp`, `no_whatsapp`, `email`, `logo_atas`,
+  `logo_bawah`, `icon`, `og_image`, `iframe_map` (URL embed Google Maps saja, bukan kode
+  `<iframe>` mentah — celah XSS yang sudah ditutup)
+- Field sosmed (nama + link): `instagram`, `facebook`, `tiktok`, `youtube`, `x`
+- Field marketplace (nama + link): `shopee`, `tokopedia`, `blibli`
 - Akses via `SiteSetting::current()` (auto-create jika belum ada)
-- `$siteSetting` di-share ke semua view via `View::share()` di ServiceProvider
-- Digunakan di `layouts.admin`, `layouts.guest`, dan `welcome.blade.php`
+- `$siteSetting` di-share ke **semua view** via `View::share()` di `SiteSettingServiceProvider`
+- Upload gambar lewat `SiteSettingService` (bukan inline di controller)
 - Hanya ada halaman index yang sekaligus berfungsi sebagai form edit
+
+### 8.11 Banner, Hero, Klien, Faq, Paket
+- CRUD konten sederhana untuk homepage/frontend (banner promosi, section hero, logo klien,
+  FAQ, paket harga) — pola sama seperti Layanan/Keunggulan (upload gambar via Service, `status`,
+  `urutan` untuk sorting, `SoftDeletes`)
+
+### 8.12 Generator (Module Builder)
+- `/admin/generator` — bikin modul CRUD baru (Model, Controller, Request, View, migration,
+  route, permission) lewat form UI, tanpa nulis kode manual
+- **Hanya untuk role `developer`**
+- Field `label` divalidasi ketat + di-escape sebelum ditulis ke file view yang di-generate —
+  kalau longgar, karakter Blade/HTML di label bisa jadi kode yang benar-benar dieksekusi
+  saat view dirender (RCE). Lihat [MODUL-BARU.md](MODUL-BARU.md) untuk alternatif manual.
 
 ---
 
@@ -391,8 +432,6 @@ Semua migration modul ada di `Modules/{Modul}/Database/Migrations/`
 
 ## 11. Flow Development
 
-Urutan pengerjaan yang disarankan:
-
 ### Sudah Dibangun
 1. Setup project (Laravel 13, Breeze, Spatie, nwidart)
 2. Konfigurasi layout admin & frontend
@@ -405,11 +444,32 @@ Urutan pengerjaan yang disarankan:
 9. Modul Keunggulan
 10. Modul Menu (dynamic sidebar)
 11. Modul SiteSetting
+12. Modul Banner, Hero, Klien, Faq, Paket
+13. Modul Post (admin CRUD + frontend + SEO + rich-editor + sanitasi)
+14. Modul Generator (builder modul CRUD via UI)
+15. Halaman error kustom (404/403/419/429/500)
+16. SEO (meta tag, sitemap, robots.txt)
+17. Hardening security: hapus registrasi publik, cek `status` user saat login, rate limit
+    forgot-password, fix RCE Generator, fix stored XSS `iframe_map`, `authorize()` cek
+    permission asli di semua Form Request (bukan `return true`)
+18. Test coverage untuk seluruh modul, ditaruh per-modul di `Modules/{Modul}/tests/Feature/`
 
 ### Belum Dibangun
 - Modul Product
-- Modul Post
 - Modul Media
+
+### Diketahui Belum Ideal (bukan bug, keputusan yang ditunda)
+- `SoftDeletes` belum ada strategi purge otomatis — data yang dihapus (soft) menumpuk terus.
+  Rencana: `Illuminate\Database\Eloquent\Prunable` + `php artisan model:prune` terjadwal
+  (retensi ~30 hari), belum diimplementasikan.
+- `.env.example` masih `APP_DEBUG=true` / `APP_ENV=local` — wajib diganti sebelum produksi.
+- Kredensial akun `developer` di `DatabaseSeeder.php` masih hardcode di source.
+- `SESSION_SECURE_COOKIE` belum dipaksa `true` di produksi.
+- Generator belum dikunci ke environment non-produksi.
+- Error page 401 & 503 belum dibuat.
+
+> Detail teknis & konvensi terbaru selalu merujuk ke [CLAUDE.md](../CLAUDE.md) — dokumen ini
+> (PRD) fokus ke gambaran besar, bukan referensi harian.
 
 ---
 

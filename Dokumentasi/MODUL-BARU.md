@@ -3,6 +3,12 @@
 Panduan ini menggunakan contoh modul **`Portofolio`** (nama resource: `portofolios`).
 Ganti semua kemunculan `Portofolio` / `portofolio` / `portofolios` dengan nama modul kamu.
 
+> **Ada cara lebih cepat:** kalau modulnya CRUD sederhana (tanpa relasi ke modul lain),
+> coba dulu **Generator** (`/admin/generator`, khusus role `developer`) — bikin Model,
+> Controller, Request, View, migration, route, dan permission otomatis lewat form UI.
+> Panduan manual di bawah ini cocok kalau butuh kustomisasi di luar kemampuan Generator,
+> atau modulnya berelasi ke modul lain (lihat [MODUL-BARU-RELASI.md](MODUL-BARU-RELASI.md)).
+
 ---
 
 ## 1. Generate Scaffold Modul
@@ -91,7 +97,7 @@ class StorePortofolioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('portofolio.create') ?? false;
     }
 
     public function rules(): array
@@ -121,7 +127,7 @@ class UpdatePortofolioRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('portofolio.edit') ?? false;
     }
 
     public function rules(): array
@@ -606,6 +612,7 @@ npm run build
 - [ ] View: `admin/edit.blade.php`
 - [ ] Permission ditambahkan ke seeder & dijalankan
 - [ ] Menu sidebar ditambahkan ke tabel `menus`
+- [ ] Test ditaruh di `Modules/{Modul}/tests/Feature/` (bukan `tests/Feature/` root)
 
 ---
 
@@ -619,3 +626,14 @@ npm run build
 | View namespace | `{modul-lowercase}::admin.{action}` | `portofolio::admin.index` |
 | Permission | `{resource}.{action}` | `portofolio.view` |
 | Migration | di dalam `Modules/{Modul}/database/migrations/` | ← jangan di `database/migrations/` |
+| Test | di dalam `Modules/{Modul}/tests/Feature/` | ← jangan di `tests/Feature/` root |
+
+> **Migration wajib ada `namespace` yang benar** dan **Request class juga** — kalau lupa,
+> class-nya ke-declare di namespace global dan Laravel gagal resolve saat controller
+> type-hint `Store{Modul}Request`/`Update{Modul}Request` (fatal error "Class not found"
+> pas form disubmit, bukan pas halaman dibuka). Ini pernah kejadian nyata di modul lain.
+
+> **Pakai `SoftDeletes`** kecuali ada alasan kuat untuk hard-delete — hampir semua modul
+> konten di project ini pakai (`$table->softDeletes()` di migration + `use SoftDeletes;`
+> di model). Catatan: file gambar tetap dihapus permanen saat `destroy()` meski row-nya
+> cuma soft-deleted (konvensi project ini, bukan default Laravel).

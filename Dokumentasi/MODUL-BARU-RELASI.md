@@ -3,7 +3,11 @@
 Template generik untuk membuat modul yang berelasi ke modul lain via `belongsTo`.
 Ganti semua `{Modul}`, `{modul}`, `{RelatedModul}`, `{related_moduls}` sesuai nama modul yang dibuat.
 
-Contoh di dokumen ini: **Product → Category** (`product belongsTo Category`).
+Contoh di dokumen ini: **Product → Category** (`product belongsTo Category`). Contoh nyata yang
+sudah jalan dengan pola ini: **Team → Category**, **Post → Category** (lihat [MODUL-POST.md](MODUL-POST.md)).
+
+> Generator (`/admin/generator`) **belum mendukung relasi** (`belongsTo`/`foreignId`) — kalau
+> modul barumu berelasi ke modul lain, wajib manual pakai panduan ini, tidak bisa lewat Generator.
 
 ---
 
@@ -33,6 +37,7 @@ Schema::create('{moduls}', function (Blueprint $table) {
     $table->string('image')->nullable();
     $table->tinyInteger('status')->default(1); // 1 = aktif, 0 = nonaktif
     $table->timestamps();
+    $table->softDeletes();
 });
 ```
 
@@ -55,11 +60,14 @@ namespace Modules\{Modul}\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Modules\{RelatedModul}\Models\{RelatedModul};
 
 class {Modul} extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         '{related_modul}_id',
         'name',
@@ -114,7 +122,7 @@ class Store{Modul}Request extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('{modul}.create') ?? false;
     }
 
     public function rules(): array
@@ -145,7 +153,7 @@ class Update{Modul}Request extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('{modul}.edit') ?? false;
     }
 
     public function rules(): array
@@ -397,3 +405,9 @@ Setelah modul jalan, tambah via **Admin → Setting → Menu**:
 - **Slug** opsional — aktifkan method `generateSlug` di model dan service jika dibutuhkan
 - **Image upload** simpan ke `storage/public/{moduls}/` — jalankan `php artisan storage:link` jika belum
 - Permission check lewat `HasMiddleware` di controller, **bukan** di route
+- **Migration & Request class wajib punya `namespace` yang benar** — kalau lupa, class-nya
+  ke-declare di namespace global dan Laravel fatal error "Class not found" saat controller
+  resolve `Store{Modul}Request`/`Update{Modul}Request` (baru ketahuan pas form disubmit,
+  bukan pas halaman dibuka). Ini pernah kejadian nyata di salah satu modul.
+- **Test** ditaruh di `Modules/{Modul}/tests/Feature/`, bukan `tests/Feature/` root — supaya
+  modul bisa dihapus/dipakai ulang tanpa meninggalkan file test yang nyangkut.

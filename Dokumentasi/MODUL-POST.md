@@ -2,6 +2,12 @@
 
 Modul artikel/blog dengan relasi ke `Category`.
 
+> **Status: sudah dibangun & jalan di production code.** Dokumen ini awalnya ditulis sebagai
+> panduan langkah-demi-langkah sebelum modul ini dibuat — sekarang isinya sudah disesuaikan
+> supaya mencerminkan implementasi final (rich-editor, sanitasi, frontend, SEO). Kalau mau bikin
+> modul CRUD baru yang mirip, lihat [MODUL-BARU.md](MODUL-BARU.md) / [MODUL-BARU-RELASI.md](MODUL-BARU-RELASI.md),
+> atau pakai Generator (`/admin/generator`, khusus role `developer`).
+
 ---
 
 ## 1. Generate Scaffold
@@ -51,11 +57,14 @@ namespace Modules\Post\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Modules\Category\Models\Category;
 
 class Post extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'category_id',
         'title',
@@ -116,7 +125,7 @@ class StorePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('post.create') ?? false;
     }
 
     public function rules(): array
@@ -148,7 +157,7 @@ class UpdatePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('post.edit') ?? false;
     }
 
     public function rules(): array
@@ -178,6 +187,7 @@ namespace Modules\Post\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mews\Purifier\Facades\Purifier;
 use Modules\Post\Models\Post;
 
 class PostService
@@ -185,6 +195,7 @@ class PostService
     public function store(array $data, ?UploadedFile $image): Post
     {
         $data['slug'] = Post::generateSlug($data['title']);
+        $data['content'] = Purifier::clean($data['content'] ?? '');
 
         if ($image) {
             $data['image'] = $image->store('posts', 'public');
@@ -196,6 +207,7 @@ class PostService
     public function update(Post $post, array $data, ?UploadedFile $image): void
     {
         $data['slug'] = Post::generateSlug($data['title'], $post->id);
+        $data['content'] = Purifier::clean($data['content'] ?? '');
 
         if ($image) {
             if ($post->image) {
@@ -365,10 +377,25 @@ Kolom tabel: **Judul**, **Kategori**, **Penulis**, **Status**, **Tanggal**, **Ak
 |---|---|---|
 | Kategori | `<select>` | Required, dari `$categories` |
 | Judul | `text` | Required, slug di-generate otomatis |
-| Konten | `textarea` | Opsional |
+| Konten | `<x-admin.rich-editor>` | Opsional, **HTML** — disanitasi `Purifier::clean()` saat disimpan |
 | Gambar | `file` | Image, max 2MB |
 | Penulis | `text` | Opsional |
 | Status | `<select>` | value `1` = Published, `0` = Draft |
+
+Field konten pakai komponen rich-editor (TinyMCE via CDN jsdelivr, `license_key: 'gpl'`,
+tanpa perlu API key), **bukan** `<x-admin.textarea>` biasa:
+
+```blade
+{{-- create --}}
+<x-admin.rich-editor name="content" :value="old('content')" />
+
+{{-- edit --}}
+<x-admin.rich-editor name="content" :value="old('content', $post->content)" />
+```
+
+Toolbar-nya sengaja dibatasi ke heading **H2–H4 saja** (bukan H1, karena judul post sudah
+jadi `<h1>` sendiri di halaman detail) — dan `config/purifier.php` sudah ditambah
+`h2,h3,h4,blockquote` ke `HTML.Allowed` supaya format itu tidak ikut hilang saat disanitasi.
 
 Form `edit` perlu tampilkan gambar lama jika ada:
 
@@ -378,6 +405,25 @@ Form `edit` perlu tampilkan gambar lama jika ada:
 @endif
 <input type="file" name="image">
 ```
+
+---
+
+## 9.1 Frontend Publik
+
+- **List** — `GET /posts` (`posts.index`), cuma tampilkan post `status = 1`, paginate 9,
+  di-handle `Modules\Post\Http\Controllers\Frontend\PostController`.
+- **Detail** — `GET /posts/{post:slug}` (`posts.show`), `abort_unless($post->isPublished(), 404)`
+  kalau draft diakses langsung lewat URL.
+- Konten dirender `{!! $post->content !!}` — **aman** karena sudah disanitasi Purifier saat
+  disimpan, bukan saat ditampilkan.
+
+## 9.2 SEO
+
+- `<x-seo-meta :title="$post->title" :description="strip_tags($post->content)" :image="..." type="article" />`
+  di `<head>` halaman detail.
+- JSON-LD `BlogPosting` (headline, tanggal, author, publisher, image) disematkan langsung di
+  halaman detail untuk rich snippet Google.
+- Post published otomatis masuk `/sitemap.xml`.
 
 ---
 
@@ -402,11 +448,10 @@ Setelah modul jalan, tambah via **Admin → Setting → Menu**:
 - **category_id** wajib diisi (`required`) — gunakan `nullOnDelete` di migration agar record tidak ikut terhapus jika kategori dihapus
 - **Relasi Category** dari `Modules\Category\Models\Category` — jangan duplikasi model
 - **Filter kategori wajib** di `create()` dan `edit()` gunakan `Category::ofType('post')` — jangan `Category::all()` atau `Category::orderBy()` saja, karena tabel `categories` dipakai bersama oleh beberapa modul (post, team, dll) dengan tipe berbeda
-- **Textarea `x-admin.textarea`** harus diisi via slot, bukan prop `value`:
+- **Konten HTML wajib disanitasi** — `content` disimpan sebagai HTML dari rich-editor, jadi
+  **selalu** panggil `Purifier::clean()` di Service sebelum `create`/`update`. Kalau skip ini,
+  admin/editor yang akunnya diretas bisa nyisip `<script>` (stored XSS).
+- **`x-admin.rich-editor`** diisi lewat prop `:value`, bukan slot (beda dari `x-admin.textarea`):
   ```blade
-  {{-- Benar — konten jadi slot --}}
-  <x-admin.textarea name="content">{{ old('content', $post->content) }}</x-admin.textarea>
-
-  {{-- Salah — value prop tidak dirender di textarea --}}
-  <x-admin.textarea name="content" :value="old('content', $post->content)" />
+  <x-admin.rich-editor name="content" :value="old('content', $post->content)" />
   ```
