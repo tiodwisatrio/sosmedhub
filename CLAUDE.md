@@ -578,4 +578,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
 - Do NOT delete tests without approval.
 
+# Export database
+mysqldump -u root -p'yourpassword*' -h 127.0.0.1 -P 3306 cms_master > cms_master_backup.sql
+
+
 </laravel-boost-guidelines>
