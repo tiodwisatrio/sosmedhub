@@ -46,7 +46,7 @@
 
         .post-content { color: #334155; line-height: 1.75; }
         .post-content p { margin-bottom: 1.25rem; }
-        .post-content h1, .post-content h2, .post-content h3 { color: #0f172a; font-weight: 600; margin: 1.75rem 0 0.75rem; }
+        .post-content h2, .post-content h3, .post-content h4 { color: #0f172a; font-weight: 600; margin: 1.75rem 0 0.75rem; }
         .post-content ul, .post-content ol { margin: 0 0 1.25rem 1.5rem; }
         .post-content ul { list-style: disc; }
         .post-content ol { list-style: decimal; }

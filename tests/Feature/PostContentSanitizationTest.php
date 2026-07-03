@@ -50,3 +50,20 @@ test('script tags are stripped from post content on update', function () {
         ->toContain('<p>Konten baru</p>')
         ->not->toContain('<script>');
 });
+
+test('heading and blockquote formatting from the editor toolbar survives sanitization', function () {
+    $this->actingAs(developerUser());
+
+    $this->post(route('admin.posts.store'), [
+        'category_id' => postCategory()->id,
+        'title' => 'Post Dengan Heading',
+        'content' => '<h2>Subjudul</h2><p>Isi</p><blockquote>Kutipan</blockquote>',
+        'status' => 1,
+    ])->assertRedirect(route('admin.posts.index'));
+
+    $post = Post::firstWhere('title', 'Post Dengan Heading');
+
+    expect($post->content)
+        ->toContain('<h2>Subjudul</h2>')
+        ->toContain('<blockquote>Kutipan</blockquote>');
+});
