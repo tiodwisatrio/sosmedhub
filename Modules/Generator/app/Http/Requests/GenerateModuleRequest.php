@@ -17,7 +17,7 @@ class GenerateModuleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'regex:/^[A-Za-z][A-Za-z0-9 ]*$/', 'max:50'],
             'fields' => ['required', 'array', 'min:1'],
-            'fields.*.label' => ['required', 'string', 'max:50'],
+            'fields.*.label' => ['required', 'string', 'max:50', 'regex:/^[\p{L}\p{N} .,()\-]+$/u'],
             'fields.*.name' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]*$/', 'max:50'],
             'fields.*.type' => ['required', Rule::in(['string', 'text', 'richtext', 'integer', 'date', 'boolean', 'image'])],
             'fields.*.nullable' => ['nullable', 'boolean'],
@@ -34,6 +34,7 @@ class GenerateModuleRequest extends FormRequest
         return [
             'name.regex' => 'Nama modul hanya boleh huruf, angka, dan spasi, diawali huruf.',
             'fields.*.name.regex' => 'Nama kolom harus snake_case (huruf kecil, angka, underscore).',
+            'fields.*.label.regex' => 'Label hanya boleh huruf, angka, spasi, dan tanda baca umum (.,()-).',
             'fields.required' => 'Minimal harus ada satu kolom.',
         ];
     }

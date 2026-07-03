@@ -100,7 +100,7 @@ class ModuleGeneratorService
     {
         return array_values(array_map(fn ($f) => [
             'name' => Str::snake(trim($f['name'])),
-            'label' => trim($f['label']),
+            'label' => e(trim($f['label'])),
             'type' => $f['type'],
             'nullable' => (bool) ($f['nullable'] ?? false),
         ], $fields));
