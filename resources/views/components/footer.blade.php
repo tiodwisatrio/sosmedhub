@@ -42,7 +42,7 @@
                 <p class="text-xs font-semibold tracking-widest uppercase text-white/40 mb-4">Menu</p>
                 <ul class="space-y-2.5 text-sm text-white/60">
                     <li><a href="{{ url('/') }}" class="hover:text-white transition-colors">Beranda</a></li>
-                    <li><a href="{{ url('/').'#tentang-kami' }}" class="hover:text-white transition-colors">Tentang Kami</a></li>
+                    <li><a href="{{ route('tentang-kami.index') }}" class="hover:text-white transition-colors">Tentang Kami</a></li>
                     <li><a href="{{ route('layanan.index') }}" class="hover:text-white transition-colors">Layanan</a></li>
                     <li><a href="{{ route('posts.index') }}" class="hover:text-white transition-colors">Post</a></li>
                     <li><a href="{{ route('kontak') }}" class="hover:text-white transition-colors">Kontak</a></li>

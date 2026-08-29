@@ -6,10 +6,7 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
+            detectTls: 'craftboard.test',
         }),
     ],
-    server: {
-        host: 'localhost',
-        hmr: { host: 'localhost' },
-    },
 });

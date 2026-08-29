@@ -1,0 +1,11 @@
+{
+    "name": "TentangKami",
+    "alias": "tentangkami",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\TentangKami\\Providers\\TentangKamiServiceProvider"
+    ],
+    "files": []
+}

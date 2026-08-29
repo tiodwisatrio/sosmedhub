@@ -44,8 +44,8 @@ export default {
                     text:    '#1E40AF',
                 },
                 sidebar: {
-                    DEFAULT: '#1E293B',
-                    hover:   '#273549',
+                    DEFAULT: '#080809',
+                    hover:   '#161718',
                     active:  '#0D9488',
                     text:    '#CBD5E1',
                     'text-active': '#FFFFFF',

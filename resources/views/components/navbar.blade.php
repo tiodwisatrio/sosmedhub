@@ -20,7 +20,7 @@
         <!-- Link Menu (desktop) -->
         <div class="hidden md:flex items-center justify-center gap-8">
             <a href="/" class="nav-text text-sm font-medium">Beranda</a>
-            <a href="tentang-kami" class="nav-text text-sm font-medium">Tentang Kami</a>
+            <a href="{{ route('tentang-kami.index') }}" class="nav-text text-sm font-medium">Tentang Kami</a>
             <a href="{{ route('layanan.index') }}" class="nav-text text-sm font-medium">Layanan</a>
             <a href="{{ route('posts.index') }}" class="nav-text text-sm font-medium">Post</a>
             <a href="{{ route('kontak') }}" class="nav-text text-sm font-medium">Kontak</a>
@@ -54,7 +54,7 @@
         class="hidden md:hidden fixed inset-0 z-40 bg-black flex-col items-center justify-center gap-8 px-6"
     >
         <a href="/" class="text-white text-4xl sm:text-5xl tracking-tight" style="font-family: 'Instrument Serif', serif;">Beranda</a>
-        <a href="tentang-kami" class="text-white text-4xl sm:text-5xl tracking-tight" style="font-family: 'Instrument Serif', serif;">Tentang Kami</a>
+        <a href="{{ route('tentang-kami.index') }}" class="text-white text-4xl sm:text-5xl tracking-tight" style="font-family: 'Instrument Serif', serif;">Tentang Kami</a>
         <a href="layanan" class="text-white text-4xl sm:text-5xl tracking-tight" style="font-family: 'Instrument Serif', serif;">Layanan</a>
         <a href="{{ route('kontak') }}" class="text-white text-4xl sm:text-5xl tracking-tight" style="font-family: 'Instrument Serif', serif;">Kontak</a>
         <a href="{{ route('login') }}" class="mt-4 liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium tracking-wide">Login</a>

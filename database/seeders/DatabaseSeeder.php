@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             'role.view', 'role.create', 'role.edit', 'role.delete',
             'menu.view', 'menu.create', 'menu.edit', 'menu.delete',
             'site-setting.view', 'site-setting.edit',
+            'tentang-kami.view', 'tentang-kami.edit',
             'post.view', 'post.create', 'post.edit', 'post.delete',
             'banner.view', 'banner.create', 'banner.edit', 'banner.delete',
             'hero.view', 'hero.create', 'hero.edit', 'hero.delete',
