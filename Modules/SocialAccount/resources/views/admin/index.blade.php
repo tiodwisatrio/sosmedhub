@@ -44,7 +44,6 @@
                                     @endif
                                     <div>
                                         <p class="font-medium text-slate-800">{{ $account->display_name ?: $account->username }}</p>
-                                        <p class="text-xs text-slate-400">@{{ $account->username }}</p>
                                     </div>
                                 </div>
                             </td>
