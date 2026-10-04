@@ -34,7 +34,10 @@ function schedulerUser(array $permissions = ['view']): User
 
 function futureWibInput(string $minutes = '+60 minutes'): string
 {
-    return Carbon::now()->setTimezone(ScheduledPost::WIB)->addMinutes(60)->format('Y-m-d\TH:i');
+    // Jam terbit wajib sejajar slot cron.
+    return ScheduledPost::nextSlot(Carbon::now()->addMinutes(60))
+        ->setTimezone(ScheduledPost::WIB)
+        ->format('Y-m-d\TH:i');
 }
 
 function socialAccountFor(User $user, array $attributes = []): SocialAccount

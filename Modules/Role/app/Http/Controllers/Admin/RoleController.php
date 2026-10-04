@@ -9,6 +9,7 @@ use Modules\Role\Http\Requests\StoreRoleRequest;
 use Modules\Role\Http\Requests\UpdateRoleRequest;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends Controller implements HasMiddleware
 {
@@ -26,14 +27,14 @@ class RoleController extends Controller implements HasMiddleware
 
     private array $labels = [
         'category' => 'Kategori',
-        'team'     => 'Tim',
-        'layanan'  => 'Layanan',
-        'product'  => 'Produk',
-        'post'     => 'Artikel',
-        'media'    => 'Media',
-        'user'     => 'Pengguna',
-        'role'     => 'Role & Akses',
-        'menu'     => 'Menu',
+        'team' => 'Tim',
+        'layanan' => 'Layanan',
+        'product' => 'Produk',
+        'post' => 'Artikel',
+        'media' => 'Media',
+        'user' => 'Pengguna',
+        'role' => 'Role & Akses',
+        'menu' => 'Menu',
         'settings' => 'Pengaturan',
     ];
 
@@ -68,7 +69,7 @@ class RoleController extends Controller implements HasMiddleware
     {
         $role = Role::create(['name' => $request->input('name'), 'guard_name' => 'web']);
         $role->syncPermissions($request->input('permissions', []));
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('admin.roles.index')
             ->with('success', "Role \"{$role->name}\" berhasil dibuat.");
@@ -90,7 +91,7 @@ class RoleController extends Controller implements HasMiddleware
 
         $role->update(['name' => $request->input('name')]);
         $role->syncPermissions($request->input('permissions', []));
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('admin.roles.index')
             ->with('success', "Role \"{$role->name}\" berhasil diperbarui.");

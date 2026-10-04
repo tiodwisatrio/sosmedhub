@@ -50,6 +50,15 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
 3. Berhasil: status `published`, `ig_media_id` dan `published_at` terisi. Gagal: status `failed`, pesan error tersimpan (maksimal 500 karakter, tanpa token).
 4. Job tidak diulang otomatis (`tries = 1`) agar tidak ada postingan ganda. Pengulangan dilakukan manual lewat **Jadwalkan Ulang**.
 
+### Slot jadwal dan cron
+Jam terbit dipilih lewat komponen `<x-scheduler::schedule-picker>` (tanggal, jam 00-23, dan menit per slot; selalu 24 jam, tanpa preset jam; menit di luar slot tidak bisa dipilih) dan terkirim sebagai satu field `scheduled_at` berformat `Y-m-d\TH:i` (WIB). Jam terbit wajib jatuh di slot yang sejajar dengan cron (`SCHEDULER_SLOT_MINUTES`, bawaan 15: menit 00, 15, 30, 45). Karena cron berjalan tepat di menit yang sama, jadwal 09.00 diproses di putaran 09.00, bukan 09.15. Validasi server (`OnScheduleSlot`) menolak jam di luar slot; form memakai `step` sesuai slot, nilai minimum dan default di slot berikutnya, dan duplikasi mengusulkan waktu di slot.
+
+Dalam satu putaran `schedule:run`: `scheduler:dispatch-due` mengirim post jatuh tempo ke antrean, lalu `queue:work --stop-when-empty --max-time=240` memprosesnya (urutan ini wajib; jika terbalik, post telat satu putaran). Worker di dalam scheduler bisa dimatikan dengan `SCHEDULER_RUN_WORKER=false` saat memakai Supervisor di VPS. Semua kunci `withoutOverlapping` diberi masa kedaluwarsa pendek (10 menit, worker sekitar 9 menit, refresh token 60 menit) agar proses yang dibunuh host tidak menahan scheduler seharian.
+
+Setiap putaran mencatat detak (`SchedulerHeartbeat`). Dashboard menampilkan peringatan untuk developer bila scheduler belum pernah berjalan atau terlewat lebih dari dua slot.
+
+Pindah ke VPS: `SCHEDULER_SLOT_MINUTES=1` atau `5`, cron tiap menit, `SCHEDULER_RUN_WORKER=false`, dan `queue:work` di Supervisor. Tidak ada perubahan kode.
+
 ### Status postingan
 `draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `failed`, `cancelled`.
 Yang boleh diubah: `scheduled`, `failed`, `draft`. Menyimpan postingan `failed` atau `draft` mengembalikannya ke `scheduled`.
@@ -105,19 +114,18 @@ scheduled_posts 1──N scheduled_post_media
 ## 7. Perintah penting
 
 ```bash
-php artisan schedule:work                       # lokal: menjalankan scheduler
-php artisan queue:work --tries=1                # lokal: memproses antrean
+php artisan schedule:work                       # lokal: menjalankan scheduler (termasuk worker antrean)
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 134 test otomatis
+php artisan test                                # 150 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 134 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 150 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 
@@ -156,11 +164,12 @@ Halaman publik (isi hardcode di `resources/views/public/`): `/` (beranda untuk t
 ### Deploy awal di shared hosting
 Rencana: shared hosting dulu sampai sekitar 10 client.
 - Pastikan hosting punya PHP 8.3, cron tiap 1 menit, dan document root bisa diarahkan ke `public`.
-- Cron tiap menit:
+- Hosting: Rumahweb shared Medium (interval cron minimal 15 menit, symlink harus diminta aktif ke support, SSH dan Git tersedia). Konfirmasi PHP 8.3 dan Composer sebelum membeli.
+- Satu entri cron tiap 15 menit (worker antrean sudah dijalankan dari dalam scheduler):
   ```
-  * * * * * cd /home/USER/sosmedhub && php artisan schedule:run >> /dev/null 2>&1
-  * * * * * cd /home/USER/sosmedhub && php artisan queue:work --stop-when-empty --tries=1 --max-time=50 >> /dev/null 2>&1
+  */15 * * * * cd /home/USER/sosmedhub && php artisan schedule:run >> /dev/null 2>&1
   ```
+  Pastikan cron berjalan di menit 00, 15, 30, 45. Jika host menggeser menitnya, slot di form tidak lagi sejajar.
 - Jalankan `npm run build` dan `composer install --no-dev` di laptop jika server tidak punya Node atau Composer, lalu upload.
 - Pastikan `/storage/...` terbuka publik dan tidak diblokir (hotlink protection, ModSecurity). Jika `storage:link` diblokir, arahkan disk `public` ke folder di dalam `public/`.
 - `.env` produksi: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` dan `INSTAGRAM_REDIRECT_URI` memakai domain produksi, `APP_KEY` baru.

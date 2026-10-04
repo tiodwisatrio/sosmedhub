@@ -56,7 +56,7 @@ class ScheduledPostService
             'user_id' => $post->user_id,
             'social_account_id' => $post->social_account_id,
             'caption' => $post->caption,
-            'scheduled_at' => now()->addDay(),
+            'scheduled_at' => ScheduledPost::nextSlot(now()->addDay()),
             'status' => ScheduledPost::STATUS_DRAFT,
         ]);
 

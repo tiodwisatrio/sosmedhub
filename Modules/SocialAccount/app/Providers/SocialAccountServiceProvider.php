@@ -23,6 +23,6 @@ class SocialAccountServiceProvider extends ModuleServiceProvider
 
     protected function configureSchedules(Schedule $schedule): void
     {
-        $schedule->command('social-accounts:refresh-tokens')->daily();
+        $schedule->command('social-accounts:refresh-tokens')->daily()->withoutOverlapping(60);
     }
 }

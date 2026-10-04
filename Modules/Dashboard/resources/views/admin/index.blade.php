@@ -7,6 +7,8 @@
 @endsection
 
 @section('content')
+    <x-scheduler::heartbeat-alert />
+
     <div>
         <div class="bg-card rounded-xl shadow-card border border-border p-8">
             <div class="flex items-center gap-4 mb-6">

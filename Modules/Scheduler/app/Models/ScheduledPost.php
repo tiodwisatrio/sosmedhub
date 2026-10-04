@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Modules\Scheduler\Database\Factories\ScheduledPostFactory;
 use Modules\SocialAccount\Models\SocialAccount;
 
@@ -43,6 +44,52 @@ class ScheduledPost extends Model
         'scheduled_at' => 'datetime',
         'published_at' => 'datetime',
     ];
+
+    private const ALLOWED_SLOTS = [1, 5, 10, 15, 20, 30, 60];
+
+    public static function slotMinutes(): int
+    {
+        $slot = (int) config('scheduler.slot_minutes', 15);
+
+        return in_array($slot, self::ALLOWED_SLOTS, true) ? $slot : 15;
+    }
+
+    /**
+     * Slot jadwal harus sejajar dengan jam cron. Karena slot selalu pembagi 60 dan
+     * WIB berselisih tepat 7 jam dari UTC, sejajar di WIB berarti sejajar di UTC.
+     */
+    public static function isOnSlot(Carbon $time): bool
+    {
+        return $time->second === 0 && $time->minute % self::slotMinutes() === 0;
+    }
+
+    /**
+     * Slot pertama yang jatuh setelah $from (default: sekarang).
+     */
+    public static function nextSlot(?Carbon $from = null): Carbon
+    {
+        $slot = self::slotMinutes();
+        $time = ($from ?? now())->copy()->startOfMinute()->addMinute();
+        $remainder = $time->minute % $slot;
+
+        return $remainder === 0 ? $time : $time->addMinutes($slot - $remainder);
+    }
+
+    /**
+     * Contoh jam untuk pesan bantuan, misalnya "09.00, 09.15, 09.30, atau 09.45".
+     */
+    public static function slotExamples(): string
+    {
+        $slot = self::slotMinutes();
+        $times = collect(range(0, 3))
+            ->map(fn (int $i) => Carbon::createFromTime(9, 0)->addMinutes($i * $slot)->format('H.i'))
+            ->unique()
+            ->values();
+
+        return $times->count() > 1
+            ? $times->slice(0, -1)->implode(', ').', atau '.$times->last()
+            : $times->first();
+    }
 
     protected static function newFactory()
     {

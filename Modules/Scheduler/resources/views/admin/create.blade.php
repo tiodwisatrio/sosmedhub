@@ -7,13 +7,19 @@
 @endsection
 
 @php
-    $minWib = now()->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('Y-m-d\TH:i');
+    $minWib = \Modules\Scheduler\Models\ScheduledPost::nextSlot()->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('Y-m-d\TH:i');
     $requestedDate = (string) request('date');
     $defaultDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $requestedDate)
         ? \Illuminate\Support\Carbon::parse($requestedDate, \Modules\Scheduler\Models\ScheduledPost::WIB)
             ->setTime(9, 0)
             ->format('Y-m-d\TH:i')
         : $minWib;
+    $initialAt = (string) old('scheduled_at', $defaultDate);
+    if (! preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $initialAt)) {
+        $initialAt = $minWib;
+    }
+    [$initDate, $initTime] = explode('T', $initialAt);
+    [$initHour, $initMinute] = explode(':', $initTime);
 
     $appName = $siteSetting->app_name ?? config('app.name');
     $siteLogo = $siteSetting->icon ?? $siteSetting->logo_atas ?? null;
@@ -31,23 +37,24 @@
     <div
         x-data="{
             caption: @js(old('caption', '')),
-            scheduled_at: @js(old('scheduled_at', $defaultDate)),
+            schedDate: @js($initDate),
+            schedHour: @js($initHour),
+            schedMinute: @js($initMinute),
             maxChars: 2200,
             maxFiles: 10,
             mediaFiles: [],
             mediaPreviews: [],
             currentIndex: 0,
 
-            toInput(d) {
-                const p = (n) => String(n).padStart(2, '0');
-                return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-            },
             pad(n) {
                 return String(n).padStart(2, '0');
             },
             parseAt(value) {
                 const d = new Date(value.replace('T', ' '));
                 return isNaN(d) ? null : d;
+            },
+            get scheduled_at() {
+                return this.schedDate ? `${this.schedDate}T${this.schedHour}:${this.schedMinute}` : '';
             },
             get remaining() {
                 return this.maxChars - (this.caption?.length || 0);
@@ -70,13 +77,6 @@
                     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                 });
                 return `${tgl} · ${this.pad(d.getHours())}:${this.pad(d.getMinutes())} WIB`;
-            },
-            pickTime(time) {
-                const [h, m] = time.split(':').map(Number);
-                const base = this.parseAt(this.scheduled_at || '') || new Date();
-                const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, 0, 0);
-                if (d <= new Date()) d.setDate(d.getDate() + 1);
-                this.scheduled_at = this.toInput(d);
             },
             handleFiles(event) {
                 const incoming = Array.from(event.target.files || []);
@@ -219,33 +219,7 @@
                         </div>
 
                         <div class="p-5 space-y-5">
-                            <div>
-                                <div class="flex items-baseline justify-between">
-                                    <label for="scheduled_at" class="block text-sm font-medium text-slate-700 mb-1.5">
-                                        Tanggal & Jam Terbit <span class="text-danger ml-0.5">*</span>
-                                    </label>
-                                </div>
-                                <x-admin.input-text
-                                    name="scheduled_at"
-                                    type="datetime-local"
-                                    x-model="scheduled_at"
-                                    min="{{ $minWib }}"
-                                />
-                            </div>
-
-                            <div>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach (['06:00' => 'Pagi', '09:00' => 'Jam 9', '12:00' => 'Siang', '16:00' => 'Sore', '19:00' => 'Malam', '22:00' => 'Akhir malam'] as $time => $label)
-                                        <button type="button" @click="pickTime('{{ $time }}')"
-                                            class="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-slate-600 hover:border-primary/40 hover:text-primary hover:bg-primary-light/30 transition-colors duration-150">
-                                            {{ $label }} · {{ $time }}
-                                        </button>
-                                    @endforeach
-                                </div>
-                                <p class="mt-2 text-xs text-slate-400">
-                                    Jika jam preset sudah lewat, tanggal otomatis mundur ke hari berikutnya.
-                                </p>
-                            </div>
+                            <x-scheduler::schedule-picker :min="$minWib" />
                         </div>
                     </div>
 
