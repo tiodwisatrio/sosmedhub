@@ -22,7 +22,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:scheduler.view', only: ['index']),
-            new Middleware('permission:scheduler.create', only: ['create', 'store']),
+            new Middleware('permission:scheduler.create', only: ['create', 'store', 'duplicate']),
             new Middleware('permission:scheduler.edit', only: ['edit', 'update', 'cancel']),
             new Middleware('permission:scheduler.delete', only: ['destroy']),
         ];
@@ -127,7 +127,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
     public function edit(ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah lewat tidak bisa diubah lagi.');
+        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
 
         return view('scheduler::admin.edit', [
             'post' => $scheduled_post->load(['media', 'socialAccount']),
@@ -138,7 +138,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
     public function update(UpdateScheduledPostRequest $request, ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah lewat tidak bisa diubah lagi.');
+        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
 
         $data = $request->safe()->only(['caption', 'scheduled_at', 'social_account_id']);
 
@@ -153,10 +153,20 @@ class ScheduledPostController extends Controller implements HasMiddleware
             ->with('success', 'Postingan berhasil diperbarui.');
     }
 
+    public function duplicate(ScheduledPost $scheduled_post)
+    {
+        $this->authorizePostAccess($scheduled_post);
+
+        $copy = $this->service->duplicate($scheduled_post->load('media'));
+
+        return redirect()->route('admin.scheduled-posts.edit', $copy)
+            ->with('success', 'Postingan diduplikasi sebagai draf. Atur waktu terbit lalu simpan.');
+    }
+
     public function cancel(ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah lewat tidak bisa dibatalkan lagi.');
+        abort_unless($scheduled_post->canBeCancelled(), 403, 'Postingan yang sudah lewat tidak bisa dibatalkan lagi.');
 
         $this->service->cancel($scheduled_post);
 

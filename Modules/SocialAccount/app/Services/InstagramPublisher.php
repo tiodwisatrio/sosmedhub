@@ -5,6 +5,7 @@ namespace Modules\SocialAccount\Services;
 use Illuminate\Http\Client\Factory as HttpClient;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Modules\SocialAccount\Exceptions\InstagramAuthException;
 use Modules\SocialAccount\Models\SocialAccount;
 use RuntimeException;
 
@@ -118,6 +119,10 @@ class InstagramPublisher
     {
         if ($response->failed()) {
             $message = $response->json('error.message') ?? 'HTTP '.$response->status();
+
+            if ((int) $response->json('error.code') === 190) {
+                throw new InstagramAuthException("Token Instagram ditolak: {$message}");
+            }
 
             throw new RuntimeException("Instagram menolak permintaan: {$message}");
         }

@@ -298,6 +298,12 @@
                                         </x-admin.button>
                                     </form>
                                 @endcan
+                                @can('scheduler.create')
+                                    <form :action="'/admin/scheduled-posts/' + selected.id + '/duplicate'" method="POST">
+                                        @csrf
+                                        <x-admin.button variant="outline" type="submit">Duplikat</x-admin.button>
+                                    </form>
+                                @endcan
                                 @can('scheduler.delete')
                                     <form :action="'/admin/scheduled-posts/' + selected.id" method="POST" @submit="confirmDelete($event)" class="ml-auto">
                                         @csrf
@@ -363,6 +369,22 @@
                     } }}">
                     {{ $post->statusLabel() }}
                 </span>
+
+                @can('scheduler.edit')
+                    @if ($post->canBeEdited())
+                        <a href="{{ route('admin.scheduled-posts.edit', $post) }}"
+                            class="inline-flex items-center flex-shrink-0 font-medium rounded-md px-3 py-1.5 text-xs border border-border hover:bg-slate-50 text-slate-700">
+                            {{ $post->isFailed() ? 'Jadwalkan Ulang' : 'Atur Jadwal' }}
+                        </a>
+                    @endif
+                @endcan
+
+                @can('scheduler.create')
+                    <form method="POST" action="{{ route('admin.scheduled-posts.duplicate', $post) }}" class="flex-shrink-0">
+                        @csrf
+                        <x-admin.button variant="outline" size="sm" type="submit">Duplikat</x-admin.button>
+                    </form>
+                @endcan
 
                 @can('scheduler.delete')
                     <form method="POST" action="{{ route('admin.scheduled-posts.destroy', $post) }}" class="flex-shrink-0"

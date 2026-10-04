@@ -351,3 +351,89 @@ test('service menyimpan waktu WIB menjadi UTC dan menampilkan kembali WIB', func
         ->and($post->scheduled_at->setTimezone(ScheduledPost::WIB)->format('Y-m-d H:i'))
         ->toBe('2026-09-01 08:30');
 });
+
+test('post gagal bisa dijadwalkan ulang lewat halaman ubah', function () {
+    $user = schedulerUser(['view', 'edit']);
+    $account = socialAccountFor($user);
+    $post = ScheduledPost::factory()->create([
+        'user_id' => $user->id,
+        'social_account_id' => $account->id,
+        'status' => ScheduledPost::STATUS_FAILED,
+        'error_message' => 'Media tidak valid',
+        'scheduled_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($user)->get(route('admin.scheduled-posts.edit', $post))
+        ->assertOk()
+        ->assertSee('Media tidak valid');
+
+    $this->actingAs($user)
+        ->put(route('admin.scheduled-posts.update', $post), [
+            'caption' => $post->caption,
+            'social_account_id' => $account->id,
+            'scheduled_at' => futureWibInput(),
+        ])
+        ->assertRedirect(route('admin.scheduled-posts.index'));
+
+    $fresh = $post->fresh();
+    expect($fresh->status)->toBe(ScheduledPost::STATUS_SCHEDULED)
+        ->and($fresh->error_message)->toBeNull();
+});
+
+test('post gagal tidak bisa dibatalkan, hanya dijadwalkan ulang atau dihapus', function () {
+    $user = schedulerUser(['view', 'edit']);
+    $post = ScheduledPost::factory()->create([
+        'user_id' => $user->id,
+        'status' => ScheduledPost::STATUS_FAILED,
+    ]);
+
+    $this->actingAs($user)->patch(route('admin.scheduled-posts.cancel', $post))->assertForbidden();
+});
+
+test('duplikasi membuat draf dengan foto salinan', function () {
+    Storage::fake('public');
+    $user = schedulerUser(['view', 'create', 'edit']);
+    $account = socialAccountFor($user);
+    $post = ScheduledPost::factory()->create([
+        'user_id' => $user->id,
+        'social_account_id' => $account->id,
+        'caption' => 'Caption asli.',
+        'status' => ScheduledPost::STATUS_PUBLISHED,
+    ]);
+    Storage::disk('public')->put('scheduled-posts/asli.jpg', 'isi-foto');
+    $post->media()->create(['media_path' => 'scheduled-posts/asli.jpg', 'position' => 0]);
+
+    $response = $this->actingAs($user)->post(route('admin.scheduled-posts.duplicate', $post));
+
+    $copy = ScheduledPost::where('id', '!=', $post->id)->firstOrFail();
+    $response->assertRedirect(route('admin.scheduled-posts.edit', $copy));
+
+    $copyMedia = $copy->media()->firstOrFail();
+    expect($copy->status)->toBe(ScheduledPost::STATUS_DRAFT)
+        ->and($copy->caption)->toBe('Caption asli.')
+        ->and($copy->social_account_id)->toBe($account->id)
+        ->and($copyMedia->media_path)->not->toBe('scheduled-posts/asli.jpg')
+        ->and(Storage::disk('public')->exists($copyMedia->media_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists('scheduled-posts/asli.jpg'))->toBeTrue();
+
+    $this->actingAs($user)
+        ->put(route('admin.scheduled-posts.update', $copy), [
+            'caption' => 'Caption asli.',
+            'social_account_id' => $account->id,
+            'scheduled_at' => futureWibInput(),
+        ])
+        ->assertRedirect(route('admin.scheduled-posts.index'));
+
+    expect($copy->fresh()->status)->toBe(ScheduledPost::STATUS_SCHEDULED);
+});
+
+test('duplikasi menolak post milik user lain dan user tanpa izin membuat', function () {
+    $owner = schedulerUser(['view', 'create']);
+    $other = schedulerUser(['view', 'create']);
+    $viewer = schedulerUser(['view']);
+    $post = ScheduledPost::factory()->create(['user_id' => $owner->id]);
+
+    $this->actingAs($other)->post(route('admin.scheduled-posts.duplicate', $post))->assertForbidden();
+    $this->actingAs($viewer)->post(route('admin.scheduled-posts.duplicate', $post))->assertForbidden();
+    expect(ScheduledPost::count())->toBe(1);
+});

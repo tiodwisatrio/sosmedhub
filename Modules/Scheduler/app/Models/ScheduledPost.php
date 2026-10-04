@@ -14,6 +14,8 @@ class ScheduledPost extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SCHEDULED = 'scheduled';
 
     public const STATUS_PUBLISHING = 'publishing';
@@ -71,9 +73,22 @@ class ScheduledPost extends Model
         return $this->media->first()?->media_path;
     }
 
+    /**
+     * Post gagal dan draf boleh diubah lalu dijadwalkan ulang.
+     */
     public function canBeEdited(): bool
     {
-        return $this->status === self::STATUS_SCHEDULED;
+        return in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED, self::STATUS_DRAFT], true);
+    }
+
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_DRAFT], true);
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_FAILED;
     }
 
     public function isPublished(): bool
@@ -89,6 +104,7 @@ class ScheduledPost extends Model
     public function statusLabel(): string
     {
         return match ($this->status) {
+            self::STATUS_DRAFT => 'Draf',
             self::STATUS_SCHEDULED => 'Terjadwal',
             self::STATUS_PUBLISHING => 'Menerbitkan',
             self::STATUS_PUBLISHED => 'Terbit',

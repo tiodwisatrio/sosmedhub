@@ -7,7 +7,8 @@
 @endsection
 
 @php
-    $editWib = $post->scheduled_at->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('Y-m-d\TH:i');
+    $editWib = ($post->scheduled_at->isPast() ? now()->addHour() : $post->scheduled_at)
+        ->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('Y-m-d\TH:i');
     $minWib = now()->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('Y-m-d\TH:i');
 
     $appName = $siteSetting->app_name ?? config('app.name');
@@ -31,6 +32,20 @@
 @endphp
 
 @section('content')
+    @if ($post->isFailed())
+        <div class="mb-4 rounded-md border border-danger/30 bg-danger-light px-4 py-3 text-sm text-danger-text">
+            <p class="font-medium">Postingan ini gagal terbit.</p>
+            @if ($post->error_message)
+                <p class="mt-1">{{ $post->error_message }}</p>
+            @endif
+            <p class="mt-1">Periksa isinya, pilih waktu terbit yang baru, lalu simpan untuk menjadwalkan ulang.</p>
+        </div>
+    @elseif ($post->status === \Modules\Scheduler\Models\ScheduledPost::STATUS_DRAFT)
+        <div class="mb-4 rounded-md border border-border bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            Ini draf hasil duplikasi. Atur waktu terbit lalu simpan agar masuk antrean.
+        </div>
+    @endif
+
     <div
         x-data="{
             caption: @js(old('caption', $post->caption)),

@@ -5,6 +5,7 @@ namespace Modules\Scheduler\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Modules\Scheduler\Models\ScheduledPost;
 
 class ScheduledPostService
@@ -27,6 +28,13 @@ class ScheduledPostService
         $data['scheduled_at'] = $this->toUtc($data['scheduled_at']);
 
         $post->fill($data);
+
+        // Post gagal atau draf yang disimpan ulang masuk antrean lagi.
+        if ($post->status !== ScheduledPost::STATUS_SCHEDULED) {
+            $post->status = ScheduledPost::STATUS_SCHEDULED;
+            $post->error_message = null;
+        }
+
         $post->save();
 
         if ($removeMediaIds) {
@@ -36,6 +44,38 @@ class ScheduledPostService
         if ($media) {
             $this->appendMedia($post, $media);
         }
+    }
+
+    /**
+     * Salin caption, akun tujuan, dan foto menjadi draf baru. Waktu terbit
+     * diisi besok pada jam yang sama sebagai usulan; pengguna menentukannya di halaman ubah.
+     */
+    public function duplicate(ScheduledPost $post): ScheduledPost
+    {
+        $copy = ScheduledPost::create([
+            'user_id' => $post->user_id,
+            'social_account_id' => $post->social_account_id,
+            'caption' => $post->caption,
+            'scheduled_at' => now()->addDay(),
+            'status' => ScheduledPost::STATUS_DRAFT,
+        ]);
+
+        $disk = Storage::disk('public');
+
+        foreach ($post->media as $item) {
+            if (! $disk->exists($item->media_path)) {
+                continue;
+            }
+
+            $extension = pathinfo($item->media_path, PATHINFO_EXTENSION);
+            $newPath = 'scheduled-posts/'.Str::uuid().($extension ? ".{$extension}" : '');
+
+            $disk->copy($item->media_path, $newPath);
+
+            $copy->media()->create(['media_path' => $newPath, 'position' => $item->position]);
+        }
+
+        return $copy;
     }
 
     public function cancel(ScheduledPost $post): void

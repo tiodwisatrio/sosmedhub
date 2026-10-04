@@ -9,6 +9,9 @@ Route::prefix('admin')
     ->group(function () {
         Route::resource('scheduled-posts', ScheduledPostController::class)->except(['show']);
 
+        Route::post('scheduled-posts/{scheduled_post}/duplicate', [ScheduledPostController::class, 'duplicate'])
+            ->name('scheduled-posts.duplicate');
+
         Route::patch('scheduled-posts/{scheduled_post}/cancel', [ScheduledPostController::class, 'cancel'])
             ->name('scheduled-posts.cancel');
     });

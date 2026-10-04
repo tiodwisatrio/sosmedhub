@@ -6,6 +6,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\Scheduler\Notifications\PostFailedNotification;
+use Modules\Scheduler\Notifications\PostPublishedNotification;
+use Modules\SocialAccount\Exceptions\InstagramAuthException;
+use Modules\SocialAccount\Models\SocialAccount;
+use Modules\SocialAccount\Notifications\AccountNeedsReconnectNotification;
 use Modules\SocialAccount\Services\InstagramPublisher;
 use Throwable;
 
@@ -51,6 +56,10 @@ class PublishScheduledPostJob implements ShouldQueue
                 'ig_media_id' => $mediaId,
                 'published_at' => now(),
             ]);
+
+            if (config('scheduler.notify_published', true)) {
+                $this->notifyOwner($post, new PostPublishedNotification($post));
+            }
         } catch (Throwable $e) {
             report($e);
 
@@ -58,6 +67,26 @@ class PublishScheduledPostJob implements ShouldQueue
                 'status' => ScheduledPost::STATUS_FAILED,
                 'error_message' => mb_substr($e->getMessage(), 0, 500),
             ]);
+
+            $this->notifyOwner($post, new PostFailedNotification($post));
+
+            if ($e instanceof InstagramAuthException && $post->socialAccount) {
+                $post->socialAccount->update(['status' => SocialAccount::STATUS_EXPIRED]);
+
+                $this->notifyOwner($post, new AccountNeedsReconnectNotification($post->socialAccount, expired: true));
+            }
+        }
+    }
+
+    /**
+     * Gagal mengirim email tidak boleh mengubah hasil publikasi.
+     */
+    private function notifyOwner(ScheduledPost $post, object $notification): void
+    {
+        try {
+            $post->user?->notify($notification);
+        } catch (Throwable $e) {
+            report($e);
         }
     }
 }

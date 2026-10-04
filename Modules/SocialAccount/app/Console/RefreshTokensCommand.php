@@ -4,6 +4,7 @@ namespace Modules\SocialAccount\Console;
 
 use Illuminate\Console\Command;
 use Modules\SocialAccount\Models\SocialAccount;
+use Modules\SocialAccount\Notifications\AccountNeedsReconnectNotification;
 use Modules\SocialAccount\Services\InstagramPublisher;
 use Throwable;
 
@@ -30,8 +31,15 @@ class RefreshTokensCommand extends Command
             } catch (Throwable $e) {
                 report($e);
 
-                if ($account->token_expires_at?->isPast()) {
+                $expired = (bool) $account->token_expires_at?->isPast();
+
+                if ($expired) {
                     $account->update(['status' => SocialAccount::STATUS_EXPIRED]);
+                }
+
+                // Peringatan hanya dalam 3 hari terakhir agar tidak mengirim email setiap hari sejak awal.
+                if ($expired || $account->token_expires_at?->lte(now()->addDays(3))) {
+                    $account->user?->notify(new AccountNeedsReconnectNotification($account, $expired));
                 }
             }
         }
