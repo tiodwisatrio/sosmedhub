@@ -1,0 +1,29 @@
+{
+    "name": "nwidart/scheduler",
+    "description": "Modul penjadwalan postingan Sosmedhub.",
+    "authors": [
+        {
+            "name": "Sosmedhub"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Scheduler\\": "app/",
+            "Modules\\Scheduler\\Database\\Factories\\": "database/factories/",
+            "Modules\\Scheduler\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Scheduler\\Tests\\": "tests/"
+        }
+    }
+}

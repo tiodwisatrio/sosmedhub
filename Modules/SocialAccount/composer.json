@@ -1,0 +1,23 @@
+{
+    "name": "nwidart/social-account",
+    "description": "",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\SocialAccount\\": "app/",
+            "Modules\\SocialAccount\\Database\\Factories\\": "database/factories/",
+            "Modules\\SocialAccount\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\SocialAccount\\Tests\\": "tests/"
+        }
+    }
+}

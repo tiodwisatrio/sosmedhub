@@ -18,7 +18,7 @@ test('halaman 404 kustom tampil untuk post dengan slug yang tidak ada', function
 
 test('halaman 403 kustom tampil saat user tidak punya permission', function () {
     $this->actingAs(User::factory()->create())
-        ->get(route('admin.categories.index'))
+        ->get(route('admin.users.index'))
         ->assertForbidden()
         ->assertSee('Akses ditolak.')
         ->assertSee('Kembali ke Dashboard');

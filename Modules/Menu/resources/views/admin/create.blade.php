@@ -34,28 +34,28 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Route Name <span class="text-slate-400 font-normal">(opsional — kosongkan jika ini dropdown parent)</span></label>
-                        <x-admin.input-text name="route_name" :value="old('route_name')" placeholder="admin.teams.index" />
+                        <x-admin.input-text name="route_name" :value="old('route_name')" placeholder="admin.users.index" />
                         @error('route_name') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Route Params <span class="text-slate-400 font-normal">(opsional)</span></label>
-                        <x-admin.input-text name="route_params" :value="old('route_params')" placeholder='type=team  atau  {"type":"team"}' />
-                        <p class="mt-1 text-xs text-slate-400">Format: <code>key=value</code> atau JSON. Contoh: <code>type=team</code></p>
+                        <x-admin.input-text name="route_params" :value="old('route_params')" placeholder='status=active  atau  {"status":"active"}' />
+                        <p class="mt-1 text-xs text-slate-400">Format: <code>key=value</code> atau JSON. Contoh: <code>status=active</code></p>
                         @error('route_params') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Active Pattern <span class="text-slate-400 font-normal">(untuk deteksi halaman aktif)</span></label>
-                        <x-admin.input-text name="active_pattern" :value="old('active_pattern')" placeholder="admin.teams.*" />
+                        <x-admin.input-text name="active_pattern" :value="old('active_pattern')" placeholder="admin.users.*" />
                         <p class="mt-1 text-xs text-slate-400">Digunakan untuk <code>request()->routeIs()</code>. Gunakan <code>*</code> sebagai wildcard.</p>
                         @error('active_pattern') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Permission <span class="text-slate-400 font-normal">(opsional — kosongkan jika semua role boleh lihat)</span></label>
-                        <x-admin.input-text name="permission" :value="old('permission')" placeholder="layanan.view" />
-                        <p class="mt-1 text-xs text-slate-400">Menu hanya tampil jika user punya permission ini. Contoh: <code>layanan.view</code></p>
+                        <x-admin.input-text name="permission" :value="old('permission')" placeholder="user.view" />
+                        <p class="mt-1 text-xs text-slate-400">Menu hanya tampil jika user punya permission ini. Contoh: <code>user.view</code></p>
                         @error('permission') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 

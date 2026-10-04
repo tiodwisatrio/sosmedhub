@@ -1,4 +1,4 @@
-# PRD — Antrian Konten
+# PRD — Sosmedhub
 
 **Product Requirements Document**
 
@@ -7,9 +7,9 @@
 | **Versi** | 0.2 — Draf |
 | **Tanggal** | 27 Agustus 2026 |
 | **Cakupan** | MVP + Peta jalan |
-| **Status** | Menunggu keputusan |
+| **Status** | Draf implementasi |
 
-Penjadwal postingan Instagram berbahasa Indonesia. Dokumen ini memuat cakupan MVP sekaligus peta jalan enam fase sesudahnya — lengkap dengan syarat masuk tiap fase, supaya urutan pengerjaan tidak ditentukan oleh suasana hati.
+Sosmedhub adalah penjadwal postingan Instagram berbahasa Indonesia. Dokumen ini memuat cakupan MVP sekaligus peta jalan enam fase sesudahnya — lengkap dengan syarat masuk tiap fase, supaya urutan pengerjaan tidak ditentukan oleh suasana hati.
 
 ---
 
@@ -39,7 +39,7 @@ Penjadwal postingan Instagram berbahasa Indonesia. Dokumen ini memuat cakupan MV
 
 ## 01 — Ringkasan
 
-Antrian Konten adalah aplikasi web untuk menjadwalkan postingan Instagram. Pengguna menghubungkan akun Instagram Business miliknya atau milik klien, menyusun konten, memilih tanggal serta jam terbit, lalu sistem menerbitkannya otomatis tanpa perlu dibuka lagi.
+Sosmedhub adalah aplikasi web untuk menjadwalkan postingan Instagram. Pengguna menghubungkan akun Instagram Business miliknya atau milik klien, menyusun konten, memilih tanggal serta jam terbit, lalu sistem menerbitkannya otomatis tanpa perlu dibuka lagi.
 
 MVP dibangun untuk menguji **satu hipotesis**: pengelola media sosial di Indonesia bersedia membayar dalam Rupiah untuk penjadwal posting yang sederhana dan berbahasa Indonesia.
 
@@ -505,8 +505,8 @@ Perkiraan kasar untuk satu orang yang mengerjakan paruh waktu. Urutannya yang pe
 
 ## 19 — Keputusan Terbuka
 
-- [ ] **Nama produk** — "Antrian Konten" masih nama kerja sementara.
-- [ ] **Lokasi repositori** — Repo baru terpisah, atau menumpang struktur yang sudah ada.
+- [x] **Nama produk** — Sosmedhub.
+- [x] **Lokasi repositori** — Repo baru terpisah.
 - [ ] **Pengguna pertama** — Klien sendiri yang sudah dikenal, atau dibuka untuk umum sejak awal. Klien sendiri lebih cepat memberi masukan jujur.
 - [ ] **Posisi carousel** — Tetap di Fase 1, atau naik ke MVP kalau ternyata klien mayoritas memposting carousel.
 

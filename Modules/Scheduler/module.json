@@ -1,0 +1,11 @@
+{
+    "name": "Scheduler",
+    "alias": "scheduler",
+    "description": "Modul penjadwalan postingan untuk MVP Sosmedhub.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Scheduler\\Providers\\SchedulerServiceProvider"
+    ],
+    "files": []
+}

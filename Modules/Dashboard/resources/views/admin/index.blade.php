@@ -23,7 +23,7 @@
             </div>
 
             <p class="text-slate-600 leading-relaxed">
-                Anda berhasil masuk ke panel admin. Gunakan menu di sebelah kiri untuk mulai mengelola konten dan sistem.
+                Anda berhasil masuk ke panel Sosmedhub. Langkah berikutnya adalah menghubungkan akun Instagram Business dan menyiapkan antrian konten pertama.
             </p>
 
             

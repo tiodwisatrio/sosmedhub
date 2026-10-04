@@ -71,6 +71,18 @@ test('dashboard redirects to the admin dashboard and renders the admin layout', 
         ->assertSee('toggleSidebar()', false);
 });
 
+test('pending users are redirected to approval page before admin access', function () {
+    $user = User::factory()->pendingApproval()->create();
+
+    $this->actingAs($user)
+        ->get('/admin/dashboard')
+        ->assertRedirect(route('approval.pending'));
+
+    $this->get(route('approval.pending'))
+        ->assertOk()
+        ->assertSee('Akun menunggu approval');
+});
+
 test('users can logout', function () {
     $user = User::factory()->create();
 

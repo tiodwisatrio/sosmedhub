@@ -27,38 +27,38 @@ test('halaman pengaturan situs menampilkan form sosmed dan marketplace', functio
 test('pengaturan situs bisa menyimpan deskripsi, sosmed, marketplace, dan iframe map', function () {
     $this->actingAs(siteSettingEditor())
         ->put(route('admin.site-settings.update'), [
-            'app_name' => 'Crafthink Web',
-            'deskripsi' => 'Agensi digital terpercaya.',
+            'app_name' => 'Sosmedhub',
+            'deskripsi' => 'Penjadwal konten Instagram berbahasa Indonesia.',
             'iframe_map' => 'https://www.google.com/maps/embed?test',
-            'instagram_nama' => '@crafthinkweb',
-            'instagram_link' => 'https://instagram.com/crafthinkweb',
-            'shopee_nama' => 'Toko Crafthink',
-            'shopee_link' => 'https://shopee.co.id/crafthinkweb',
+            'instagram_nama' => '@sosmedhub',
+            'instagram_link' => 'https://instagram.com/sosmedhub',
+            'shopee_nama' => 'Sosmedhub',
+            'shopee_link' => 'https://shopee.co.id/sosmedhub',
         ])
         ->assertRedirect(route('admin.site-settings.index'))
         ->assertSessionHas('success');
 
     $setting = SiteSetting::current();
 
-    expect($setting->deskripsi)->toBe('Agensi digital terpercaya.')
+    expect($setting->deskripsi)->toBe('Penjadwal konten Instagram berbahasa Indonesia.')
         ->and($setting->iframe_map)->toContain('google.com/maps/embed')
-        ->and($setting->instagram_nama)->toBe('@crafthinkweb')
-        ->and($setting->instagram_link)->toBe('https://instagram.com/crafthinkweb')
-        ->and($setting->shopee_nama)->toBe('Toko Crafthink')
-        ->and($setting->shopee_link)->toBe('https://shopee.co.id/crafthinkweb');
+        ->and($setting->instagram_nama)->toBe('@sosmedhub')
+        ->and($setting->instagram_link)->toBe('https://instagram.com/sosmedhub')
+        ->and($setting->shopee_nama)->toBe('Sosmedhub')
+        ->and($setting->shopee_link)->toBe('https://shopee.co.id/sosmedhub');
 });
 
 test('pengaturan situs menolak iframe map yang bukan url embed google maps', function () {
     $this->actingAs(siteSettingEditor())
         ->put(route('admin.site-settings.update'), [
-            'app_name' => 'Crafthink Web',
+            'app_name' => 'Sosmedhub',
             'iframe_map' => '<img src="x" onerror="alert(document.cookie)">',
         ])
         ->assertSessionHasErrors('iframe_map');
 
     $this->actingAs(siteSettingEditor())
         ->put(route('admin.site-settings.update'), [
-            'app_name' => 'Crafthink Web',
+            'app_name' => 'Sosmedhub',
             'iframe_map' => 'https://evil.example.com/maps/embed',
         ])
         ->assertSessionHasErrors('iframe_map');

@@ -57,6 +57,16 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Approval</label>
+                    <div class="rounded-lg border border-border bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        {{ ucfirst($user->approval_status ?? \App\Models\User::APPROVAL_PENDING) }}
+                        @if ($user->approved_at)
+                            <span class="text-slate-400">- approved {{ $user->approved_at->format('d M Y H:i') }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">
                         Password <span class="text-slate-400 font-normal">(kosongkan jika tidak ingin mengubah)</span>
                     </label>

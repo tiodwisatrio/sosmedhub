@@ -58,6 +58,24 @@ test('pengguna baru bisa dibuat dengan password ter-hash dan role tersimpan', fu
     expect($user)->not->toBeNull();
     expect(Hash::check('password123', $user->password))->toBeTrue();
     expect($user->hasRole('editor'))->toBeTrue();
+    expect($user->approval_status)->toBe(User::APPROVAL_APPROVED);
+});
+
+test('pengguna pending bisa di-approve dari daftar pengguna', function () {
+    $target = User::factory()->pendingApproval()->create(['name' => 'Client Pending']);
+    Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
+
+    $manager = userManager();
+
+    $this->actingAs($manager)
+        ->patch(route('admin.users.approve', $target))
+        ->assertRedirect(route('admin.users.index'));
+
+    $fresh = $target->fresh();
+
+    expect($fresh->approval_status)->toBe(User::APPROVAL_APPROVED)
+        ->and($fresh->approved_by)->toBe($manager->id)
+        ->and($fresh->status)->toBeTrue();
 });
 
 test('email pengguna tidak boleh duplikat', function () {

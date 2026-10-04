@@ -35,7 +35,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Route Name <span class="text-slate-400 font-normal">(opsional)</span></label>
-                        <x-admin.input-text name="route_name" :value="old('route_name', $menu->route_name)" placeholder="admin.teams.index" />
+                        <x-admin.input-text name="route_name" :value="old('route_name', $menu->route_name)" placeholder="admin.users.index" />
                         @error('route_name') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 
@@ -44,7 +44,7 @@
                         <x-admin.input-text
                             name="route_params"
                             :value="old('route_params', $menu->route_params ? http_build_query($menu->route_params) : '')"
-                            placeholder="type=team"
+                            placeholder="status=active"
                         />
                         <p class="mt-1 text-xs text-slate-400">Format: <code>key=value</code> atau JSON.</p>
                         @error('route_params') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
@@ -52,14 +52,14 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Active Pattern</label>
-                        <x-admin.input-text name="active_pattern" :value="old('active_pattern', $menu->active_pattern)" placeholder="admin.teams.*" />
+                        <x-admin.input-text name="active_pattern" :value="old('active_pattern', $menu->active_pattern)" placeholder="admin.users.*" />
                         <p class="mt-1 text-xs text-slate-400">Gunakan <code>*</code> sebagai wildcard untuk <code>routeIs()</code>.</p>
                         @error('active_pattern') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Permission <span class="text-slate-400 font-normal">(opsional)</span></label>
-                        <x-admin.input-text name="permission" :value="old('permission', $menu->permission)" placeholder="layanan.view" />
+                        <x-admin.input-text name="permission" :value="old('permission', $menu->permission)" placeholder="user.view" />
                         <p class="mt-1 text-xs text-slate-400">Kosongkan agar semua role bisa lihat.</p>
                         @error('permission') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>

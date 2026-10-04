@@ -4,39 +4,39 @@ use App\Models\User;
 use Modules\Menu\Models\Menu;
 use Spatie\Permission\Models\Permission;
 
-function categoryViewer(): User
+function userViewer(): User
 {
-    $permission = Permission::firstOrCreate(['name' => 'category.view', 'guard_name' => 'web']);
+    $permission = Permission::firstOrCreate(['name' => 'user.view', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->givePermissionTo($permission);
 
     return $user;
 }
 
-test('menu kategori post aktif hanya saat query type cocok', function () {
-    $this->actingAs(categoryViewer())->get('/admin/categories?type=post')->assertOk();
+test('menu dengan route params aktif hanya saat query cocok', function () {
+    $this->actingAs(userViewer())->get('/admin/users?status=active')->assertOk();
 
-    $kategoriPost = new Menu([
-        'route_name' => 'admin.categories.index',
-        'active_pattern' => 'admin.categories.*',
-        'route_params' => ['type' => 'post'],
+    $activeUsers = new Menu([
+        'route_name' => 'admin.users.index',
+        'active_pattern' => 'admin.users.*',
+        'route_params' => ['status' => 'active'],
     ]);
-    $kategoriTim = new Menu([
-        'route_name' => 'admin.categories.index',
-        'active_pattern' => 'admin.categories.*',
-        'route_params' => ['type' => 'team'],
+    $inactiveUsers = new Menu([
+        'route_name' => 'admin.users.index',
+        'active_pattern' => 'admin.users.*',
+        'route_params' => ['status' => 'inactive'],
     ]);
 
-    expect($kategoriPost->isActive())->toBeTrue();
-    expect($kategoriTim->isActive())->toBeFalse();
+    expect($activeUsers->isActive())->toBeTrue();
+    expect($inactiveUsers->isActive())->toBeFalse();
 });
 
 test('menu tanpa route_params tetap aktif hanya dari active_pattern', function () {
-    $this->actingAs(categoryViewer())->get('/admin/categories?type=post')->assertOk();
+    $this->actingAs(userViewer())->get('/admin/users?status=active')->assertOk();
 
     $menu = new Menu([
-        'route_name' => 'admin.categories.index',
-        'active_pattern' => 'admin.categories.*',
+        'route_name' => 'admin.users.index',
+        'active_pattern' => 'admin.users.*',
         'route_params' => null,
     ]);
 

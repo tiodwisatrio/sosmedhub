@@ -29,8 +29,27 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'status' => true,
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+            'approved_by' => null,
+            'rejected_at' => null,
+            'rejected_reason' => null,
+            'suspended_at' => null,
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function pendingApproval(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'approval_status' => User::APPROVAL_PENDING,
+            'approved_at' => null,
+            'approved_by' => null,
+            'rejected_at' => null,
+            'rejected_reason' => null,
+            'suspended_at' => null,
+        ]);
     }
 
     /**

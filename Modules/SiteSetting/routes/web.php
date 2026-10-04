@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\SiteSetting\Http\Controllers\Admin\SiteSettingController;
 
 Route::prefix('admin')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'approved'])
     ->name('admin.')
     ->group(function () {
         Route::get('site-settings', [SiteSettingController::class, 'index'])->name('site-settings.index');

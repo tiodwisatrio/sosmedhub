@@ -49,6 +49,13 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Approval</label>
+                    <div class="rounded-lg border border-border bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        Pengguna yang dibuat dari admin otomatis berstatus approved.
+                    </div>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
                     <x-admin.input-text name="password" type="password" placeholder="Minimal 8 karakter" />
                     @error('password') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror

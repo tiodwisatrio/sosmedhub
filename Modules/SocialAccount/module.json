@@ -1,0 +1,11 @@
+{
+    "name": "SocialAccount",
+    "alias": "social-account",
+    "description": "Manage connected social media accounts.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SocialAccount\\Providers\\SocialAccountServiceProvider"
+    ],
+    "files": []
+}

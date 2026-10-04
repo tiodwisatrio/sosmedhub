@@ -4,6 +4,7 @@ namespace Modules\User\Services;
 
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class UserService
@@ -11,6 +12,12 @@ class UserService
     public function store(array $data, ?UploadedFile $avatar, ?string $role): User
     {
         $data['email_verified_at'] = now();
+        $data['approval_status'] = $data['approval_status'] ?? User::APPROVAL_APPROVED;
+
+        if ($data['approval_status'] === User::APPROVAL_APPROVED) {
+            $data['approved_at'] = $data['approved_at'] ?? now();
+            $data['approved_by'] = $data['approved_by'] ?? Auth::id();
+        }
 
         if ($avatar) {
             $data['avatar'] = $avatar->store('avatars', 'public');

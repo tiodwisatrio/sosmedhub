@@ -20,7 +20,7 @@ class UserController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:user.view', only: ['index']),
             new Middleware('permission:user.create', only: ['create', 'store']),
-            new Middleware('permission:user.edit', only: ['edit', 'update']),
+            new Middleware('permission:user.edit', only: ['edit', 'update', 'approve', 'suspend', 'reject']),
             new Middleware('permission:user.delete', only: ['destroy']),
         ];
     }
@@ -93,5 +93,60 @@ class UserController extends Controller implements HasMiddleware
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Pengguna berhasil dihapus.');
+    }
+
+    public function approve(User $user)
+    {
+        abort_if($user->hasRole('developer'), 403);
+
+        $user->forceFill([
+            'status' => true,
+            'approval_status' => User::APPROVAL_APPROVED,
+            'approved_at' => now(),
+            'approved_by' => auth()->id(),
+            'rejected_at' => null,
+            'rejected_reason' => null,
+            'suspended_at' => null,
+        ])->save();
+
+        if (! $user->roles()->exists()) {
+            $clientRole = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
+            $user->assignRole($clientRole);
+        }
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Pengguna berhasil di-approve.');
+    }
+
+    public function suspend(User $user)
+    {
+        abort_if($user->hasRole('developer'), 403);
+        abort_if($user->id === auth()->id(), 403, 'Tidak dapat suspend akun sendiri.');
+
+        $user->forceFill([
+            'approval_status' => User::APPROVAL_SUSPENDED,
+            'suspended_at' => now(),
+        ])->save();
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Pengguna berhasil di-suspend.');
+    }
+
+    public function reject(User $user)
+    {
+        abort_if($user->hasRole('developer'), 403);
+        abort_if($user->id === auth()->id(), 403, 'Tidak dapat reject akun sendiri.');
+
+        $user->forceFill([
+            'approval_status' => User::APPROVAL_REJECTED,
+            'rejected_at' => now(),
+            'rejected_reason' => request('rejected_reason'),
+            'approved_at' => null,
+            'approved_by' => null,
+            'suspended_at' => null,
+        ])->save();
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Pengguna berhasil ditolak.');
     }
 }
