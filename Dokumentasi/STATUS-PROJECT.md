@@ -14,8 +14,8 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 |---|---|
 | Login, registrasi, dan persetujuan user oleh admin | Jalan |
 | Hubungkan akun Instagram lewat OAuth (token long-lived, terenkripsi) | Jalan, sudah dicoba dengan akun asli |
-| Satu user dengan banyak akun Instagram | Didukung (lihat bagian 8, ada celah) |
-| Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel) | Jalan |
+| Satu user dengan banyak akun Instagram | Didukung (lihat bagian 9 nomor 1) |
+| Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel); upload hanya JPEG | Jalan |
 | Kalender mingguan dan riwayat postingan | Jalan |
 | Publikasi otomatis (cron + antrean) | Jalan, sudah terbit ke Instagram asli |
 | Jadwalkan ulang postingan gagal | Jalan |
@@ -92,6 +92,7 @@ scheduled_posts 1──N scheduled_post_media
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
+| `DEVELOPER_NAME`, `DEVELOPER_EMAIL`, `DEVELOPER_PASSWORD` | Akun developer awal untuk `db:seed`. Dibaca lewat `config/sosmedhub.php`. Password hanya wajib saat akun belum ada; akun yang sudah ada tidak diubah. |
 
 ## 7. Perintah penting
 
@@ -101,14 +102,14 @@ php artisan queue:work --tries=1                # lokal: memproses antrean
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 111 test otomatis
+php artisan test                                # 117 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 111 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 117 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 
@@ -125,20 +126,19 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 
 ## 9. Masalah yang diketahui
 
-1. **Akun Instagram bisa berpindah pemilik.** Jika user B menghubungkan akun yang sudah dihubungkan user A, `persistAccount` mengganti `user_id` ke user B. Harus ditolak dengan pesan yang jelas. Perbaiki sebelum client kedua masuk.
-2. **Password seeder.** `DatabaseSeeder` membuat user developer dengan password `default`. **Ganti sebelum deploy.**
-3. **Form menerima PNG**, padahal Instagram API resmi hanya JPEG. PNG bisa gagal di tengah jalan.
-4. Tabel sisa CMS lama di database lokal (lihat bagian 4).
-5. `CLAUDE.md` ikut ter-push ke GitHub. Jika tidak diinginkan: `git rm --cached CLAUDE.md`, tambahkan ke `.gitignore`, lalu commit.
-6. Banyak perubahan belum di-commit (modul `SocialAccount`, `Scheduler`, migration `avatar_url`, jadwal ulang, duplikasi, notifikasi).
-7. Mode Development Meta: hanya akun dengan role **Instagram Tester** yang bisa dihubungkan.
+1. **Satu akun Instagram yang sama dihubungkan oleh user berbeda.** Keputusan saat ini: dibiarkan, karena bisa ada dua client yang memakai satu akun, dan developer memakai akun yang sama untuk tes sebagai developer dan client. Perilakunya: tabel `social_accounts` unik per `platform` + `provider_account_id`, jadi saat user B menghubungkan akun yang sudah dihubungkan user A, baris yang sama berpindah ke user B (`user_id` berubah). User A tidak lagi melihat akun itu di daftarnya, dan jadwal lama A tetap terkait ke akun tersebut. Jika nanti dua user perlu memakai akun yang sama bersamaan, ubah unik menjadi per `user_id` + `platform` + `provider_account_id` (satu baris dan satu token per user), atau tolak dengan pesan yang jelas.
+2. Tabel sisa CMS lama di database lokal (lihat bagian 4).
+3. `CLAUDE.md` sudah ada di `.gitignore`, tetapi masih dilacak git karena pernah di-commit. Untuk berhenti melacaknya: `git rm --cached CLAUDE.md`, lalu commit.
+4. Banyak perubahan belum di-commit (modul `SocialAccount`, `Scheduler`, migration `avatar_url`, jadwal ulang, duplikasi, notifikasi, JPEG saja, seeder dari `.env`).
+5. Mode Development Meta: hanya akun dengan role **Instagram Tester** yang bisa dihubungkan.
+6. `DEVELOPER_PASSWORD` di `.env` lokal masih kosong. Tidak masalah selama akun developer sudah ada di database; isi sebelum menjalankan seeder di database baru.
 
 ## 10. Langkah berikutnya
 
 ### Sebelum deploy
-1. Perbaiki celah pindah pemilik akun (bagian 9 nomor 1) dan tambahkan test.
-2. Batasi upload ke JPEG (form dan validasi).
-3. Ganti password user developer di seeder, atau pakai variabel `.env`.
+1. ~~Batasi upload ke JPEG~~ (selesai).
+2. ~~Password developer dari `.env`~~ (selesai). Di server, isi `DEVELOPER_EMAIL` dan `DEVELOPER_PASSWORD` yang kuat sebelum `db:seed`.
+3. Putuskan perilaku akun Instagram yang sama dipakai banyak user (bagian 9 nomor 1).
 4. Rapikan halaman Akun Sosial: tombol **Hubungkan Akun** langsung ke OAuth, badge dan tombol **Hubungkan Ulang** untuk akun `expired`, hapus form manual untuk client.
 5. Commit semua perubahan dan push.
 
@@ -155,7 +155,7 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 - `.env` produksi: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` dan `INSTAGRAM_REDIRECT_URI` memakai domain produksi, `APP_KEY` baru.
 - Daftarkan URL redirect produksi di dashboard Meta (langkah 4, Siapkan login bisnis Instagram).
 - Verifikasi domain pengirim di Resend.
-- Jalankan `migrate --force` dan `db:seed`, login, ganti password, lalu hubungkan ulang akun Instagram.
+- Jalankan `migrate --force` dan `db:seed`, login, lalu hubungkan ulang akun Instagram.
 - Jalankan manual tes B sampai F di server.
 
 ### Setelah itu

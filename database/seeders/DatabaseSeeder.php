@@ -63,14 +63,28 @@ class DatabaseSeeder extends Seeder
             ])->get()
         );
 
-        $user = User::firstOrCreate(
-            ['email' => 'tiodwisatrio27@gmail.com'],
-            [
-                'name' => 'Tio Dwi Satrio',
-                'password' => Hash::make('default'),
+        $email = config('sosmedhub.developer.email');
+
+        if (! $email) {
+            throw new \RuntimeException('Isi DEVELOPER_EMAIL di .env sebelum menjalankan seeder.');
+        }
+
+        $user = User::firstOrNew(['email' => $email]);
+
+        // Password hanya dibutuhkan saat akun dibuat; akun yang sudah ada tidak diubah.
+        if (! $user->exists) {
+            $password = config('sosmedhub.developer.password');
+
+            if (! $password) {
+                throw new \RuntimeException('Isi DEVELOPER_PASSWORD di .env sebelum membuat akun developer.');
+            }
+
+            $user->fill([
+                'name' => config('sosmedhub.developer.name'),
+                'password' => Hash::make($password),
                 'email_verified_at' => now(),
-            ]
-        );
+            ])->save();
+        }
 
         $user->forceFill([
             'status' => true,

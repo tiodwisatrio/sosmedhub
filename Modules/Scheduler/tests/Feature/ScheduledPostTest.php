@@ -178,7 +178,7 @@ test('postingan menolak waktu terbit di masa lalu', function () {
     expect(ScheduledPost::count())->toBe(0);
 });
 
-test('postingan menolak foto yang bukan jpeg atau png', function () {
+test('postingan menolak foto yang bukan jpeg', function () {
     $user = schedulerUser(['view', 'create']);
     $account = socialAccountFor($user);
 
@@ -190,6 +190,31 @@ test('postingan menolak foto yang bukan jpeg atau png', function () {
             'scheduled_at' => futureWibInput(),
         ])
         ->assertSessionHasErrors(['media.0']);
+});
+
+test('postingan menolak foto png dan menerima jpeg', function () {
+    Storage::fake('public');
+    $user = schedulerUser(['view', 'create']);
+    $account = socialAccountFor($user);
+
+    $payload = fn ($file) => [
+        'caption' => 'Uji format foto.',
+        'social_account_id' => $account->id,
+        'media' => [$file],
+        'scheduled_at' => futureWibInput(),
+    ];
+
+    $this->actingAs($user)
+        ->post(route('admin.scheduled-posts.store'), $payload(UploadedFile::fake()->image('foto.png', 800, 800)))
+        ->assertSessionHasErrors(['media.0']);
+
+    expect(ScheduledPost::count())->toBe(0);
+
+    $this->actingAs($user)
+        ->post(route('admin.scheduled-posts.store'), $payload(UploadedFile::fake()->image('foto.jpg', 800, 800)))
+        ->assertSessionHasNoErrors();
+
+    expect(ScheduledPost::count())->toBe(1);
 });
 
 test('halaman edit bisa diakses user dengan permission edit', function () {

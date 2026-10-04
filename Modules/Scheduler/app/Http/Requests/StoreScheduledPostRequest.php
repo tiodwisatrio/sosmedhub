@@ -22,7 +22,7 @@ class StoreScheduledPostRequest extends FormRequest
             'caption' => ['required', 'string', 'max:2200'],
             'social_account_id' => ['required', 'integer', $this->socialAccountRule()],
             'media' => ['required', 'array', 'min:1', 'max:10'],
-            'media.*' => ['image', 'mimes:jpeg,png', 'max:8192'],
+            'media.*' => ['image', 'mimes:jpg,jpeg', 'max:8192'],
             'scheduled_at' => ['required', 'date', $this->futureWibRule()],
         ];
     }
@@ -45,5 +45,14 @@ class StoreScheduledPostRequest extends FormRequest
         return Rule::exists('social_accounts', 'id')
             ->where('status', SocialAccount::STATUS_ACTIVE)
             ->when(! $this->user()?->isDeveloper(), fn ($rule) => $rule->where('user_id', $this->user()?->id));
+    }
+
+    public function messages(): array
+    {
+        return [
+            'media.*.image' => 'File harus berupa foto.',
+            'media.*.mimes' => 'Foto harus berformat JPEG (.jpg atau .jpeg). Instagram tidak menerima format lain lewat API.',
+            'media.*.max' => 'Ukuran tiap foto maksimal 8 MB.',
+        ];
     }
 }

@@ -161,13 +161,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                                         </svg>
                                         <span class="mt-1 text-xs text-slate-400">Tambah foto</span>
-                                        <input x-ref="mediaInput" type="file" name="media[]" accept="image/jpeg,image/png" multiple
+                                        <input x-ref="mediaInput" type="file" name="media[]" accept="image/jpeg" multiple
                                             :required="mediaFiles.length === 0" class="sr-only" />
                                     </label>
                                 </div>
 
                                 <p class="mt-2 text-xs text-slate-400">
-                                    JPEG/PNG · maks 8 MB per foto · hingga 10 foto (carousel Instagram).
+                                    JPEG · maks 8 MB per foto · hingga 10 foto (carousel Instagram).
                                 </p>
 
                                 @error('media')
