@@ -10,6 +10,8 @@ use Modules\Scheduler\Models\ScheduledPost;
 
 class ScheduledPostService
 {
+    public function __construct(private readonly MediaProcessor $processor) {}
+
     public function store(array $data, ?array $media, int $userId): ScheduledPost
     {
         $data['user_id'] = $userId;
@@ -47,8 +49,9 @@ class ScheduledPostService
     }
 
     /**
-     * Salin caption, akun tujuan, dan foto menjadi draf baru. Waktu terbit
-     * diisi besok pada jam yang sama sebagai usulan; pengguna menentukannya di halaman ubah.
+     * Salin caption, akun tujuan, dan foto menjadi draf baru. Waktu terbit diisi slot
+     * besok sebagai usulan. Foto yang versi terbitnya sudah dihapus (lewat masa simpan)
+     * tidak ikut tersalin; thumbnail saja terlalu kecil untuk diterbitkan ulang.
      */
     public function duplicate(ScheduledPost $post): ScheduledPost
     {
@@ -63,16 +66,29 @@ class ScheduledPostService
         $disk = Storage::disk('public');
 
         foreach ($post->media as $item) {
-            if (! $disk->exists($item->media_path)) {
+            if (! $item->media_path || ! $disk->exists($item->media_path)) {
                 continue;
             }
 
-            $extension = pathinfo($item->media_path, PATHINFO_EXTENSION);
-            $newPath = 'scheduled-posts/'.Str::uuid().($extension ? ".{$extension}" : '');
-
+            $name = (string) Str::uuid();
+            $extension = pathinfo($item->media_path, PATHINFO_EXTENSION) ?: 'jpg';
+            $newPath = "scheduled-posts/{$name}.{$extension}";
             $disk->copy($item->media_path, $newPath);
 
-            $copy->media()->create(['media_path' => $newPath, 'position' => $item->position]);
+            $newThumbnail = null;
+            if ($item->thumbnail_path && $disk->exists($item->thumbnail_path)) {
+                $newThumbnail = "scheduled-posts/thumbs/{$name}.jpg";
+                $disk->copy($item->thumbnail_path, $newThumbnail);
+            }
+
+            $copy->media()->create([
+                'media_path' => $newPath,
+                'thumbnail_path' => $newThumbnail,
+                'width' => $item->width,
+                'height' => $item->height,
+                'size' => $item->size,
+                'position' => $item->position,
+            ]);
         }
 
         return $copy;
@@ -89,7 +105,7 @@ class ScheduledPostService
         $media = $post->media()->when($mediaIds, fn ($q) => $q->whereIn('id', $mediaIds))->get();
 
         foreach ($media as $item) {
-            Storage::disk('public')->delete($item->media_path);
+            Storage::disk('public')->delete(array_filter([$item->media_path, $item->thumbnail_path]));
             $item->delete();
         }
 
@@ -105,8 +121,9 @@ class ScheduledPostService
                 continue;
             }
 
+            // File asli hanya dibaca dari lokasi sementara upload; yang disimpan versi olahan.
             $post->media()->create([
-                'media_path' => $file->store('scheduled-posts', 'public'),
+                ...$this->processor->process($file->getRealPath()),
                 'position' => $nextPosition + $index,
             ]);
         }

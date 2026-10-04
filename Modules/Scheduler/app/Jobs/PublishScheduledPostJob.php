@@ -45,6 +45,10 @@ class PublishScheduledPostJob implements ShouldQueue
                 throw new \RuntimeException('Akun Instagram tidak aktif atau token tidak tersedia.');
             }
 
+            if ($post->media->contains(fn ($media) => ! $media->hasPublishFile())) {
+                throw new \RuntimeException('Sebagian foto postingan sudah tidak tersedia di server. Unggah ulang fotonya.');
+            }
+
             $urls = $post->media
                 ->map(fn ($media) => Storage::disk('public')->url($media->media_path))
                 ->all();

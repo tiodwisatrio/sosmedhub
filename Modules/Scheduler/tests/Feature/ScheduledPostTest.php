@@ -368,7 +368,7 @@ test('service menyimpan waktu WIB menjadi UTC dan menampilkan kembali WIB', func
     $user = User::factory()->create();
     $inputWib = '2026-09-01 08:30';
 
-    $post = (new ScheduledPostService)->store(
+    $post = app(ScheduledPostService::class)->store(
         ['caption' => 'Tes zona waktu.', 'scheduled_at' => $inputWib],
         null,
         $user->id

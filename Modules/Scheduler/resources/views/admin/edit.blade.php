@@ -36,7 +36,7 @@
 
 @php
     $existingMediaList = $post->media
-        ->filter(fn ($item) => \Illuminate\Support\Facades\Storage::disk('public')->exists($item->media_path))
+        ->filter(fn ($item) => $item->media_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->media_path))
         ->map(fn ($item) => ['id' => $item->id, 'url' => \Illuminate\Support\Facades\Storage::url($item->media_path)])
         ->values()
         ->all();

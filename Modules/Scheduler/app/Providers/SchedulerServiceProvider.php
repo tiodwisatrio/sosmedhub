@@ -4,6 +4,8 @@ namespace Modules\Scheduler\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Modules\Scheduler\Console\DispatchDuePostsCommand;
+use Modules\Scheduler\Console\ProcessExistingMediaCommand;
+use Modules\Scheduler\Console\PruneMediaCommand;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class SchedulerServiceProvider extends ModuleServiceProvider
@@ -19,6 +21,8 @@ class SchedulerServiceProvider extends ModuleServiceProvider
 
     protected array $commands = [
         DispatchDuePostsCommand::class,
+        PruneMediaCommand::class,
+        ProcessExistingMediaCommand::class,
     ];
 
     /**
@@ -45,5 +49,10 @@ class SchedulerServiceProvider extends ModuleServiceProvider
                 ->everyMinute()
                 ->withoutOverlapping((int) ceil($maxSeconds / 60) + 5);
         }
+
+        // 01.00 tetap terkena cron tiap 15 menit.
+        $schedule->command('scheduler:prune-media')
+            ->dailyAt('01:00')
+            ->withoutOverlapping(60);
     }
 }

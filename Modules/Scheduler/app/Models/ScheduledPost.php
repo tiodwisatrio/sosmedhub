@@ -123,6 +123,14 @@ class ScheduledPost extends Model
     /**
      * Post gagal dan draf boleh diubah lalu dijadwalkan ulang.
      */
+    /**
+     * Thumbnail media pertama untuk tampilan daftar (kalender, riwayat).
+     */
+    public function getThumbnailPathAttribute(): ?string
+    {
+        return $this->media->first()?->displayPath();
+    }
+
     public function canBeEdited(): bool
     {
         return in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED, self::STATUS_DRAFT], true);

@@ -23,4 +23,17 @@ return [
 
     // Batas waktu worker per putaran. Harus jauh di bawah interval cron dan batas proses host.
     'worker_max_seconds' => (int) env('SCHEDULER_WORKER_MAX_SECONDS', 240),
+
+    'media' => [
+        // Lebar versi terbit. Instagram menerima paling lebar 1440px dan menampilkan 1080px.
+        'publish_max_width' => 1440,
+        'publish_quality' => 85,
+        'thumbnail_width' => 400,
+        'thumbnail_quality' => 75,
+        // Pengaman memori saat memproses foto. Imagick membuka JPEG pada skala kecil, jadi 50MP aman.
+        'max_megapixels' => (int) env('SCHEDULER_MAX_MEGAPIXELS', 50),
+        'imagick_memory_mb' => (int) env('SCHEDULER_IMAGICK_MEMORY_MB', 256),
+        // Versi terbit dihapus sekian hari setelah postingan terbit; thumbnail tetap disimpan.
+        'publish_retention_days' => (int) env('SCHEDULER_PUBLISH_RETENTION_DAYS', 30),
+    ],
 ];

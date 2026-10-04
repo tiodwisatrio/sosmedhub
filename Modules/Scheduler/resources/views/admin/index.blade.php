@@ -132,8 +132,8 @@
                                     @forelse ($cell['posts'] as $post)
                                         <button type="button" @click="openPost({{ $post->id }})"
                                             class="relative block w-full flex-1 min-h-[5.5rem] text-left rounded-lg border border-border bg-slate-100 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:border-primary/40 hover:shadow-dropdown transition-all duration-150 cursor-pointer">
-                                            @if ($post->media_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->media_path))
-                                                <img src="{{ Storage::url($post->media_path) }}" alt="Foto postingan"
+                                            @if ($post->thumbnail_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->thumbnail_path))
+                                                <img src="{{ Storage::url($post->thumbnail_path) }}" alt="Foto postingan"
                                                     class="absolute inset-0 w-full h-full object-cover">
                                             @else
                                                 <div class="absolute inset-0 flex items-center justify-center text-slate-300">

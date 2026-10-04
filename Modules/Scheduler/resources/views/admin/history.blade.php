@@ -58,8 +58,8 @@
         @forelse ($historyPosts as $post)
             <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-0">
                 <div class="flex-shrink-0">
-                    @if ($post->media_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->media_path))
-                        <img src="{{ Storage::url($post->media_path) }}" alt="Foto postingan"
+                    @if ($post->thumbnail_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->thumbnail_path))
+                        <img src="{{ Storage::url($post->thumbnail_path) }}" alt="Foto postingan"
                             class="w-12 h-12 rounded-lg object-cover border border-border">
                     @else
                         <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-300 border border-border">

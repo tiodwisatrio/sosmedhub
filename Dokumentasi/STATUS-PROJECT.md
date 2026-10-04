@@ -59,6 +59,17 @@ Setiap putaran mencatat detak (`SchedulerHeartbeat`). Dashboard menampilkan peri
 
 Pindah ke VPS: `SCHEDULER_SLOT_MINUTES=1` atau `5`, cron tiap menit, `SCHEDULER_RUN_WORKER=false`, dan `queue:work` di Supervisor. Tidak ada perubahan kode.
 
+### Pengolahan foto
+Foto diolah saat diunggah oleh `MediaProcessor` (Imagick, wajib ada di server): dibaca dalam skala kecil bila lebih besar dari target (hemat memori untuk foto hingga 50MP), diputar sesuai EXIF, metadata dihapus (termasuk GPS), lalu disimpan dua versi: **versi terbit** (lebar maks 1440px, JPEG 85, biasanya 400-900KB; yang diambil Instagram) dan **thumbnail** (400px, JPEG 75, sekitar 20-40KB; untuk kalender dan riwayat). File asli tidak disimpan. Instagram memperkecil semua foto ke 1080-1440px, jadi kualitas di Instagram tidak berbeda.
+
+Validasi (`InstagramPhoto`): JPEG terbaca, maksimal `SCHEDULER_MAX_MEGAPIXELS` (50), rasio 4:5 sampai 1,91:1 (dihitung setelah orientasi EXIF). Foto yang pasti ditolak Instagram ketahuan saat upload, bukan saat jam terbit.
+
+`scheduler:prune-media` (harian 01.00) menghapus versi terbit dari postingan yang terbit lebih dari `SCHEDULER_PUBLISH_RETENTION_DAYS` (30) hari lalu; thumbnail tetap. Foto tanpa thumbnail tidak dihapus. Duplikat dari postingan yang fotonya sudah dihapus menghasilkan draf tanpa foto, dengan peringatan untuk mengunggah ulang.
+
+Setelah deploy pertama fitur ini, jalankan sekali `php artisan scheduler:process-existing-media` untuk mengolah foto lama.
+
+PHP harus mengizinkan upload sebesar validasi: `upload_max_filesize` minimal 8M dan `post_max_size` minimal 100M (carousel 10 foto x 8MB). Atur di MultiPHP INI Editor (cPanel) dan di Herd untuk lokal.
+
 ### Status postingan
 `draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `failed`, `cancelled`.
 Yang boleh diubah: `scheduled`, `failed`, `draft`. Menyimpan postingan `failed` atau `draft` mengembalikannya ke `scheduled`.
@@ -118,14 +129,14 @@ php artisan schedule:work                       # lokal: menjalankan scheduler (
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 150 test otomatis
+php artisan test                                # 165 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 150 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 165 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 

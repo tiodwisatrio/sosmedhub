@@ -55,7 +55,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
 
         $postsForModal = $posts->map(function (ScheduledPost $post) {
             $media = $post->media
-                ->filter(fn ($item) => Storage::disk('public')->exists($item->media_path))
+                ->filter(fn ($item) => $item->media_path && Storage::disk('public')->exists($item->media_path))
                 ->values();
 
             return [
@@ -152,9 +152,17 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $this->authorizePostAccess($scheduled_post);
 
         $copy = $this->service->duplicate($scheduled_post->load('media'));
+        $missing = $scheduled_post->media->count() - $copy->media()->count();
 
-        return redirect()->route('admin.scheduled-posts.edit', $copy)
+        $redirect = redirect()->route('admin.scheduled-posts.edit', $copy)
             ->with('success', 'Postingan diduplikasi sebagai draf. Atur waktu terbit lalu simpan.');
+
+        if ($missing > 0) {
+            $days = (int) config('scheduler.media.publish_retention_days', 30);
+            $redirect->with('error', "{$missing} foto tidak ikut tersalin karena sudah dihapus dari sistem ({$days} hari setelah terbit). Unggah ulang fotonya sebelum menyimpan.");
+        }
+
+        return $redirect;
     }
 
     public function cancel(ScheduledPost $scheduled_post)

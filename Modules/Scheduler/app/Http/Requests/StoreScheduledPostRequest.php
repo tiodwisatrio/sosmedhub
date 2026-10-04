@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\Scheduler\Rules\InstagramPhoto;
 use Modules\Scheduler\Rules\OnScheduleSlot;
 use Modules\SocialAccount\Models\SocialAccount;
 
@@ -23,7 +24,7 @@ class StoreScheduledPostRequest extends FormRequest
             'caption' => ['required', 'string', 'max:2200'],
             'social_account_id' => ['required', 'integer', $this->socialAccountRule()],
             'media' => ['required', 'array', 'min:1', 'max:10'],
-            'media.*' => ['image', 'mimes:jpg,jpeg', 'max:8192'],
+            'media.*' => ['bail', 'image', 'mimes:jpg,jpeg', 'max:8192', new InstagramPhoto],
             'scheduled_at' => ['required', 'date', $this->futureWibRule(), new OnScheduleSlot],
         ];
     }
