@@ -325,84 +325,20 @@
     </div>
 
     {{-- ================================================================
-         Riwayat
+         Ringkasan riwayat
          ================================================================ --}}
-    <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-semibold text-slate-700">Riwayat</h2>
-        <span class="text-xs text-slate-400">Postingan yang sudah lewat, terbit, gagal, atau dibatalkan</span>
-    </div>
-
-    <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden mb-8">
-        @forelse ($historyPosts as $post)
-            <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-0">
-                <div class="flex-shrink-0">
-                    @if ($post->media_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->media_path))
-                        <img src="{{ Storage::url($post->media_path) }}" alt="Foto postingan"
-                            class="w-12 h-12 rounded-lg object-cover border border-border">
-                    @else
-                        <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-300 border border-border">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
-                            </svg>
-                        </div>
-                    @endif
-                </div>
-
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm text-slate-800 truncate">
-                        {{ \Illuminate\Support\Str::limit(strip_tags($post->caption), 90) }}
-                    </p>
-                    <div class="flex items-center gap-3 mt-0.5">
-                        <p class="text-xs text-slate-400">{{ $post->formattedScheduledAt() }} WIB</p>
-                        @if ($post->status === \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED && $post->error_message)
-                            <p class="text-xs text-danger truncate">{{ $post->error_message }}</p>
-                        @endif
-                    </div>
-                </div>
-
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0
-                    {{ match ($post->status) {
-                        \Modules\Scheduler\Models\ScheduledPost::STATUS_PUBLISHED => 'bg-success-light text-success-text',
-                        \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED => 'bg-danger-light text-danger-text',
-                        \Modules\Scheduler\Models\ScheduledPost::STATUS_CANCELLED => 'bg-slate-100 text-slate-400',
-                        default => 'bg-warning-light text-warning-text',
-                    } }}">
-                    {{ $post->statusLabel() }}
-                </span>
-
-                @can('scheduler.edit')
-                    @if ($post->canBeEdited())
-                        <a href="{{ route('admin.scheduled-posts.edit', $post) }}"
-                            class="inline-flex items-center flex-shrink-0 font-medium rounded-md px-3 py-1.5 text-xs border border-border hover:bg-slate-50 text-slate-700">
-                            {{ $post->isFailed() ? 'Jadwalkan Ulang' : 'Atur Jadwal' }}
-                        </a>
-                    @endif
-                @endcan
-
-                @can('scheduler.create')
-                    <form method="POST" action="{{ route('admin.scheduled-posts.duplicate', $post) }}" class="flex-shrink-0">
-                        @csrf
-                        <x-admin.button variant="outline" size="sm" type="submit">Duplikat</x-admin.button>
-                    </form>
-                @endcan
-
-                @can('scheduler.delete')
-                    <form method="POST" action="{{ route('admin.scheduled-posts.destroy', $post) }}" class="flex-shrink-0"
-                        onsubmit="return confirm('Hapus postingan ini?')">
-                        @csrf
-                        @method('DELETE')
-                        <x-admin.button variant="outline" size="sm" type="submit">Hapus</x-admin.button>
-                    </form>
-                @endcan
-            </div>
-        @empty
-            <p class="px-6 py-12 text-center text-slate-400 text-sm">Belum ada riwayat postingan.</p>
-        @endforelse
-
-        @if ($historyPosts->hasPages())
-            <div class="px-6 py-4 border-t border-border">
-                {{ $historyPosts->links() }}
-            </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-card rounded-2xl shadow-card border border-border px-6 py-4 mb-8">
+        @if ($failedCount > 0)
+            <p class="text-sm text-danger-text">
+                <span class="font-semibold">{{ $failedCount }}</span> postingan gagal terbit dan perlu dijadwalkan ulang.
+            </p>
+        @else
+            <p class="text-sm text-slate-500">Postingan yang sudah terbit, gagal, atau dibatalkan ada di halaman Riwayat.</p>
         @endif
+
+        <a href="{{ route('admin.post-history.index', $failedCount > 0 ? ['status' => 'failed'] : []) }}"
+            class="inline-flex items-center gap-1.5 font-medium rounded-md px-4 py-2 text-sm border border-border hover:bg-slate-50 text-slate-700">
+            {{ $failedCount > 0 ? 'Lihat yang gagal' : 'Buka Riwayat' }}
+        </a>
     </div>
 @endsection

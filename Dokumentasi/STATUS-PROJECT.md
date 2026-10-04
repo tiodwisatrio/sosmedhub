@@ -16,7 +16,8 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Hubungkan akun Instagram lewat OAuth (token long-lived, terenkripsi) | Jalan, sudah dicoba dengan akun asli |
 | Satu user dengan banyak akun Instagram | Didukung (lihat bagian 9 nomor 1) |
 | Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel); upload hanya JPEG | Jalan |
-| Kalender mingguan dan riwayat postingan | Jalan |
+| Kalender mingguan (halaman Penjadwalan) | Jalan |
+| Halaman Riwayat terpisah: tab status, filter akun, pencarian caption | Jalan |
 | Publikasi otomatis (cron + antrean) | Jalan, sudah terbit ke Instagram asli |
 | Jadwalkan ulang postingan gagal | Jalan |
 | Duplikat postingan (menjadi draf) | Jalan |
@@ -36,7 +37,7 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
 |---|---|
 | `Dashboard`, `User`, `Role`, `Menu`, `SiteSetting` | Dipertahankan dari template |
 | `SocialAccount` | Model akun, OAuth Instagram (`InstagramGraphService`), publikasi dan refresh token (`InstagramPublisher`), command refresh token, notifikasi akun terputus |
-| `Scheduler` | Model jadwal dan foto, controller dan view, job `PublishScheduledPostJob`, command `scheduler:dispatch-due`, notifikasi gagal dan berhasil |
+| `Scheduler` | Model jadwal dan foto, controller dan view (Penjadwalan di `ScheduledPostController`, Riwayat di `PostHistoryController`), job `PublishScheduledPostJob`, command `scheduler:dispatch-due`, notifikasi gagal dan berhasil |
 
 ### Alur menghubungkan akun
 1. User klik **Hubungkan Instagram**, lalu diarahkan ke halaman login Instagram.
@@ -52,6 +53,12 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
 ### Status postingan
 `draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `failed`, `cancelled`.
 Yang boleh diubah: `scheduled`, `failed`, `draft`. Menyimpan postingan `failed` atau `draft` mengembalikannya ke `scheduled`.
+
+### Komponen pratinjau
+Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya, jadi harus berada di dalam `x-data` yang menyediakan `previewList`, `currentIndex`, `caption`, `schedulePreview`, dan `photoCountLabel`. Props Blade: `username`, `app-name`, `app-initial`, `logo-url`.
+
+### Halaman Riwayat
+`/admin/post-history` (route `admin.post-history.index`, izin `scheduler.view`) berisi postingan yang sudah lewat antrean: status selain `scheduled`, atau `scheduled` yang waktunya sudah lewat. Ada tab status (Semua, Terbit, Gagal, Dibatalkan, Draf) dengan jumlahnya, filter akun, dan pencarian caption. Halaman Penjadwalan hanya menampilkan kalender dan ringkasan jumlah postingan gagal dengan tautan ke Riwayat. Nama route sengaja tidak memakai awalan `admin.scheduled-posts.` supaya menu Penjadwalan tidak ikut aktif. Menu Riwayat ditambahkan di `MenuDatabaseSeeder`; di server yang sudah punya data menu, tambahkan lewat halaman Menu (route `admin.post-history.index`, pola aktif `admin.post-history.*`, izin `scheduler.view`) karena seeder menu menghapus seluruh tabel menu.
 
 ### Notifikasi email (lewat antrean)
 - **Postingan gagal**: selalu dikirim, berisi penyebab dan tombol Jadwalkan ulang.
@@ -103,14 +110,14 @@ php artisan queue:work --tries=1                # lokal: memproses antrean
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 124 test otomatis
+php artisan test                                # 134 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 124 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 134 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 

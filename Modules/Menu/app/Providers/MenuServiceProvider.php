@@ -30,7 +30,7 @@ class MenuServiceProvider extends ModuleServiceProvider
                 ->orderBy('urutan')
                 ->get()
                 ->filter(fn ($menu) => $menu->canSee())
-                ->map(function ($menu) use ($user) {
+                ->map(function ($menu) {
                     $menu->setRelation(
                         'children',
                         $menu->children->filter(fn ($child) => $child->canSee())->values()

@@ -85,15 +85,9 @@ class ScheduledPostController extends Controller implements HasMiddleware
                     });
             });
 
-        $historyPosts = $this->visibleScheduledPosts()
-            ->with('socialAccount')
-            ->where(function ($query) {
-                $query
-                    ->where('status', '!=', ScheduledPost::STATUS_SCHEDULED)
-                    ->orWhere('scheduled_at', '<=', now());
-            })
-            ->latest('scheduled_at')
-            ->paginate(5);
+        $failedCount = $this->visibleScheduledPosts()
+            ->where('status', ScheduledPost::STATUS_FAILED)
+            ->count();
 
         return view('scheduler::admin.index', [
             'weeks' => $weeks,
@@ -103,7 +97,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
             'currentBlock' => $todayWib->copy()->startOfWeek(Carbon::MONDAY),
             'postsCount' => $posts->count(),
             'postsForModal' => $postsForModal,
-            'historyPosts' => $historyPosts,
+            'failedCount' => $failedCount,
         ]);
     }
 

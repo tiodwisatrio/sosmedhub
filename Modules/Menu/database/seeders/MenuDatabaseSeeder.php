@@ -68,12 +68,22 @@ class MenuDatabaseSeeder extends Seeder
         ]);
 
         Menu::create([
+            'label' => 'Riwayat',
+            'route_name' => 'admin.post-history.index',
+            'active_pattern' => 'admin.post-history.*',
+            'permission' => 'scheduler.view',
+            'icon' => $icons['list']['path'],
+            'urutan' => 6,
+            'is_active' => 1,
+        ]);
+
+        Menu::create([
             'label' => 'Akun Sosial',
             'route_name' => 'admin.social-accounts.index',
             'active_pattern' => 'admin.social-accounts.*',
             'permission' => 'social-account.view',
             'icon' => $icons['link']['path'] ?? $icons['cog']['path'],
-            'urutan' => 6,
+            'urutan' => 7,
             'is_active' => 1,
         ]);
 
