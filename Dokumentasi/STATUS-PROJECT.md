@@ -24,6 +24,7 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Email postingan berhasil | Terpasang, belum dites manual |
 | Email akun terputus dan peringatan token hampir habis | Terpasang, belum dites manual |
 | Refresh token otomatis harian | Terpasang, belum dites dengan Instagram asli |
+| Halaman publik: beranda, kebijakan privasi, ketentuan layanan, penghapusan data | Jalan (isi hardcode, lihat bagian 10) |
 | Batas akun atau jumlah post per user | Belum ada (sengaja, menunggu model bisnis) |
 | Facebook Page, Reels, Story, insight | Belum ada (di luar MVP) |
 
@@ -102,14 +103,14 @@ php artisan queue:work --tries=1                # lokal: memproses antrean
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 117 test otomatis
+php artisan test                                # 124 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 117 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 124 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 
@@ -140,7 +141,10 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 2. ~~Password developer dari `.env`~~ (selesai). Di server, isi `DEVELOPER_EMAIL` dan `DEVELOPER_PASSWORD` yang kuat sebelum `db:seed`.
 3. Putuskan perilaku akun Instagram yang sama dipakai banyak user (bagian 9 nomor 1).
 4. Rapikan halaman Akun Sosial: tombol **Hubungkan Akun** langsung ke OAuth, badge dan tombol **Hubungkan Ulang** untuk akun `expired`, hapus form manual untuk client.
-5. Commit semua perubahan dan push.
+5. ~~Halaman publik~~ (selesai, lihat di bawah). **Isi email kontak di Pengaturan Situs** sebelum App Review; halaman hukum membacanya, dan menampilkan penanda kuning jika kosong.
+6. Commit semua perubahan dan push.
+
+Halaman publik (isi hardcode di `resources/views/public/`): `/` (beranda untuk tamu; user yang sudah masuk diarahkan ke dashboard), `/kebijakan-privasi`, `/ketentuan-layanan`, `/hapus-data`. Tautan ke tiga halaman hukum ada di footer. URL yang diisi di dashboard Meta: Privacy Policy `https://DOMAIN/kebijakan-privasi`, Terms `https://DOMAIN/ketentuan-layanan`, Data Deletion `https://DOMAIN/hapus-data` (tipe instruksi, bukan callback). Baca ulang isinya sebelum review; komitmen seperti "paling lama 30 hari" bisa diubah sesuai kemampuan Anda.
 
 ### Deploy awal di shared hosting
 Rencana: shared hosting dulu sampai sekitar 10 client.
@@ -160,7 +164,7 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 
 ### Setelah itu
 - Tambahkan client awal sebagai **Instagram Tester** di dashboard Meta (client menerima undangan di Settings, Apps and websites, Tester invites).
-- Siapkan syarat **App Review** supaya client bisa mendaftar dan menghubungkan akun sendiri: Privacy Policy, Terms, Data Deletion, screencast alur lengkap, dan alasan tiap permission (`instagram_business_basic`, `instagram_business_content_publish`). Mode Live saja tidak cukup; yang membuka akses umum adalah Advanced Access lewat App Review.
+- Siapkan syarat **App Review** supaya client bisa mendaftar dan menghubungkan akun sendiri: halaman Privacy Policy, Terms, dan Data Deletion sudah ada; tinggal screencast alur lengkap, dan alasan tiap permission (`instagram_business_basic`, `instagram_business_content_publish`). Mode Live saja tidak cukup; yang membuka akses umum adalah Advanced Access lewat App Review.
 - Putuskan model bisnis (batas akun atau antrean per paket), lalu pasang batas di dua tempat: saat menghubungkan akun dan saat validasi jadwal.
 - Pertimbangkan fitur lanjutan: draf mandiri, template caption, pustaka media, Reels, insight, tim dan persetujuan konten, billing (Midtrans atau Xendit).
 - Pindah ke VPS dengan Supervisor untuk antrean jika client sudah sekitar 10 dan aktif, atau jika publikasi sering telat.

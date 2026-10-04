@@ -4,6 +4,17 @@
 
 [x-cloak] { display: none !important; }
 
+@layer components {
+    .legal { @apply leading-relaxed text-white/70; }
+    .legal h2 { font-family: 'Instrument Serif', serif; @apply mb-3 mt-14 text-3xl font-normal text-white; }
+    .legal p { @apply mt-3; }
+    .legal ul { @apply mt-3 list-disc space-y-2 pl-5 marker:text-white/30; }
+    .legal ol { @apply mt-3 list-decimal space-y-2 pl-5 marker:text-white/40; }
+    .legal strong { @apply font-medium text-white; }
+    .legal a { @apply text-white underline decoration-white/30 underline-offset-4 transition hover:decoration-white; }
+    .legal code { @apply rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] text-white; }
+}
+
 .liquid-glass {
     background: rgba(255, 255, 255, 0.01);
     background-blend-mode: luminosity;

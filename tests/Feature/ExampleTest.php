@@ -1,7 +1,17 @@
 <?php
 
-it('returns a successful response', function () {
-    $response = $this->get('/');
+use App\Models\User;
 
-    $response->assertRedirect(route('login'));
+it('menampilkan beranda publik untuk tamu', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Terbit sesuai jadwal.')
+        ->assertSee(route('login'), false)
+        ->assertSee(route('privacy'), false);
+});
+
+it('mengarahkan user yang sudah masuk dari beranda ke dashboard', function () {
+    $this->actingAs(User::factory()->create())
+        ->get('/')
+        ->assertRedirect(route('admin.dashboard'));
 });
