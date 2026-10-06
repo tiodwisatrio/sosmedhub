@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Modules\SocialAccount\Models\SocialAccount;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 function socialAccountUser(array $permissions = ['view']): User
 {
@@ -177,4 +178,116 @@ test('callback OAuth menolak state yang tidak cocok', function () {
         ->assertSessionHas('error');
 
     expect(SocialAccount::count())->toBe(0);
+});
+
+test('halaman akun sosial menampilkan kartu Instagram, Facebook, dan Threads', function () {
+    $html = $this->actingAs(socialAccountUser(['view', 'create']))
+        ->get(route('admin.social-accounts.index'))
+        ->assertOk()
+        ->assertSee('aria-label="Instagram"', false)
+        ->assertSee('aria-label="Facebook"', false)
+        ->assertSee('aria-label="Threads"', false)
+        ->getContent();
+
+    // Facebook dan Threads: tombol Hubungkan nonaktif, bukan tautan
+    expect(substr_count($html, 'aria-disabled="true"'))->toBe(2)
+        ->and(substr_count($html, 'Segera hadir'))->toBe(2);
+});
+
+test('kartu Instagram tanpa akun menampilkan tombol Hubungkan ke OAuth', function () {
+    $this->actingAs(socialAccountUser(['view', 'create']))
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('Belum ada akun terhubung')
+        ->assertSee('href="'.route('admin.social-accounts.instagram.redirect').'"', false)
+        ->assertDontSee('+ Tambah Akun');
+});
+
+test('kartu Instagram menampilkan avatar, nama, username, Edit, Putuskan, dan Tambah Akun', function () {
+    $user = socialAccountUser(['view', 'create', 'edit', 'delete']);
+    $account = makeSocialAccount($user, [
+        'username' => 'kopikita',
+        'display_name' => 'Kopi Kita Official',
+        'avatar_url' => 'https://cdn.example.com/avatar.jpg',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('1 akun terhubung')
+        ->assertSee('Kopi Kita Official')
+        ->assertSee('@kopikita')
+        ->assertSee('src="https://cdn.example.com/avatar.jpg"', false)
+        // avatar CDN Instagram bisa kedaluwarsa: ada cadangan inisial
+        ->assertSee('onerror=', false)
+        ->assertSee('KO')
+        ->assertSee('href="'.route('admin.social-accounts.edit', $account).'"', false)
+        ->assertSee('action="'.route('admin.social-accounts.destroy', $account).'"', false)
+        ->assertSee('+ Tambah Akun')
+        ->assertDontSee('Hubungkan akun Instagram untuk mulai');
+});
+
+test('beberapa akun Instagram tampil berurutan menurut username', function () {
+    $user = socialAccountUser(['view']);
+    makeSocialAccount($user, ['username' => 'zeta_brand', 'provider_account_id' => 'z']);
+    makeSocialAccount($user, ['username' => 'alfa_brand', 'provider_account_id' => 'a']);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('2 akun terhubung')
+        ->assertSeeInOrder(['@alfa_brand', '@zeta_brand']);
+});
+
+test('akun yang koneksinya berakhir menampilkan peringatan dan tombol Hubungkan Ulang', function () {
+    $user = socialAccountUser(['view', 'create']);
+    makeSocialAccount($user, ['username' => 'lama', 'status' => SocialAccount::STATUS_EXPIRED]);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('Koneksi berakhir')
+        ->assertSee('Hubungkan Ulang')
+        ->assertSee('href="'.route('admin.social-accounts.instagram.redirect').'"', false);
+});
+
+test('akun yang sudah diputus tidak tampil dan kartu kembali meminta Hubungkan', function () {
+    $user = socialAccountUser(['view', 'create']);
+    makeSocialAccount($user, ['username' => 'sudah_putus', 'status' => SocialAccount::STATUS_DISCONNECTED]);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertDontSee('sudah_putus')
+        ->assertSee('Belum ada akun terhubung');
+});
+
+test('tombol kartu mengikuti izin: tanpa izin tidak ada Hubungkan, Edit, atau Putuskan', function () {
+    $user = socialAccountUser(['view']);
+    $account = makeSocialAccount($user, ['username' => 'hanya_lihat']);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('@hanya_lihat')
+        ->assertSee('Anda tidak punya izin untuk menghubungkan akun.')
+        ->assertDontSee('+ Tambah Akun')
+        ->assertDontSee(route('admin.social-accounts.edit', $account), false)
+        ->assertDontSee(route('admin.social-accounts.destroy', $account), false);
+});
+
+test('developer melihat akun semua user beserta pemilik', function () {
+    $developer = socialAccountUser(['view']);
+    $developer->assignRole(Role::firstOrCreate(['name' => 'developer', 'guard_name' => 'web']));
+    $client = User::factory()->create(['name' => 'Budi Client']);
+    makeSocialAccount($client, ['username' => 'milik_budi']);
+
+    $this->actingAs($developer)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('@milik_budi')
+        ->assertSee('Pemilik: Budi Client');
+});
+
+test('client tidak melihat label pemilik', function () {
+    $user = socialAccountUser(['view']);
+    makeSocialAccount($user, ['username' => 'punya_sendiri']);
+
+    $this->actingAs($user)
+        ->get(route('admin.social-accounts.index'))
+        ->assertSee('@punya_sendiri')
+        ->assertDontSee('Pemilik:');
 });

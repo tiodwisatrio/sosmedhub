@@ -104,6 +104,14 @@ PHP harus mengizinkan upload sebesar validasi: `upload_max_filesize` minimal 8M 
 `draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `failed`, `cancelled`.
 Yang boleh diubah: `scheduled`, `failed`, `draft`. Menyimpan postingan `failed` atau `draft` mengembalikannya ke `scheduled`.
 
+### Halaman Akun Sosial
+Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram (aktif), Facebook dan Threads (tombol Hubungkan nonaktif, "Segera hadir"; disiapkan sebagai tampilan saja, tanpa backend). Komponen: `<x-social-account::platform-card>` dan `<x-social-account::brand-icon>` (logo SVG di dalam ubin warna merek) di `Modules/SocialAccount/resources/views/components/`.
+- Tanpa akun: tombol **Hubungkan** (langsung ke OAuth Instagram).
+- Ada akun: tiap akun tampil dengan avatar (cadangan inisial bila gambar CDN kedaluwarsa), nama, `@username`, tombol **Edit** dan **Putuskan**, lalu **+ Tambah Akun** di bawah kartu. Akun berstatus `expired` menampilkan peringatan dan **Hubungkan Ulang**.
+- Akun berstatus `disconnected` tidak ditampilkan; menghubungkannya lagi mengaktifkan barisnya kembali.
+- Tombol mengikuti izin (`social-account.create`, `.edit`, `.delete`). Developer melihat akun semua user dengan label pemilik.
+- Form manual (`/admin/social-accounts/create`) tidak lagi ditautkan dari halaman ini tetapi masih bisa dibuka lewat URL.
+
 ### Komponen pratinjau
 Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya, jadi harus berada di dalam `x-data` yang menyediakan `previewList`, `currentIndex`, `caption`, `schedulePreview`, dan `photoCountLabel`. Props Blade: `username`, `app-name`, `app-initial`, `logo-url`.
 
@@ -159,14 +167,14 @@ php artisan schedule:work                       # lokal: menjalankan scheduler (
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 173 test otomatis
+php artisan test                                # 182 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 173 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 182 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 

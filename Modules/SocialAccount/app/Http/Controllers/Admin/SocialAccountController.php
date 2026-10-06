@@ -28,12 +28,17 @@ class SocialAccountController extends Controller implements HasMiddleware
 
     public function index()
     {
+        // Akun yang sudah diputus tidak ditampilkan; menghubungkan lagi mengaktifkan barisnya kembali.
         $accounts = $this->visibleAccounts()
             ->with('user')
-            ->latest()
-            ->paginate(15);
+            ->whereIn('status', [SocialAccount::STATUS_ACTIVE, SocialAccount::STATUS_EXPIRED])
+            ->orderBy('username')
+            ->get();
 
-        return view('social-account::admin.index', compact('accounts'));
+        return view('social-account::admin.index', [
+            'accountsByPlatform' => $accounts->groupBy('platform'),
+            'showOwner' => (bool) auth()->user()?->isDeveloper(),
+        ]);
     }
 
     public function create()
