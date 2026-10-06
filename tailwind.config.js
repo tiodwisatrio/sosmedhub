@@ -1,6 +1,9 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
+// Warna latar sidebar. Teks menu aktif memakai warna yang sama, jadi cukup ubah di sini.
+const sidebarBg = '#704ef8';
+
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
@@ -44,11 +47,11 @@ export default {
                     text:    '#1E40AF',
                 },
                 sidebar: {
-                    DEFAULT: '#080809',
-                    hover:   '#161718',
-                    active:  '#0D9488',
-                    text:    '#CBD5E1',
-                    'text-active': '#FFFFFF',
+                    DEFAULT: sidebarBg,
+                    hover:   'rgba(255, 255, 255, 0.15)',
+                    active:  '#ffffff',
+                    text:    '#ffffff',
+                    'text-active': sidebarBg,
                 },
                 page:   '#F8FAFC',
                 card:   '#FFFFFF',

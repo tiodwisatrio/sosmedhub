@@ -70,6 +70,6 @@
     @enderror
 
     <p class="mt-1.5 text-xs text-slate-400">
-        Menit kelipatan {{ $slot }} ({{ \Modules\Scheduler\Models\ScheduledPost::slotExamples() }}). Postingan terbit pada jam yang dipilih, bisa mundur beberapa menit.
+        {{ \Modules\Scheduler\Models\ScheduledPost::slotHint() }}
     </p>
 </div>

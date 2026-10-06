@@ -76,6 +76,25 @@ class ScheduledPost extends Model
     }
 
     /**
+     * Kalimat bantuan di bawah pemilih jam. Slot 1 menit berarti bebas memilih menit,
+     * jadi kalimat "kelipatan 1 menit" dihindari.
+     */
+    public static function slotHint(): string
+    {
+        $slot = self::slotMinutes();
+
+        if ($slot === 1) {
+            return 'Pilih menit bebas. Postingan terbit pada menit yang dipilih, bisa mundur kurang dari satu menit.';
+        }
+
+        return sprintf(
+            'Menit kelipatan %d (%s). Postingan terbit pada jam yang dipilih, bisa mundur beberapa menit.',
+            $slot,
+            self::slotExamples()
+        );
+    }
+
+    /**
      * Contoh jam untuk pesan bantuan, misalnya "09.00, 09.15, 09.30, atau 09.45".
      */
     public static function slotExamples(): string

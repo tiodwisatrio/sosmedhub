@@ -10,7 +10,9 @@ return [
 
     /*
     | Jarak antar slot jadwal dalam menit, harus sama dengan interval cron.
-    | Shared hosting Rumahweb Medium: 15 (cron tiap 15 menit). VPS: 1 atau 5.
+    | VPS (cron tiap menit): 1. Shared hosting Rumahweb Medium: 15 (cron tiap 15 menit).
+    | Bawaan 15 sengaja yang paling aman: bila .env lupa diisi, jadwal tidak pernah lebih
+    | rapat daripada cron.
     | Hanya pembagi 60 yang diterima; nilai lain dianggap 15.
     */
     'slot_minutes' => (int) env('SCHEDULER_SLOT_MINUTES', 15),

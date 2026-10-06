@@ -151,7 +151,7 @@
                                         <a href="{{ $child->routeUrl() }}"
                                             @class([
                                                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors duration-150',
-                                                'text-sidebar-text-active font-medium' => $childActive,
+                                                'bg-sidebar-active text-sidebar-text-active font-medium' => $childActive,
                                                 'text-sidebar-text/80 hover:bg-sidebar-hover hover:text-white' => ! $childActive,
                                             ])
                                         >

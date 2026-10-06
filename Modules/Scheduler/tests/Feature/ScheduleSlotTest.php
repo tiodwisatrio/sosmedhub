@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\Scheduler\Providers\SchedulerServiceProvider;
 use Modules\Scheduler\Services\SchedulerHeartbeat;
 use Modules\SocialAccount\Models\SocialAccount;
 use Spatie\Permission\Models\Permission;
@@ -36,6 +37,8 @@ function wib(string $time): Carbon
 {
     return Carbon::parse($time, ScheduledPost::WIB);
 }
+
+beforeEach(fn () => config(['scheduler.slot_minutes' => 15]));
 
 afterEach(fn () => Carbon::setTestNow());
 
@@ -252,4 +255,71 @@ it('menampilkan peringatan scheduler di dashboard hanya untuk developer', functi
         ->assertOk()
         ->assertDontSee('Scheduler belum pernah berjalan.')
         ->assertDontSee('Scheduler tidak berjalan sejak');
+});
+
+it('slot 1 menit: menit bebas dipilih, jam tidak dibatasi, dan teks bantuan sesuai', function () {
+    config(['scheduler.slot_minutes' => 1]);
+    Carbon::setTestNow(wib('2026-10-06 09:07:30'));
+    $user = slotUser();
+    slotAccount($user);
+
+    expect(ScheduledPost::slotHint())->toBe('Pilih menit bebas. Postingan terbit pada menit yang dipilih, bisa mundur kurang dari satu menit.')
+        ->and(ScheduledPost::nextSlot()->setTimezone(ScheduledPost::WIB)->format('H:i'))->toBe('09:08')
+        ->and(ScheduledPost::isOnSlot(wib('2026-10-06 09:13:00')))->toBeTrue();
+
+    $html = $this->actingAs($user)->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('Pilih menit bebas.')
+        ->assertDontSee('kelipatan 1')
+        ->assertSee('min="2026-10-06"', false)
+        ->assertSee("schedMinute: '08'", false)
+        ->getContent();
+
+    preg_match('/<select id="schedule-minute".*?<\/select>/s', $html, $minute);
+    preg_match_all('/<option value="(\d{2})"/', $minute[0], $m);
+
+    expect($m[1])->toHaveCount(60)
+        ->and($m[1][0])->toBe('00')
+        ->and($m[1][59])->toBe('59');
+});
+
+it('slot 1 menit: server menerima menit sembarang dan peringatan scheduler lebih cepat', function () {
+    config(['scheduler.slot_minutes' => 1]);
+    Storage::fake('public');
+    $user = slotUser();
+    $account = slotAccount($user);
+    $tomorrow = now(ScheduledPost::WIB)->addDay()->format('Y-m-d');
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), [
+        'caption' => 'Menit bebas.',
+        'social_account_id' => $account->id,
+        'media' => [UploadedFile::fake()->image('foto.jpg', 800, 800)],
+        'scheduled_at' => "{$tomorrow}T09:07",
+    ])->assertSessionHasNoErrors();
+
+    expect(ScheduledPost::count())->toBe(1);
+
+    // detak dianggap macet setelah dua slot + 1 menit = 3 menit
+    $heartbeat = app(SchedulerHeartbeat::class);
+    Carbon::setTestNow(wib('2026-10-06 09:00:00'));
+    $heartbeat->beat();
+    Carbon::setTestNow(wib('2026-10-06 09:02:30'));
+    expect($heartbeat->isStale())->toBeFalse();
+    Carbon::setTestNow(wib('2026-10-06 09:03:30'));
+    expect($heartbeat->isStale())->toBeTrue();
+});
+
+it('worker antrean dari scheduler bisa dimatikan untuk VPS dengan Supervisor', function () {
+    $commands = fn () => collect(app(Schedule::class)->events())->map(fn ($e) => $e->command);
+    $provider = new SchedulerServiceProvider(app());
+
+    $schedule = new Schedule;
+    config(['scheduler.run_worker' => false]);
+    (fn () => $this->configureSchedules($schedule))->call($provider);
+
+    $registered = collect($schedule->events())->map(fn ($e) => $e->command);
+
+    expect($registered->contains(fn ($c) => str_contains($c, 'scheduler:dispatch-due')))->toBeTrue()
+        ->and($registered->contains(fn ($c) => str_contains($c, 'scheduler:prune-media')))->toBeTrue()
+        ->and($registered->contains(fn ($c) => str_contains($c, 'queue:work')))->toBeFalse();
 });

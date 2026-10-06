@@ -57,7 +57,37 @@ Dalam satu putaran `schedule:run`: `scheduler:dispatch-due` mengirim post jatuh 
 
 Setiap putaran mencatat detak (`SchedulerHeartbeat`). Dashboard menampilkan peringatan untuk developer bila scheduler belum pernah berjalan atau terlewat lebih dari dua slot.
 
-Pindah ke VPS: `SCHEDULER_SLOT_MINUTES=1` atau `5`, cron tiap menit, `SCHEDULER_RUN_WORKER=false`, dan `queue:work` di Supervisor. Tidak ada perubahan kode.
+**Rencana saat ini: VPS** (cron tiap menit, slot 1 menit). Di slot 1 menit, pilihan menit di form berisi 00-59 dan teks bantuannya "Pilih menit bebas". Konfigurasi VPS:
+
+`.env`:
+```env
+SCHEDULER_SLOT_MINUTES=1
+SCHEDULER_RUN_WORKER=false   # queue:work dijalankan Supervisor
+QUEUE_CONNECTION=database
+```
+
+Cron (user web server, misalnya `www-data`):
+```
+* * * * * cd /var/www/sosmedhub && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Supervisor (`/etc/supervisor/conf.d/sosmedhub-queue.conf`):
+```ini
+[program:sosmedhub-queue]
+command=php /var/www/sosmedhub/artisan queue:work --sleep=3 --tries=1 --max-time=3600
+user=www-data
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/sosmedhub/storage/logs/worker.log
+stopwaitsecs=3600
+```
+Setelah menyimpan: `supervisorctl reread && supervisorctl update`. Setiap deploy jalankan `php artisan queue:restart` agar worker memakai kode baru. `--tries=1` wajib dipertahankan agar post tidak terbit dua kali.
+
+Bila `SCHEDULER_SLOT_MINUTES` tidak diisi, bawaannya 15 (paling aman: jadwal tidak pernah lebih rapat daripada cron). Untuk shared hosting tetap memakai 15, `SCHEDULER_RUN_WORKER=true`, dan cron tiap 15 menit.
 
 ### Pengolahan foto
 Foto diolah saat diunggah oleh `MediaProcessor` (Imagick, wajib ada di server): dibaca dalam skala kecil bila lebih besar dari target (hemat memori untuk foto hingga 50MP), diputar sesuai EXIF, metadata dihapus (termasuk GPS), lalu disimpan dua versi: **versi terbit** (lebar maks 1440px, JPEG 85, biasanya 400-900KB; yang diambil Instagram) dan **thumbnail** (400px, JPEG 75, sekitar 20-40KB; untuk kalender dan riwayat). File asli tidak disimpan. Instagram memperkecil semua foto ke 1080-1440px, jadi kualitas di Instagram tidak berbeda.
@@ -129,14 +159,14 @@ php artisan schedule:work                       # lokal: menjalankan scheduler (
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 165 test otomatis
+php artisan test                                # 173 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 165 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 173 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 
