@@ -234,7 +234,10 @@ class ScheduledPostController extends Controller implements HasMiddleware
 
     private function availableSocialAccounts(?ScheduledPost $post = null)
     {
-        $query = SocialAccount::query()->where('status', SocialAccount::STATUS_ACTIVE);
+        // Publikasi Facebook belum tersedia, jadi hanya akun Instagram yang bisa dipilih.
+        $query = SocialAccount::query()
+            ->where('platform', SocialAccount::PLATFORM_INSTAGRAM)
+            ->where('status', SocialAccount::STATUS_ACTIVE);
 
         if (! auth()->user()?->isDeveloper()) {
             $query->where('user_id', auth()->id());

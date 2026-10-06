@@ -13,6 +13,8 @@ class SocialAccount extends Model
 
     public const PLATFORM_INSTAGRAM = 'instagram';
 
+    public const PLATFORM_FACEBOOK = 'facebook';
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_DISCONNECTED = 'disconnected';
@@ -50,6 +52,13 @@ class SocialAccount extends Model
 
     public function label(): string
     {
-        return trim(($this->display_name ?: $this->username).' (@'.$this->username.')');
+        $name = $this->display_name ?: $this->username;
+
+        // Halaman Facebook tidak punya handle seperti Instagram, jadi cukup namanya.
+        if ($this->platform === self::PLATFORM_FACEBOOK) {
+            return $name;
+        }
+
+        return trim($name.' (@'.$this->username.')');
     }
 }

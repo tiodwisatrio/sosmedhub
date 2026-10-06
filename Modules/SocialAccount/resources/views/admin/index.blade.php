@@ -23,8 +23,10 @@
         <x-social-account::platform-card
             platform="facebook"
             label="Facebook"
-            description="Halaman Facebook"
-            :accounts="$accountsByPlatform->get('facebook', collect())" />
+            :accounts="$accountsByPlatform->get('facebook', collect())"
+            :connect-url="route('admin.social-accounts.facebook.redirect')"
+            :show-owner="$showOwner"
+            available />
 
         <x-social-account::platform-card
             platform="threads"

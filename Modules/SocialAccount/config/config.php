@@ -16,4 +16,18 @@ return [
             'instagram_business_content_publish',
         ],
     ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect_uri' => env('FACEBOOK_REDIRECT_URI'),
+        'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v26.0'),
+        'scopes' => [
+            'pages_show_list',
+            'pages_read_engagement',
+            'pages_manage_posts',
+            // Halaman milik Business Portfolio baru muncul di me/accounts bila izin ini diminta.
+            'business_management',
+        ],
+    ],
 ];

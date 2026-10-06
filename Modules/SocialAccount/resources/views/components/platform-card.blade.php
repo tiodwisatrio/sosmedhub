@@ -68,7 +68,12 @@
 
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-semibold text-slate-800">{{ $name }}</p>
-                                <p class="truncate text-xs text-slate-500">{{ '@'.$account->username }}</p>
+                                @if ($platform === 'instagram')
+                                    <p class="truncate text-xs text-slate-500">{{ '@'.$account->username }}</p>
+                                @elseif ($account->provider_account_id)
+                                    {{-- Halaman Facebook bisa bernama sama, jadi ID membedakannya. --}}
+                                    <p class="truncate text-xs text-slate-500">ID {{ $account->provider_account_id }}</p>
+                                @endif
                                 @if ($showOwner && $account->user)
                                     <p class="truncate text-xs text-slate-400">Pemilik: {{ $account->user->name }}</p>
                                 @endif

@@ -189,9 +189,9 @@ test('halaman akun sosial menampilkan kartu Instagram, Facebook, dan Threads', f
         ->assertSee('aria-label="Threads"', false)
         ->getContent();
 
-    // Facebook dan Threads: tombol Hubungkan nonaktif, bukan tautan
-    expect(substr_count($html, 'aria-disabled="true"'))->toBe(2)
-        ->and(substr_count($html, 'Segera hadir'))->toBe(2);
+    // Hanya Threads yang belum tersedia: tombol Hubungkan nonaktif, bukan tautan
+    expect(substr_count($html, 'aria-disabled="true"'))->toBe(1)
+        ->and(substr_count($html, 'Segera hadir'))->toBe(1);
 });
 
 test('kartu Instagram tanpa akun menampilkan tombol Hubungkan ke OAuth', function () {

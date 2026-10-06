@@ -28,7 +28,8 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Refresh token otomatis harian | Terpasang, belum dites dengan Instagram asli |
 | Halaman publik: beranda, kebijakan privasi, ketentuan layanan, penghapusan data | Jalan (isi hardcode, lihat bagian 10) |
 | Batas akun atau jumlah post per user | Belum ada (sengaja, menunggu model bisnis) |
-| Facebook Page, Threads, insight | Belum ada (di luar MVP; kartu Facebook dan Threads hanya tampilan) |
+| Connect Facebook Page | Ada: Facebook Login, pilih Halaman, token Halaman terenkripsi. **Publikasi ke Facebook belum ada**; akun Facebook belum muncul di form penjadwalan |
+| Threads, insight | Belum ada (di luar MVP; kartu Threads hanya tampilan) |
 
 ## 3. Arsitektur
 
@@ -129,7 +130,7 @@ Yang boleh diubah: `scheduled`, `failed`, `partial`, `draft`. Menyimpan postinga
 Status tiap format ada di `scheduled_post_publications`: `pending`, `publishing`, `published`, `failed`. Lencana format (Feed, Story, Reels) tampil di kalender, modal, riwayat (dengan titik status per format), dan form ubah.
 
 ### Halaman Akun Sosial
-Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram (aktif), Facebook dan Threads (tombol Hubungkan nonaktif, "Segera hadir"; disiapkan sebagai tampilan saja, tanpa backend). Komponen: `<x-social-account::platform-card>` dan `<x-social-account::brand-icon>` (logo SVG di dalam ubin warna merek) di `Modules/SocialAccount/resources/views/components/`.
+Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram dan Facebook (aktif), Threads (tombol Hubungkan nonaktif, "Segera hadir"; tampilan saja, tanpa backend). Komponen: `<x-social-account::platform-card>` dan `<x-social-account::brand-icon>` (logo SVG di dalam ubin warna merek) di `Modules/SocialAccount/resources/views/components/`.
 - Tanpa akun: tombol **Hubungkan** (langsung ke OAuth Instagram).
 - Ada akun: tiap akun tampil dengan avatar (cadangan inisial bila gambar CDN kedaluwarsa), nama, `@username`, tombol **Edit** dan **Putuskan**, lalu **+ Tambah Akun** di bawah kartu. Akun berstatus `expired` menampilkan peringatan dan **Hubungkan Ulang**.
 - Akun berstatus `disconnected` tidak ditampilkan; menghubungkannya lagi mengaktifkan barisnya kembali.
@@ -179,6 +180,9 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `INSTAGRAM_CLIENT_ID` | ID aplikasi **Instagram** (bukan App ID Meta). |
 | `INSTAGRAM_CLIENT_SECRET` | Rahasia aplikasi Instagram, 32 karakter heksadesimal. |
 | `INSTAGRAM_REDIRECT_URI` | Harus **persis sama** dengan URL redirect di dashboard Meta. Formatnya `https://DOMAIN/admin/social-accounts/instagram/callback`. |
+| `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | App ID dan App Secret dari **Settings > Basic** di Meta (bukan ID aplikasi Instagram). |
+| `FACEBOOK_REDIRECT_URI` | Harus persis sama dengan *Valid OAuth Redirect URIs* di Facebook Login. Formatnya `https://DOMAIN/admin/social-accounts/facebook/callback`. |
+| `FACEBOOK_GRAPH_VERSION` | Default `v26.0`. |
 | `INSTAGRAM_GRAPH_VERSION` | Versi Graph API, misalnya `v26.0`. |
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
