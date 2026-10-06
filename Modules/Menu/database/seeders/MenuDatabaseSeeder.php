@@ -60,10 +60,21 @@ class MenuDatabaseSeeder extends Seeder
         Menu::create([
             'label' => 'Penjadwalan',
             'route_name' => 'admin.scheduled-posts.index',
-            'active_pattern' => 'admin.scheduled-posts.*',
+            // Manajemen Post punya menu sendiri, jadi tidak ikut menyalakan menu ini.
+            'active_pattern' => 'admin.scheduled-posts.*,!admin.scheduled-posts.create',
             'permission' => 'scheduler.view',
             'icon' => $icons['calendar']['path'],
             'urutan' => 5,
+            'is_active' => 1,
+        ]);
+
+        Menu::create([
+            'label' => 'Manajemen Post',
+            'route_name' => 'admin.scheduled-posts.create',
+            'active_pattern' => 'admin.scheduled-posts.create',
+            'permission' => 'scheduler.create',
+            'icon' => $icons['plus']['path'] ?? $icons['calendar']['path'],
+            'urutan' => 6,
             'is_active' => 1,
         ]);
 
@@ -73,7 +84,7 @@ class MenuDatabaseSeeder extends Seeder
             'active_pattern' => 'admin.post-history.*',
             'permission' => 'scheduler.view',
             'icon' => $icons['list']['path'],
-            'urutan' => 6,
+            'urutan' => 7,
             'is_active' => 1,
         ]);
 
@@ -83,7 +94,7 @@ class MenuDatabaseSeeder extends Seeder
             'active_pattern' => 'admin.social-accounts.*',
             'permission' => 'social-account.view',
             'icon' => $icons['link']['path'] ?? $icons['cog']['path'],
-            'urutan' => 7,
+            'urutan' => 8,
             'is_active' => 1,
         ]);
 

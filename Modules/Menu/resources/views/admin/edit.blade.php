@@ -53,7 +53,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Active Pattern</label>
                         <x-admin.input-text name="active_pattern" :value="old('active_pattern', $menu->active_pattern)" placeholder="admin.users.*" />
-                        <p class="mt-1 text-xs text-slate-400">Gunakan <code>*</code> sebagai wildcard untuk <code>routeIs()</code>.</p>
+                        <p class="mt-1 text-xs text-slate-400">Gunakan <code>*</code> sebagai wildcard untuk <code>routeIs()</code>, koma untuk beberapa pola, dan awalan <code>!</code> untuk mengecualikan, misalnya <code>admin.scheduled-posts.*,!admin.scheduled-posts.create</code>.</p>
                         @error('active_pattern') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                     </div>
 

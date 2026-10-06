@@ -101,7 +101,7 @@ class Menu extends Model
             return false;
         }
 
-        if (! request()->routeIs($this->active_pattern)) {
+        if (! $this->matchesPattern()) {
             return false;
         }
 
@@ -112,6 +112,28 @@ class Menu extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Pola dipisah koma. Awalan "!" mengecualikan: menu aktif bila cocok dengan salah satu
+     * pola biasa dan tidak cocok dengan pola pengecualian mana pun.
+     * Contoh: "admin.scheduled-posts.*,!admin.scheduled-posts.create".
+     */
+    private function matchesPattern(): bool
+    {
+        $patterns = array_filter(array_map('trim', explode(',', (string) $this->active_pattern)));
+
+        $include = array_filter($patterns, fn (string $pattern) => ! str_starts_with($pattern, '!'));
+        $exclude = array_map(
+            fn (string $pattern) => substr($pattern, 1),
+            array_filter($patterns, fn (string $pattern) => str_starts_with($pattern, '!'))
+        );
+
+        if ($include === [] || ! request()->routeIs(...$include)) {
+            return false;
+        }
+
+        return $exclude === [] || ! request()->routeIs(...$exclude);
     }
 
     public function isParentActive(): bool
