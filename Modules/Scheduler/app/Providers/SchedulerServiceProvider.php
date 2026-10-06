@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Modules\Scheduler\Console\DispatchDuePostsCommand;
 use Modules\Scheduler\Console\ProcessExistingMediaCommand;
 use Modules\Scheduler\Console\PruneMediaCommand;
+use Modules\Scheduler\Console\PruneOrphanMediaCommand;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class SchedulerServiceProvider extends ModuleServiceProvider
@@ -22,6 +23,7 @@ class SchedulerServiceProvider extends ModuleServiceProvider
     protected array $commands = [
         DispatchDuePostsCommand::class,
         PruneMediaCommand::class,
+        PruneOrphanMediaCommand::class,
         ProcessExistingMediaCommand::class,
     ];
 
@@ -49,6 +51,11 @@ class SchedulerServiceProvider extends ModuleServiceProvider
                 ->everyMinute()
                 ->withoutOverlapping((int) ceil($maxSeconds / 60) + 5);
         }
+
+        // File tanpa baris media (unggahan yang gagal di tengah jalan); hanya yang berumur lebih dari 24 jam.
+        $schedule->command('scheduler:prune-orphans')
+            ->dailyAt('02:00')
+            ->withoutOverlapping(60);
 
         // 01.00 tetap terkena cron tiap 15 menit.
         $schedule->command('scheduler:prune-media')

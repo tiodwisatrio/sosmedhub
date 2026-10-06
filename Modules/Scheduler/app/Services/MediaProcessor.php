@@ -2,6 +2,7 @@
 
 namespace Modules\Scheduler\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Imagick;
@@ -111,6 +112,38 @@ class MediaProcessor
             'width' => $width,
             'height' => $height,
             'size' => strlen($publishBlob),
+        ];
+    }
+
+    /**
+     * Menyimpan video apa adanya (tanpa transkode). Syaratnya sudah diperiksa saat validasi;
+     * di sini hanya metadata yang dicatat untuk tampilan dan pembersihan.
+     *
+     * @return array{media_path: string, thumbnail_path: null, width: int, height: int, size: int, duration_ms: int, mime: string, type: string}
+     */
+    public function storeVideo(UploadedFile $file): array
+    {
+        $info = app(Mp4Inspector::class)->inspect($file->getRealPath());
+        $mime = $file->getMimeType() === 'video/quicktime' ? 'video/quicktime' : 'video/mp4';
+        $path = 'scheduled-posts/videos/'.Str::uuid().($mime === 'video/quicktime' ? '.mov' : '.mp4');
+
+        // Salin lewat stream: video bisa ratusan MB.
+        $stream = fopen($file->getRealPath(), 'rb');
+        Storage::disk('public')->put($path, $stream);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        return [
+            'media_path' => $path,
+            'thumbnail_path' => null,
+            'width' => $info['width'],
+            'height' => $info['height'],
+            'size' => (int) $file->getSize(),
+            'duration_ms' => (int) round($info['duration'] * 1000),
+            'mime' => $mime,
+            'type' => 'video',
         ];
     }
 

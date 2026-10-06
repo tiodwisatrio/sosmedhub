@@ -34,7 +34,9 @@
                 <ul>
                     <li>Postingan terbit setelah waktu yang Anda pilih, biasanya dalam satu menit. Kami tidak menjamin ketepatan waktu atau keberhasilan penerbitan, karena bergantung pada layanan Instagram.</li>
                     <li>Penerbitan dapat gagal, misalnya karena koneksi akun berakhir, foto tidak sesuai syarat Instagram, atau Instagram menolak permintaan. Anda akan menerima email berisi penyebabnya dan dapat menjadwalkan ulang.</li>
-                    <li>Foto harus berformat JPEG. Instagram membatasi jumlah postingan per akun dalam 24 jam, dan batas itu berlaku juga untuk Sosmedhub.</li>
+                    <li>Foto harus berformat JPEG. Video harus berformat MP4 atau MOV (H.264 atau HEVC dengan audio AAC): Story maksimal 60 detik dan Reels maksimal {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel')) }}. Instagram membatasi jumlah postingan per akun dalam 24 jam, dan batas itu berlaku juga untuk Sosmedhub.</li>
+                    <li>Story tidak mendukung caption, stiker, atau tautan lewat penerbitan otomatis. Teks yang ingin tampil di Story harus sudah ada pada gambar atau videonya.</li>
+                    <li>Satu jadwal bisa diterbitkan ke beberapa format (Feed, Story, Reels). Tiap format diproses sendiri, sehingga satu format bisa gagal sementara yang lain terbit.</li>
                     <li>Koneksi akun Instagram berlaku terbatas dan diperpanjang otomatis. Jika gagal diperpanjang, Anda perlu menghubungkan ulang akun agar jadwal tetap berjalan.</li>
                 </ul>
 

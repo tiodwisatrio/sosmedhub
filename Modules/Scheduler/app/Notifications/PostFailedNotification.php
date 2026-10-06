@@ -22,12 +22,28 @@ class PostFailedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject('Postingan Instagram gagal terbit')
+        $partial = $this->post->status === ScheduledPost::STATUS_PARTIAL;
+        $failed = $this->post->publications()->get()->filter->isFailed();
+
+        $mail = (new MailMessage)
+            ->subject($partial ? 'Sebagian postingan Instagram gagal terbit' : 'Postingan Instagram gagal terbit')
             ->greeting('Halo '.$notifiable->name.',')
-            ->line('Postingan yang dijadwalkan pada '.$this->post->formattedScheduledAt().' WIB gagal terbit.')
-            ->line('Caption: "'.Str::limit(strip_tags($this->post->caption), 100).'"')
-            ->line('Penyebab: '.($this->post->error_message ?: 'Tidak diketahui.'))
-            ->action('Jadwalkan ulang', route('admin.scheduled-posts.edit', $this->post));
+            ->line($partial
+                ? 'Postingan yang dijadwalkan pada '.$this->post->formattedScheduledAt().' WIB terbit sebagian. Format yang sudah terbit tidak akan diterbitkan ulang.'
+                : 'Postingan yang dijadwalkan pada '.$this->post->formattedScheduledAt().' WIB gagal terbit.');
+
+        if ($this->post->caption !== '') {
+            $mail->line('Caption: "'.Str::limit(strip_tags($this->post->caption), 100).'"');
+        }
+
+        if ($failed->count() > 1 || ($failed->isNotEmpty() && $partial)) {
+            foreach ($failed as $publication) {
+                $mail->line($publication->label().': '.($publication->error_message ?: 'Tidak diketahui.'));
+            }
+        } else {
+            $mail->line('Penyebab: '.($failed->first()?->error_message ?: $this->post->error_message ?: 'Tidak diketahui.'));
+        }
+
+        return $mail->action('Jadwalkan ulang', route('admin.scheduled-posts.edit', $this->post));
     }
 }

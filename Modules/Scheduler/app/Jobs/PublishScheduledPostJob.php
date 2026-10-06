@@ -4,16 +4,13 @@ namespace Modules\Scheduler\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
-use Modules\Scheduler\Notifications\PostFailedNotification;
-use Modules\Scheduler\Notifications\PostPublishedNotification;
-use Modules\SocialAccount\Exceptions\InstagramAuthException;
-use Modules\SocialAccount\Models\SocialAccount;
-use Modules\SocialAccount\Notifications\AccountNeedsReconnectNotification;
-use Modules\SocialAccount\Services\InstagramPublisher;
-use Throwable;
+use Modules\Scheduler\Models\ScheduledPostPublication;
 
+/**
+ * Titik masuk saat jadwal jatuh tempo: mengklaim jadwal (agar tidak terbit dua kali) lalu
+ * membagi pekerjaan menjadi satu job per format.
+ */
 class PublishScheduledPostJob implements ShouldQueue
 {
     use Queueable;
@@ -21,11 +18,11 @@ class PublishScheduledPostJob implements ShouldQueue
     // Tidak diulang otomatis: mengulang bisa menerbitkan postingan dua kali.
     public int $tries = 1;
 
-    public int $timeout = 180;
+    public int $timeout = 60;
 
     public function __construct(public readonly int $scheduledPostId) {}
 
-    public function handle(InstagramPublisher $publisher): void
+    public function handle(): void
     {
         $claimed = ScheduledPost::query()
             ->whereKey($this->scheduledPostId)
@@ -36,61 +33,20 @@ class PublishScheduledPostJob implements ShouldQueue
             return;
         }
 
-        $post = ScheduledPost::with(['socialAccount', 'media'])->findOrFail($this->scheduledPostId);
+        $post = ScheduledPost::query()->findOrFail($this->scheduledPostId);
 
-        try {
-            $account = $post->socialAccount;
-
-            if (! $account?->isActive() || ! $account->access_token) {
-                throw new \RuntimeException('Akun Instagram tidak aktif atau token tidak tersedia.');
-            }
-
-            if ($post->media->contains(fn ($media) => ! $media->hasPublishFile())) {
-                throw new \RuntimeException('Sebagian foto postingan sudah tidak tersedia di server. Unggah ulang fotonya.');
-            }
-
-            $urls = $post->media
-                ->map(fn ($media) => Storage::disk('public')->url($media->media_path))
-                ->all();
-
-            $mediaId = $publisher->publish($account, $urls, $post->caption);
-
-            $post->update([
-                'status' => ScheduledPost::STATUS_PUBLISHED,
-                'ig_media_id' => $mediaId,
-                'published_at' => now(),
-            ]);
-
-            if (config('scheduler.notify_published', true)) {
-                $this->notifyOwner($post, new PostPublishedNotification($post));
-            }
-        } catch (Throwable $e) {
-            report($e);
-
-            $post->update([
-                'status' => ScheduledPost::STATUS_FAILED,
-                'error_message' => mb_substr($e->getMessage(), 0, 500),
-            ]);
-
-            $this->notifyOwner($post, new PostFailedNotification($post));
-
-            if ($e instanceof InstagramAuthException && $post->socialAccount) {
-                $post->socialAccount->update(['status' => SocialAccount::STATUS_EXPIRED]);
-
-                $this->notifyOwner($post, new AccountNeedsReconnectNotification($post->socialAccount, expired: true));
-            }
+        // Jadwal lama tanpa baris publikasi diperlakukan sebagai Feed.
+        if ($post->publications()->doesntExist()) {
+            $post->publications()->create(['format' => ScheduledPost::FORMAT_FEED]);
         }
-    }
 
-    /**
-     * Gagal mengirim email tidak boleh mengubah hasil publikasi.
-     */
-    private function notifyOwner(ScheduledPost $post, object $notification): void
-    {
-        try {
-            $post->user?->notify($notification);
-        } catch (Throwable $e) {
-            report($e);
+        $publications = $post->publications()->where('status', '!=', ScheduledPostPublication::STATUS_PUBLISHED)->get();
+
+        // Berurutan Feed, Story, Reels agar hasil di akun mengikuti urutan yang dipilih.
+        foreach (ScheduledPost::FORMATS as $format) {
+            foreach ($publications->where('format', $format) as $publication) {
+                PublishPublicationJob::dispatch($publication->id);
+            }
         }
     }
 }

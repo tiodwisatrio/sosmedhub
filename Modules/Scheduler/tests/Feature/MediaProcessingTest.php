@@ -239,7 +239,7 @@ it('menolak menerbitkan postingan yang fotonya sudah tidak tersedia', function (
         ->handle(app(InstagramPublisher::class));
 
     expect($post->fresh()->status)->toBe(ScheduledPost::STATUS_FAILED)
-        ->and($post->fresh()->error_message)->toContain('Unggah ulang fotonya');
+        ->and($post->fresh()->error_message)->toContain('Unggah ulang medianya');
     Http::assertNothingSent();
 });
 

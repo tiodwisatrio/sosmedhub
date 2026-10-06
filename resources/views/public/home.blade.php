@@ -67,14 +67,14 @@
                     <p class="text-sm text-white/35" style="font-family: 'Instrument Serif', serif;">Langkah 2</p>
                     <h3 class="mt-2 text-lg font-medium">Susun jadwal</h3>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">
-                        Unggah foto JPEG, tulis caption, lalu pilih tanggal dan jam dalam WIB. Satu postingan bisa memuat sampai 10 foto sebagai carousel.
+                        Pilih format Feed, Story, atau Reels, unggah foto atau video, tulis caption, lalu pilih tanggal dan jam dalam WIB. Satu jadwal bisa terbit ke beberapa format sekaligus.
                     </p>
                 </li>
                 <li>
                     <p class="text-sm text-white/35" style="font-family: 'Instrument Serif', serif;">Langkah 3</p>
                     <h3 class="mt-2 text-lg font-medium">Terbit otomatis</h3>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">
-                        Saat waktunya tiba, postingan terbit di akun Anda. Jika gagal, Anda menerima email berisi penyebabnya dan bisa menjadwalkan ulang dengan satu klik.
+                        Saat waktunya tiba, postingan terbit di akun Anda. Jika ada format yang gagal, Anda menerima email berisi penyebabnya dan hanya format itu yang diterbitkan ulang saat Anda menjadwalkan ulang.
                     </p>
                 </li>
             </ol>
@@ -95,7 +95,7 @@
                 </div>
                 <div>
                     <p class="font-mono text-sm text-white">instagram_business_content_publish</p>
-                    <p class="mt-2 text-sm leading-relaxed text-white/55">Menerbitkan foto dan caption yang Anda jadwalkan ke akun Anda. Hanya untuk postingan yang Anda buat sendiri di Sosmedhub.</p>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Menerbitkan foto, video, dan caption yang Anda jadwalkan ke akun Anda (Feed, Story, dan Reels). Hanya untuk postingan yang Anda buat sendiri di Sosmedhub.</p>
                 </div>
                 <p class="border-t border-white/10 pt-6 text-sm leading-relaxed text-white/55">
                     Anda bisa memutus akun kapan saja dari menu Akun Sosial atau dari pengaturan Instagram.

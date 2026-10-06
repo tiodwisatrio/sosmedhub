@@ -4,64 +4,138 @@ namespace Modules\Scheduler\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\Scheduler\Models\ScheduledPostMedia;
+use Modules\Scheduler\Models\ScheduledPostPublication;
 
 class ScheduledPostService
 {
     public function __construct(private readonly MediaProcessor $processor) {}
 
+    /**
+     * @param  array  $data  caption, scheduled_at, social_account_id, serta opsional formats (list) dan share_to_feed
+     * @param  array|null  $media  daftar file (dianggap Feed) atau ['feed' => [...], 'story' => [...], 'reel' => [...]]
+     */
     public function store(array $data, ?array $media, int $userId): ScheduledPost
     {
+        $formats = $this->formatsFrom($data) ?: [ScheduledPost::FORMAT_FEED];
+        $shareToFeed = (bool) ($data['share_to_feed'] ?? true);
+        $order = (array) ($data['order'] ?? []);
+        unset($data['formats'], $data['share_to_feed'], $data['order']);
+
         $data['user_id'] = $userId;
+        $data['caption'] = (string) ($data['caption'] ?? '');
         $data['status'] = ScheduledPost::STATUS_SCHEDULED;
         $data['scheduled_at'] = $this->toUtc($data['scheduled_at']);
 
-        $post = ScheduledPost::create($data);
+        return DB::transaction(function () use ($data, $media, $formats, $shareToFeed, $order) {
+            $post = ScheduledPost::create($data);
 
-        $this->appendMedia($post, $media ?? []);
+            foreach ($formats as $format) {
+                $post->publications()->create([
+                    'format' => $format,
+                    'status' => ScheduledPostPublication::STATUS_PENDING,
+                    'share_to_feed' => $shareToFeed,
+                ]);
+            }
 
-        return $post;
+            foreach ($this->normalizeMedia($media) as $format => $files) {
+                if (in_array($format, $formats, true)) {
+                    $created = $this->appendMedia($post, $format, $files);
+                    $this->applyOrder($post, $format, $order[$format] ?? null, $created);
+                }
+            }
+
+            return $post;
+        });
     }
 
     public function update(ScheduledPost $post, array $data, ?array $media, ?array $removeMediaIds = []): void
     {
+        $formats = $this->formatsFrom($data);
+        $shareToFeed = array_key_exists('share_to_feed', $data) ? (bool) $data['share_to_feed'] : null;
+        $order = (array) ($data['order'] ?? []);
+        unset($data['formats'], $data['share_to_feed'], $data['order']);
+
         $data['scheduled_at'] = $this->toUtc($data['scheduled_at']);
+        $data['caption'] = (string) ($data['caption'] ?? '');
 
-        $post->fill($data);
+        DB::transaction(function () use ($post, $data, $media, $removeMediaIds, $formats, $shareToFeed, $order) {
+            $post->fill($data);
 
-        // Post gagal atau draf yang disimpan ulang masuk antrean lagi.
-        if ($post->status !== ScheduledPost::STATUS_SCHEDULED) {
-            $post->status = ScheduledPost::STATUS_SCHEDULED;
-            $post->error_message = null;
-        }
+            // Post gagal, sebagian terbit, atau draf yang disimpan ulang masuk antrean lagi.
+            if ($post->status !== ScheduledPost::STATUS_SCHEDULED) {
+                $post->status = ScheduledPost::STATUS_SCHEDULED;
+                $post->error_message = null;
+            }
 
-        $post->save();
+            $post->save();
 
-        if ($removeMediaIds) {
-            $this->deleteMedia($post, $removeMediaIds);
-        }
+            $locked = $post->publications()->where('status', ScheduledPostPublication::STATUS_PUBLISHED)->pluck('format')->all();
 
-        if ($media) {
-            $this->appendMedia($post, $media);
-        }
+            if ($formats !== []) {
+                $this->syncPublications($post, array_values(array_unique([...$formats, ...$locked])), $shareToFeed);
+            } elseif ($post->publications()->doesntExist()) {
+                $post->publications()->create(['format' => ScheduledPost::FORMAT_FEED]);
+            }
+
+            if ($removeMediaIds) {
+                $this->deleteMedia($post, $removeMediaIds, except: $locked);
+            }
+
+            $createdByFormat = [];
+
+            foreach ($this->normalizeMedia($media) as $format => $files) {
+                if (! in_array($format, $locked, true) && $post->publications()->where('format', $format)->exists()) {
+                    $createdByFormat[$format] = $this->appendMedia($post, $format, $files);
+                }
+            }
+
+            // Urutan dari form (seret-lepas): campuran media lama dan baru.
+            foreach ($order as $format => $tokens) {
+                if (! in_array($format, $locked, true) && $post->publications()->where('format', $format)->exists()) {
+                    $this->applyOrder($post, $format, $tokens, $createdByFormat[$format] ?? []);
+                }
+            }
+
+            // Publikasi yang gagal diulang dari awal; yang sudah terbit tidak disentuh.
+            $post->publications()
+                ->where('status', ScheduledPostPublication::STATUS_FAILED)
+                ->get()
+                ->each->resetForRetry();
+        });
     }
 
     /**
-     * Salin caption, akun tujuan, dan foto menjadi draf baru. Waktu terbit diisi slot
-     * besok sebagai usulan. Foto yang versi terbitnya sudah dihapus (lewat masa simpan)
-     * tidak ikut tersalin; thumbnail saja terlalu kecil untuk diterbitkan ulang.
+     * Salin caption, akun tujuan, format, dan media menjadi draf baru. Waktu terbit diisi slot
+     * besok sebagai usulan. Media yang versi terbitnya sudah dihapus tidak ikut tersalin;
+     * thumbnail saja terlalu kecil untuk diterbitkan ulang.
      */
     public function duplicate(ScheduledPost $post): ScheduledPost
     {
-        $copy = ScheduledPost::create([
-            'user_id' => $post->user_id,
-            'social_account_id' => $post->social_account_id,
-            'caption' => $post->caption,
-            'scheduled_at' => ScheduledPost::nextSlot(now()->addDay()),
-            'status' => ScheduledPost::STATUS_DRAFT,
-        ]);
+        $post->loadMissing(['media', 'publications']);
+
+        $copy = DB::transaction(function () use ($post) {
+            $copy = ScheduledPost::create([
+                'user_id' => $post->user_id,
+                'social_account_id' => $post->social_account_id,
+                'caption' => $post->caption,
+                'scheduled_at' => ScheduledPost::nextSlot(now()->addDay()),
+                'status' => ScheduledPost::STATUS_DRAFT,
+            ]);
+
+            foreach ($post->formats() as $format) {
+                $copy->publications()->create([
+                    'format' => $format,
+                    'share_to_feed' => $post->publications->firstWhere('format', $format)?->share_to_feed ?? true,
+                ]);
+            }
+
+            return $copy;
+        });
 
         $disk = Storage::disk('public');
 
@@ -72,7 +146,8 @@ class ScheduledPostService
 
             $name = (string) Str::uuid();
             $extension = pathinfo($item->media_path, PATHINFO_EXTENSION) ?: 'jpg';
-            $newPath = "scheduled-posts/{$name}.{$extension}";
+            $folder = $item->isVideo() ? 'scheduled-posts/videos' : 'scheduled-posts';
+            $newPath = "{$folder}/{$name}.{$extension}";
             $disk->copy($item->media_path, $newPath);
 
             $newThumbnail = null;
@@ -82,11 +157,15 @@ class ScheduledPostService
             }
 
             $copy->media()->create([
+                'format' => $item->format,
+                'type' => $item->type,
                 'media_path' => $newPath,
                 'thumbnail_path' => $newThumbnail,
                 'width' => $item->width,
                 'height' => $item->height,
                 'size' => $item->size,
+                'duration_ms' => $item->duration_ms,
+                'mime' => $item->mime,
                 'position' => $item->position,
             ]);
         }
@@ -100,9 +179,15 @@ class ScheduledPostService
         $post->save();
     }
 
-    public function deleteMedia(ScheduledPost $post, ?array $mediaIds = null): void
+    /**
+     * @param  list<string>  $except  format yang tidak boleh disentuh (sudah terbit)
+     */
+    public function deleteMedia(ScheduledPost $post, ?array $mediaIds = null, array $except = []): void
     {
-        $media = $post->media()->when($mediaIds, fn ($q) => $q->whereIn('id', $mediaIds))->get();
+        $media = $post->media()
+            ->when($mediaIds, fn ($q) => $q->whereIn('id', $mediaIds))
+            ->when($except, fn ($q) => $q->whereNotIn('format', $except))
+            ->get();
 
         foreach ($media as $item) {
             Storage::disk('public')->delete(array_filter([$item->media_path, $item->thumbnail_path]));
@@ -112,27 +197,148 @@ class ScheduledPostService
         $this->renumberPositions($post);
     }
 
-    private function appendMedia(ScheduledPost $post, array $files): void
+    /**
+     * Menyamakan publikasi dengan format yang dipilih. Format yang dihapus ikut menghapus
+     * media-nya, kecuali sudah terbit.
+     *
+     * @param  list<string>  $formats
+     */
+    private function syncPublications(ScheduledPost $post, array $formats, ?bool $shareToFeed): void
     {
-        $nextPosition = ($post->media()->max('position') ?? -1) + 1;
+        $existing = $post->publications()->get()->keyBy('format');
 
-        foreach ($files as $index => $file) {
+        foreach ($existing as $format => $publication) {
+            if (! in_array($format, $formats, true) && ! $publication->isPublished()) {
+                $this->deleteFormatMedia($post, $format);
+                $publication->delete();
+            }
+        }
+
+        foreach ($formats as $format) {
+            if (! $existing->has($format)) {
+                $post->publications()->create(['format' => $format, 'share_to_feed' => $shareToFeed ?? true]);
+            }
+        }
+
+        if ($shareToFeed !== null) {
+            $post->publications()
+                ->where('format', ScheduledPost::FORMAT_REEL)
+                ->where('status', '!=', ScheduledPostPublication::STATUS_PUBLISHED)
+                ->update(['share_to_feed' => $shareToFeed]);
+        }
+    }
+
+    private function deleteFormatMedia(ScheduledPost $post, string $format): void
+    {
+        $post->media()->where('format', $format)->get()->each(function (ScheduledPostMedia $item) {
+            Storage::disk('public')->delete(array_filter([$item->media_path, $item->thumbnail_path]));
+            $item->delete();
+        });
+    }
+
+    /**
+     * @param  list<UploadedFile>  $files
+     * @return list<int> ID media yang dibuat, berurutan sesuai urutan unggah
+     */
+    private function appendMedia(ScheduledPost $post, string $format, array $files): array
+    {
+        $created = [];
+        $nextPosition = ($post->media()->where('format', $format)->max('position') ?? -1) + 1;
+
+        foreach (array_values($files) as $index => $file) {
             if (! $file instanceof UploadedFile) {
                 continue;
             }
 
+            $isVideo = str_starts_with((string) $file->getMimeType(), 'video/');
+
             // File asli hanya dibaca dari lokasi sementara upload; yang disimpan versi olahan.
-            $post->media()->create([
-                ...$this->processor->process($file->getRealPath()),
+            $stored = $isVideo
+                ? $this->processor->storeVideo($file)
+                : [...$this->processor->process($file->getRealPath()), 'type' => 'image', 'mime' => 'image/jpeg'];
+
+            $created[] = $post->media()->create([
+                ...$stored,
+                'format' => $format,
                 'position' => $nextPosition + $index,
-            ]);
+            ])->id;
         }
+
+        return $created;
+    }
+
+    /**
+     * Menyimpan urutan media satu format sesuai urutan dari form. "e:ID" menunjuk media yang sudah
+     * ada (hanya milik jadwal dan format ini), "n:N" menunjuk file unggahan ke-N. Media yang tidak
+     * disebut tetap ada, ditaruh di belakang menurut urutan sebelumnya.
+     *
+     * @param  list<string>|null  $tokens
+     * @param  list<int>  $created
+     */
+    private function applyOrder(ScheduledPost $post, string $format, ?array $tokens, array $created): void
+    {
+        if ($tokens === null) {
+            return;
+        }
+
+        $media = $post->media()->where('format', $format)->get()->keyBy('id');
+        $sequence = [];
+
+        foreach ($tokens as $token) {
+            [$kind, $number] = explode(':', $token) + [1 => '-1'];
+            $id = $kind === 'e' ? (int) $number : ($created[(int) $number] ?? null);
+
+            if ($id && $media->has($id) && ! in_array($id, $sequence, true)) {
+                $sequence[] = $id;
+            }
+        }
+
+        foreach ($media->sortBy('position') as $item) {
+            if (! in_array($item->id, $sequence, true)) {
+                $sequence[] = $item->id;
+            }
+        }
+
+        foreach ($sequence as $position => $id) {
+            if ($media[$id]->position !== $position) {
+                $media[$id]->update(['position' => $position]);
+            }
+        }
+    }
+
+    /**
+     * @return array<string, list<UploadedFile>>
+     */
+    private function normalizeMedia(?array $media): array
+    {
+        if (! $media) {
+            return [];
+        }
+
+        // Daftar file biasa (cara lama) berarti media Feed.
+        if (array_is_list($media)) {
+            return [ScheduledPost::FORMAT_FEED => $media];
+        }
+
+        return array_intersect_key($media, array_flip(ScheduledPost::FORMATS));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function formatsFrom(array $data): array
+    {
+        $formats = $data['formats'] ?? [];
+
+        return is_array($formats)
+            ? array_values(array_intersect(ScheduledPost::FORMATS, array_map('strval', $formats)))
+            : [];
     }
 
     private function renumberPositions(ScheduledPost $post): void
     {
-        $post->media->each(function ($item, $index) {
-            $item->update(['position' => $index]);
+        $post->media()->get()->groupBy('format')->each(function ($items) {
+            $items->sortBy('position')->values()->each(fn ($item, $index) => $item->update(['position' => $index]));
         });
     }
 

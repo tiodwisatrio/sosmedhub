@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Jobs\PublishScheduledPostJob;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Notifications\PostFailedNotification;
@@ -32,11 +33,15 @@ function duePost(array $attributes = []): ScheduledPost
     ], $attributes));
 
     $post->media()->create(['media_path' => 'scheduled-posts/a.jpg', 'position' => 0]);
+    Storage::disk('public')->put('scheduled-posts/a.jpg', 'foto');
 
     return $post;
 }
 
-beforeEach(fn () => config(['social-account.instagram.status_poll_seconds' => 0]));
+beforeEach(function () {
+    config(['social-account.instagram.status_poll_seconds' => 0]);
+    Storage::fake('public');
+});
 
 it('mengirim hanya postingan jatuh tempo ke antrean', function () {
     Queue::fake();

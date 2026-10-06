@@ -21,6 +21,11 @@ class InstagramPhoto implements ValidationRule
 
     private const TOLERANCE = 0.01;
 
+    /**
+     * @param  bool  $enforceRatio  Story hanya menyarankan 9:16, jadi rasio tidak dipaksa.
+     */
+    public function __construct(private readonly bool $enforceRatio = true) {}
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! $value instanceof UploadedFile || ! $value->isValid()) {
@@ -51,6 +56,10 @@ class InstagramPhoto implements ValidationRule
                 $maxMegapixels,
             ));
 
+            return;
+        }
+
+        if (! $this->enforceRatio) {
             return;
         }
 

@@ -40,7 +40,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $blockEnd = $blockStart->copy()->addWeeks(4);
 
         $posts = $this->visibleScheduledPosts()
-            ->with(['media', 'socialAccount'])
+            ->with(['media', 'socialAccount', 'publications'])
             ->where('status', ScheduledPost::STATUS_SCHEDULED)
             ->whereBetween('scheduled_at', [
                 $blockStart->copy()->utc(),
@@ -61,8 +61,17 @@ class ScheduledPostController extends Controller implements HasMiddleware
             return [
                 'id' => $post->id,
                 'caption' => $post->caption,
-                'media' => $media->map(fn ($item) => Storage::url($item->media_path))->values(),
-                'media_url' => $media->first() ? Storage::url($media->first()->media_path) : null,
+                // Semua media dari semua format, masing-masing dengan format dan jenisnya.
+                'media' => $media->sortBy(fn ($item) => array_search($item->format, ScheduledPost::FORMATS))
+                    ->map(fn ($item) => [
+                        'url' => Storage::url($item->media_path),
+                        'type' => $item->isVideo() ? 'video' : 'image',
+                        'format' => ScheduledPost::formatLabel($item->format),
+                    ])->values(),
+                'formats' => collect($post->formats())
+                    ->map(fn (string $format) => ['key' => $format, 'label' => ScheduledPost::formatLabel($format)])
+                    ->values(),
+                'uses_caption' => ! in_array($post->formats(), [[ScheduledPost::FORMAT_STORY]], true),
                 'scheduled_at' => $post->formattedScheduledAt().' WIB',
                 'status' => $post->statusLabel(),
                 'created_at' => $post->created_at?->format('d M Y'),
@@ -88,6 +97,9 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $failedCount = $this->visibleScheduledPosts()
             ->where('status', ScheduledPost::STATUS_FAILED)
             ->count();
+        $partialCount = $this->visibleScheduledPosts()
+            ->where('status', ScheduledPost::STATUS_PARTIAL)
+            ->count();
 
         return view('scheduler::admin.index', [
             'weeks' => $weeks,
@@ -98,6 +110,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
             'postsCount' => $posts->count(),
             'postsForModal' => $postsForModal,
             'failedCount' => $failedCount,
+            'partialCount' => $partialCount,
         ]);
     }
 
@@ -111,8 +124,11 @@ class ScheduledPostController extends Controller implements HasMiddleware
     public function store(StoreScheduledPostRequest $request)
     {
         $data = $request->safe()->only(['caption', 'scheduled_at', 'social_account_id']);
+        $data['formats'] = $request->selectedFormats();
+        $data['share_to_feed'] = $request->boolean('share_to_feed', true);
+        $data['order'] = $request->mediaOrder();
 
-        $this->service->store($data, $request->file('media') ?? [], auth()->id());
+        $this->service->store($data, $request->mediaByFormat(), auth()->id());
 
         return redirect()->route('admin.scheduled-posts.index')
             ->with('success', 'Postingan berhasil dijadwalkan.');
@@ -124,7 +140,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
         abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
 
         return view('scheduler::admin.edit', [
-            'post' => $scheduled_post->load(['media', 'socialAccount']),
+            'post' => $scheduled_post->load(['media', 'socialAccount', 'publications']),
             'socialAccounts' => $this->availableSocialAccounts($scheduled_post),
         ]);
     }
@@ -135,11 +151,14 @@ class ScheduledPostController extends Controller implements HasMiddleware
         abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
 
         $data = $request->safe()->only(['caption', 'scheduled_at', 'social_account_id']);
+        $data['formats'] = $request->selectedFormats();
+        $data['share_to_feed'] = $request->boolean('share_to_feed', true);
+        $data['order'] = $request->mediaOrder();
 
         $this->service->update(
             $scheduled_post,
             $data,
-            $request->file('media') ?? [],
+            $request->mediaByFormat(),
             $request->input('remove_media') ?? []
         );
 

@@ -28,6 +28,7 @@ class PostPublishedNotification extends Notification implements ShouldQueue
             ->subject('Postingan Instagram berhasil terbit')
             ->greeting('Halo '.$notifiable->name.',')
             ->line('Postingan kamu sudah terbit'.($account ? ' di @'.$account->username : '').'.')
+            ->line('Format: '.implode(', ', array_map(fn (string $f) => ScheduledPost::formatLabel($f), $this->post->formats())).'.')
             ->line('Caption: "'.Str::limit(strip_tags($this->post->caption), 100).'"')
             ->action('Lihat penjadwalan', route('admin.scheduled-posts.index'));
     }

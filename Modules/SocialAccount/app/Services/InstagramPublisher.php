@@ -9,6 +9,10 @@ use Modules\SocialAccount\Exceptions\InstagramAuthException;
 use Modules\SocialAccount\Models\SocialAccount;
 use RuntimeException;
 
+/**
+ * Panggilan tingkat rendah ke Instagram API: membuat container media, memeriksa statusnya,
+ * dan menerbitkannya. Urutan dan penantian diatur oleh PublicationRunner.
+ */
 class InstagramPublisher
 {
     private const GRAPH_URL = 'https://graph.instagram.com';
@@ -16,27 +20,38 @@ class InstagramPublisher
     public function __construct(private readonly HttpClient $http) {}
 
     /**
-     * Menerbitkan satu foto, atau carousel bila ada lebih dari satu URL.
+     * Membuat container media (foto, video Reels, Story, atau carousel).
      *
-     * @param  list<string>  $imageUrls
-     * @return string ID media Instagram
+     * @param  array<string, scalar>  $params  image_url, video_url, media_type, caption, dan seterusnya
+     * @return string ID container
      */
-    public function publish(SocialAccount $account, array $imageUrls, string $caption): string
+    public function createContainer(SocialAccount $account, array $params): string
     {
-        if ($imageUrls === []) {
-            throw new RuntimeException('Postingan tidak memiliki foto.');
-        }
+        $response = $this->request($account)->post("/{$this->userId($account)}/media", $params);
 
-        $userId = $account->provider_account_id ?: 'me';
+        return (string) $this->data($response, 'id');
+    }
 
-        $containerId = count($imageUrls) === 1
-            ? $this->createContainer($account, $userId, ['image_url' => $imageUrls[0], 'caption' => $caption])
-            : $this->createCarousel($account, $userId, $imageUrls, $caption);
+    /**
+     * @return array{code: string, detail: ?string} code: IN_PROGRESS, FINISHED, ERROR, EXPIRED, PUBLISHED
+     */
+    public function containerStatus(SocialAccount $account, string $containerId): array
+    {
+        $response = $this->request($account)->get("/{$containerId}", ['fields' => 'status_code,status']);
 
-        $this->waitUntilReady($account, $containerId);
+        return [
+            'code' => (string) $this->data($response, 'status_code'),
+            'detail' => $response->json('status'),
+        ];
+    }
 
+    /**
+     * @return string ID media di Instagram
+     */
+    public function publishContainer(SocialAccount $account, string $containerId): string
+    {
         $response = $this->request($account)
-            ->post("/{$userId}/media_publish", ['creation_id' => $containerId]);
+            ->post("/{$this->userId($account)}/media_publish", ['creation_id' => $containerId]);
 
         return (string) $this->data($response, 'id');
     }
@@ -62,57 +77,9 @@ class InstagramPublisher
         ]);
     }
 
-    private function createCarousel(SocialAccount $account, string $userId, array $imageUrls, string $caption): string
+    private function userId(SocialAccount $account): string
     {
-        $children = array_map(
-            fn (string $url) => $this->createContainer($account, $userId, [
-                'image_url' => $url,
-                'is_carousel_item' => 'true',
-            ]),
-            $imageUrls
-        );
-
-        foreach ($children as $childId) {
-            $this->waitUntilReady($account, $childId);
-        }
-
-        return $this->createContainer($account, $userId, [
-            'media_type' => 'CAROUSEL',
-            'children' => implode(',', $children),
-            'caption' => $caption,
-        ]);
-    }
-
-    private function createContainer(SocialAccount $account, string $userId, array $params): string
-    {
-        return (string) $this->data($this->request($account)->post("/{$userId}/media", $params), 'id');
-    }
-
-    private function waitUntilReady(SocialAccount $account, string $containerId): void
-    {
-        $attempts = (int) config('social-account.instagram.status_poll_attempts', 10);
-        $seconds = (int) config('social-account.instagram.status_poll_seconds', 3);
-
-        for ($i = 0; $i < $attempts; $i++) {
-            $status = $this->data(
-                $this->request($account)->get("/{$containerId}", ['fields' => 'status_code']),
-                'status_code'
-            );
-
-            if ($status === 'FINISHED') {
-                return;
-            }
-
-            if (in_array($status, ['ERROR', 'EXPIRED'], true)) {
-                throw new RuntimeException("Instagram gagal memproses media (status {$status}).");
-            }
-
-            if ($seconds > 0) {
-                sleep($seconds);
-            }
-        }
-
-        throw new RuntimeException('Instagram belum selesai memproses media. Coba jadwalkan ulang.');
+        return $account->provider_account_id ?: 'me';
     }
 
     private function data(Response $response, string $key): mixed

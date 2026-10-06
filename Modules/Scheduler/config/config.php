@@ -26,6 +26,22 @@ return [
     // Batas waktu worker per putaran. Harus jauh di bawah interval cron dan batas proses host.
     'worker_max_seconds' => (int) env('SCHEDULER_WORKER_MAX_SECONDS', 240),
 
+    /*
+    | Batas video. Meta mengizinkan Reels sampai 15 menit; batas di sini lebih ketat.
+    | Story video: maksimal 60 detik dan 100MB. Reels: maksimal 300MB.
+    */
+    'video' => [
+        'min_seconds' => 3,
+        'story_max_seconds' => 60,
+        'story_max_mb' => 100,
+        'reel_max_seconds' => (int) env('SCHEDULER_REEL_MAX_SECONDS', 180),
+        'reel_max_mb' => 300,
+        'photo_max_mb' => 8,
+        // Video diproses Instagram dalam menit; cek berkala tanpa menahan worker.
+        'poll_delay_seconds' => (int) env('SCHEDULER_VIDEO_POLL_SECONDS', 30),
+        'poll_max_minutes' => 10,
+    ],
+
     'media' => [
         // Lebar versi terbit. Instagram menerima paling lebar 1440px dan menampilkan 1080px.
         'publish_max_width' => 1440,

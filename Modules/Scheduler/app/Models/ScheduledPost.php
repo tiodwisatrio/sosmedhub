@@ -25,9 +25,20 @@ class ScheduledPost extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    // Sebagian format terbit, sebagian gagal.
+    public const STATUS_PARTIAL = 'partial';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const WIB = 'Asia/Jakarta';
+
+    public const FORMAT_FEED = 'feed';
+
+    public const FORMAT_STORY = 'story';
+
+    public const FORMAT_REEL = 'reel';
+
+    public const FORMATS = [self::FORMAT_FEED, self::FORMAT_STORY, self::FORMAT_REEL];
 
     protected $fillable = [
         'user_id',
@@ -130,6 +141,66 @@ class ScheduledPost extends Model
         return $this->hasMany(ScheduledPostMedia::class)->orderBy('position');
     }
 
+    public function publications(): HasMany
+    {
+        return $this->hasMany(ScheduledPostPublication::class);
+    }
+
+    public static function formatLabel(string $format): string
+    {
+        return match ($format) {
+            self::FORMAT_STORY => 'Story',
+            self::FORMAT_REEL => 'Reels',
+            default => 'Feed',
+        };
+    }
+
+    /**
+     * Format yang dipilih, berurutan Feed, Story, Reels. Jadwal lama tanpa baris
+     * publikasi dianggap Feed saja.
+     *
+     * @return list<string>
+     */
+    public function formats(): array
+    {
+        $chosen = $this->relationLoaded('publications')
+            ? $this->publications->pluck('format')
+            : $this->publications()->pluck('format');
+
+        $formats = array_values(array_filter(self::FORMATS, fn (string $f) => $chosen->contains($f)));
+
+        return $formats === [] ? [self::FORMAT_FEED] : $formats;
+    }
+
+    /**
+     * Media satu format, berurutan.
+     */
+    public function mediaFor(string $format)
+    {
+        return $this->media->where('format', $format)->values();
+    }
+
+    /**
+     * Menyimpulkan status jadwal dari status tiap publikasi. Hanya dipakai setelah semua
+     * publikasi selesai; selama masih ada yang berjalan, status tetap "publishing".
+     */
+    public function resolveFinalStatus(): ?string
+    {
+        $publications = $this->publications()->get();
+
+        if ($publications->isEmpty() || $publications->contains(fn ($p) => ! $p->isFinal())) {
+            return null;
+        }
+
+        $published = $publications->filter->isPublished()->count();
+
+        return match (true) {
+            $published === $publications->count() => self::STATUS_PUBLISHED,
+            $published > 0 => self::STATUS_PARTIAL,
+            default => self::STATUS_FAILED,
+        };
+    }
+
     /**
      * Media pertama dipakai sebagai thumbnail agar tampilan lama yang
      * masih memakai $post->media_path tetap berfungsi.
@@ -147,12 +218,22 @@ class ScheduledPost extends Model
      */
     public function getThumbnailPathAttribute(): ?string
     {
-        return $this->media->first()?->displayPath();
+        return $this->media->map(fn ($item) => $item->displayPath())->filter()->first();
+    }
+
+    /**
+     * Ada video tetapi tidak ada gambar kecil untuk ditampilkan; daftar memakai ubin ikon putar.
+     */
+    public function getHasVideoOnlyAttribute(): bool
+    {
+        return $this->thumbnail_path === null && $this->media->contains(fn ($item) => $item->isVideo());
     }
 
     public function canBeEdited(): bool
     {
-        return in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED, self::STATUS_DRAFT], true);
+        return in_array($this->status, [
+            self::STATUS_SCHEDULED, self::STATUS_FAILED, self::STATUS_PARTIAL, self::STATUS_DRAFT,
+        ], true);
     }
 
     public function canBeCancelled(): bool
@@ -163,6 +244,14 @@ class ScheduledPost extends Model
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED;
+    }
+
+    /**
+     * Gagal seluruhnya atau sebagian: ada yang perlu dijadwalkan ulang.
+     */
+    public function needsAttention(): bool
+    {
+        return in_array($this->status, [self::STATUS_FAILED, self::STATUS_PARTIAL], true);
     }
 
     public function isPublished(): bool
@@ -183,6 +272,7 @@ class ScheduledPost extends Model
             self::STATUS_PUBLISHING => 'Menerbitkan',
             self::STATUS_PUBLISHED => 'Terbit',
             self::STATUS_FAILED => 'Gagal',
+            self::STATUS_PARTIAL => 'Sebagian terbit',
             self::STATUS_CANCELLED => 'Dibatalkan',
             default => ucfirst($this->status),
         };

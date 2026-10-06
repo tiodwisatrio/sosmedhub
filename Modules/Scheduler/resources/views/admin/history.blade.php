@@ -12,6 +12,7 @@
             '' => 'Semua',
             \Modules\Scheduler\Models\ScheduledPost::STATUS_PUBLISHED => 'Terbit',
             \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED => 'Gagal',
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_PARTIAL => 'Sebagian',
             \Modules\Scheduler\Models\ScheduledPost::STATUS_CANCELLED => 'Dibatalkan',
             \Modules\Scheduler\Models\ScheduledPost::STATUS_DRAFT => 'Draf',
         ];
@@ -61,6 +62,10 @@
                     @if ($post->thumbnail_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->thumbnail_path))
                         <img src="{{ Storage::url($post->thumbnail_path) }}" alt="Foto postingan"
                             class="w-12 h-12 rounded-lg object-cover border border-border">
+                    @elseif ($post->has_video_only)
+                        <div class="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-white/70 border border-border">
+                            <x-heroicon-o-film class="w-5 h-5" />
+                        </div>
                     @else
                         <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-300 border border-border">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -71,16 +76,32 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm text-slate-800 truncate">
-                        {{ \Illuminate\Support\Str::limit(strip_tags($post->caption), 90) }}
-                    </p>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p class="text-sm text-slate-800 truncate max-w-full">
+                            @if ($post->caption !== '')
+                                {{ \Illuminate\Support\Str::limit(strip_tags($post->caption), 90) }}
+                            @else
+                                <span class="text-slate-400">Tanpa caption (Story)</span>
+                            @endif
+                        </p>
+                        <x-scheduler::format-badges :post="$post" status />
+                    </div>
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                         <p class="text-xs text-slate-400">{{ $post->formattedScheduledAt() }} WIB</p>
                         @if ($post->socialAccount)
                             <p class="text-xs text-slate-400">{{ '@'.$post->socialAccount->username }}</p>
                         @endif
-                        @if ($post->status === \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED && $post->error_message)
-                            <p class="text-xs text-danger truncate">{{ $post->error_message }}</p>
+                        @if ($post->needsAttention())
+                            @php($failedPublications = $post->publications->filter->isFailed())
+                            @forelse ($failedPublications as $publication)
+                                <p class="text-xs text-danger truncate" title="{{ $publication->error_message }}">
+                                    <span class="font-semibold">{{ $publication->label() }}:</span> {{ $publication->error_message }}
+                                </p>
+                            @empty
+                                @if ($post->error_message)
+                                    <p class="text-xs text-danger truncate">{{ $post->error_message }}</p>
+                                @endif
+                            @endforelse
                         @endif
                     </div>
                 </div>
@@ -89,6 +110,7 @@
                     {{ match ($post->status) {
                         \Modules\Scheduler\Models\ScheduledPost::STATUS_PUBLISHED => 'bg-success-light text-success-text',
                         \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED => 'bg-danger-light text-danger-text',
+                        \Modules\Scheduler\Models\ScheduledPost::STATUS_PARTIAL => 'bg-warning-light text-warning-text',
                         \Modules\Scheduler\Models\ScheduledPost::STATUS_CANCELLED => 'bg-slate-100 text-slate-400',
                         default => 'bg-warning-light text-warning-text',
                     } }}">
@@ -99,7 +121,7 @@
                     @if ($post->canBeEdited())
                         <a href="{{ route('admin.scheduled-posts.edit', $post) }}"
                             class="inline-flex items-center flex-shrink-0 font-medium rounded-md px-3 py-1.5 text-xs border border-border hover:bg-slate-50 text-slate-700">
-                            {{ $post->isFailed() ? 'Jadwalkan Ulang' : 'Atur Jadwal' }}
+                            {{ $post->needsAttention() ? 'Jadwalkan Ulang' : 'Atur Jadwal' }}
                         </a>
                     @endif
                 @endcan

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -14,8 +15,12 @@ use Tests\TestCase;
 |
 */
 
+require_once __DIR__.'/Helpers/mp4.php';
+
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    // Disk public selalu palsu di test, supaya unggahan tidak menulis ke storage/app/public sungguhan.
+    ->beforeEach(fn () => Storage::fake('public'))
     ->in('Feature', '../Modules/*/tests/Feature');
 
 /*
@@ -47,4 +52,14 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Membaca konfigurasi awal komponen Alpine "postComposer" dari HTML halaman buat/ubah jadwal.
+ */
+function composerConfig(string $html): array
+{
+    preg_match("/postComposer\\(JSON\\.parse\\('(.*?)'\\)\\)/s", $html, $match);
+
+    return json_decode(str_replace('\\u0022', '"', $match[1] ?? '{}'), true) ?? [];
 }

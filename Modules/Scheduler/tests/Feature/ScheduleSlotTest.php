@@ -132,12 +132,15 @@ it('form buat memakai tanggal, jam 24 jam, dan menit per slot yang terpisah', fu
 
     // nilai awal: slot berikutnya (09.07 -> 09.15) dipecah ke tiga nilai
     $response
-        ->assertSee("schedDate: '2026-10-06'", false)
-        ->assertSee("schedHour: '09'", false)
-        ->assertSee("schedMinute: '15'", false)
         // preset jam dibuang
         ->assertDontSee('Akhir malam')
         ->assertDontSee('Jika jam preset');
+
+    // nilai awal: slot berikutnya (09.07 -> 09.15) dipecah ke tiga nilai
+    $cfg = composerConfig($html);
+    expect($cfg['schedDate'])->toBe('2026-10-06')
+        ->and($cfg['schedHour'])->toBe('09')
+        ->and($cfg['schedMinute'])->toBe('15');
 });
 
 it('opsi menit mengikuti slot dari konfigurasi', function () {
@@ -157,17 +160,16 @@ it('form memakai nilai lama saat validasi gagal dan mengabaikan bentuk yang sala
     $user = slotUser();
     slotAccount($user);
 
-    $this->actingAs($user)->withSession(['_old_input' => ['scheduled_at' => '2026-10-20T14:30']])
-        ->get(route('admin.scheduled-posts.create'))
-        ->assertSee("schedDate: '2026-10-20'", false)
-        ->assertSee("schedHour: '14'", false)
-        ->assertSee("schedMinute: '30'", false);
+    $cfg = composerConfig($this->actingAs($user)->withSession(['_old_input' => ['scheduled_at' => '2026-10-20T14:30']])
+        ->get(route('admin.scheduled-posts.create'))->getContent());
+    expect($cfg['schedDate'])->toBe('2026-10-20')
+        ->and($cfg['schedHour'])->toBe('14')
+        ->and($cfg['schedMinute'])->toBe('30');
 
-    $this->actingAs($user)->withSession(['_old_input' => ['scheduled_at' => 'ngawur']])
-        ->get(route('admin.scheduled-posts.create'))
-        ->assertOk()
-        ->assertSee("schedDate: '2026-10-06'", false)
-        ->assertSee("schedMinute: '15'", false);
+    $cfg = composerConfig($this->actingAs($user)->withSession(['_old_input' => ['scheduled_at' => 'ngawur']])
+        ->get(route('admin.scheduled-posts.create'))->getContent());
+    expect($cfg['schedDate'])->toBe('2026-10-06')
+        ->and($cfg['schedMinute'])->toBe('15');
 });
 
 it('form ubah mengganti waktu lampau dengan slot berikutnya', function () {
@@ -180,11 +182,10 @@ it('form ubah mengganti waktu lampau dengan slot berikutnya', function () {
         'scheduled_at' => wib('2026-10-05 20:00:00')->utc(),
     ]);
 
-    $this->actingAs($user)->get(route('admin.scheduled-posts.edit', $post))
-        ->assertOk()
-        ->assertSee("schedDate: '2026-10-06'", false)
-        ->assertSee("schedHour: '09'", false)
-        ->assertSee("schedMinute: '15'", false);
+    $cfg = composerConfig($this->actingAs($user)->get(route('admin.scheduled-posts.edit', $post))->assertOk()->getContent());
+    expect($cfg['schedDate'])->toBe('2026-10-06')
+        ->and($cfg['schedHour'])->toBe('09')
+        ->and($cfg['schedMinute'])->toBe('15');
 });
 
 it('duplikasi mengisi waktu usulan yang sejajar slot', function () {
@@ -272,8 +273,9 @@ it('slot 1 menit: menit bebas dipilih, jam tidak dibatasi, dan teks bantuan sesu
         ->assertSee('Pilih menit bebas.')
         ->assertDontSee('kelipatan 1')
         ->assertSee('min="2026-10-06"', false)
-        ->assertSee("schedMinute: '08'", false)
         ->getContent();
+
+    expect(composerConfig($html)['schedMinute'])->toBe('08');
 
     preg_match('/<select id="schedule-minute".*?<\/select>/s', $html, $minute);
     preg_match_all('/<option value="(\d{2})"/', $minute[0], $m);

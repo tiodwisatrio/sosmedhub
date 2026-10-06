@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureUserIsApproved;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -27,4 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Total unggahan melebihi post_max_size: PHP membuang seluruh isi form. Beri tahu batasnya
+        // alih-alih menampilkan halaman galat 413 mentah.
+        $exceptions->render(function (PostTooLargeException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            return back()->with('error', 'Total ukuran file yang diunggah melebihi batas server ('
+                .ini_get('post_max_size').'). Kurangi jumlah atau ukuran file, lalu coba lagi.');
+        });
     })->create();

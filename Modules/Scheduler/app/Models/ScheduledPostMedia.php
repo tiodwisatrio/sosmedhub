@@ -11,6 +11,10 @@ class ScheduledPostMedia extends Model
 
     protected $fillable = [
         'scheduled_post_id',
+        'format',
+        'type',
+        'duration_ms',
+        'mime',
         'media_path',
         'thumbnail_path',
         'width',
@@ -29,7 +33,18 @@ class ScheduledPostMedia extends Model
      */
     public function displayPath(): ?string
     {
-        return $this->thumbnail_path ?: $this->media_path;
+        // Video tidak punya thumbnail gambar; tampilan daftar memakai ubin ikon putar.
+        return $this->thumbnail_path ?: ($this->isVideo() ? null : $this->media_path);
+    }
+
+    public function isVideo(): bool
+    {
+        return $this->type === 'video';
+    }
+
+    public function durationSeconds(): ?float
+    {
+        return $this->duration_ms === null ? null : $this->duration_ms / 1000;
     }
 
     public function hasPublishFile(): bool

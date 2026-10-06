@@ -135,6 +135,10 @@
                                             @if ($post->thumbnail_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->thumbnail_path))
                                                 <img src="{{ Storage::url($post->thumbnail_path) }}" alt="Foto postingan"
                                                     class="absolute inset-0 w-full h-full object-cover">
+                                            @elseif ($post->has_video_only)
+                                                <div class="absolute inset-0 flex items-center justify-center bg-slate-800 text-white/70">
+                                                    <x-heroicon-o-film class="w-6 h-6" />
+                                                </div>
                                             @else
                                                 <div class="absolute inset-0 flex items-center justify-center text-slate-300">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -146,6 +150,8 @@
                                             <span class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/75 text-white text-[10px] font-semibold tabular-nums backdrop-blur-sm">
                                                 {{ $post->scheduled_at->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('H:i') }}
                                             </span>
+
+                                            <x-scheduler::format-badges :post="$post" size="sm" class="absolute left-1.5 top-1.5 max-w-[58%]" />
 
                                             <span class="absolute right-1.5 top-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-white/90 text-primary backdrop-blur-sm">
                                                 <span class="w-1 h-1 rounded-full bg-primary"></span>
@@ -218,9 +224,13 @@
                 <template x-if="selected">
                     <div>
                         <div class="relative h-72 bg-slate-100">
-                            <template x-if="selected.media.length > 0">
-                                <img :src="selected.media[mediaIndex]" alt="Foto postingan"
+                            <template x-if="selected.media.length > 0 && selected.media[mediaIndex].type !== 'video'">
+                                <img :src="selected.media[mediaIndex].url" alt="Media postingan"
                                     class="absolute inset-0 w-full h-full object-cover">
+                            </template>
+                            <template x-if="selected.media.length > 0 && selected.media[mediaIndex].type === 'video'">
+                                <video :src="selected.media[mediaIndex].url + '#t=0.1'" controls muted playsinline preload="metadata"
+                                    x-on:loadedmetadata="$el.currentTime = 0.1" class="absolute inset-0 w-full h-full object-contain bg-black"></video>
                             </template>
                             <template x-if="selected.media.length === 0">
                                 <div class="absolute inset-0 flex items-center justify-center text-slate-300">
@@ -245,9 +255,9 @@
                                 </button>
                             </div>
 
-                            <span x-show="selected.media.length > 1"
-                                class="absolute top-2.5 left-3 px-1.5 py-0.5 rounded-full bg-slate-900/60 text-white text-[11px] font-semibold tabular-nums"
-                                x-text="(mediaIndex + 1) + ' / ' + selected.media.length"></span>
+                            <span x-show="selected.media.length > 0"
+                                class="absolute top-2.5 left-3 px-2 py-0.5 rounded-full bg-slate-900/60 text-white text-[11px] font-semibold tabular-nums"
+                                x-text="selected.media.length > 0 ? (selected.media[mediaIndex].format + (selected.media.length > 1 ? ' · ' + (mediaIndex + 1) + ' / ' + selected.media.length : '')) : ''"></span>
                             <span class="absolute bottom-2.5 left-3 px-1.5 py-0.5 rounded bg-slate-900/75 text-white text-xs font-semibold tabular-nums"
                                 x-text="selected.scheduled_at"></span>
                             <button type="button" @click="close()"
@@ -259,9 +269,20 @@
                         </div>
 
                         <div class="p-5">
-                            <p class="text-[15px] text-slate-700 leading-relaxed whitespace-pre-line" x-text="selected.caption"></p>
+                            <p x-show="selected.uses_caption" class="text-[15px] text-slate-700 leading-relaxed whitespace-pre-line" x-text="selected.caption"></p>
+                            <p x-show="! selected.uses_caption" class="text-sm text-slate-400">Story tidak memakai caption.</p>
 
                             <dl class="mt-4 pt-4 border-t border-border space-y-3 text-[15px]">
+                                <div class="flex items-center justify-between gap-4">
+                                    <dt class="text-slate-400">Format</dt>
+                                    <dd class="flex flex-wrap justify-end gap-1">
+                                        <template x-for="format in selected.formats" :key="format.key">
+                                            <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                                :class="{ 'bg-slate-100 text-slate-700': format.key === 'feed', 'bg-fuchsia-100 text-fuchsia-800': format.key === 'story', 'bg-sky-100 text-sky-800': format.key === 'reel' }"
+                                                x-text="format.label"></span>
+                                        </template>
+                                    </dd>
+                                </div>
                                 <div class="flex items-center justify-between gap-4">
                                     <dt class="text-slate-400">Jadwal</dt>
                                     <dd class="font-medium text-slate-700" x-text="selected.scheduled_at"></dd>
@@ -328,17 +349,27 @@
          Ringkasan riwayat
          ================================================================ --}}
     <div class="flex flex-wrap items-center justify-between gap-3 bg-card rounded-2xl shadow-card border border-border px-6 py-4 mb-8">
-        @if ($failedCount > 0)
+        @if ($failedCount > 0 || $partialCount > 0)
             <p class="text-sm text-danger-text">
-                <span class="font-semibold">{{ $failedCount }}</span> postingan gagal terbit dan perlu dijadwalkan ulang.
+                @if ($failedCount > 0)
+                    <span class="font-semibold">{{ $failedCount }}</span> postingan gagal terbit{{ $partialCount > 0 ? ',' : '' }}
+                @endif
+                @if ($partialCount > 0)
+                    {{ $failedCount > 0 ? 'dan' : '' }} <span class="font-semibold">{{ $partialCount }}</span> postingan terbit sebagian.
+                @else
+                    dan perlu dijadwalkan ulang.
+                @endif
+                @if ($partialCount > 0)
+                    Perlu dijadwalkan ulang.
+                @endif
             </p>
         @else
             <p class="text-sm text-slate-500">Postingan yang sudah terbit, gagal, atau dibatalkan ada di halaman Riwayat.</p>
         @endif
 
-        <a href="{{ route('admin.post-history.index', $failedCount > 0 ? ['status' => 'failed'] : []) }}"
+        <a href="{{ route('admin.post-history.index', $failedCount > 0 ? ['status' => 'failed'] : ($partialCount > 0 ? ['status' => 'partial'] : [])) }}"
             class="inline-flex items-center gap-1.5 font-medium rounded-md px-4 py-2 text-sm border border-border hover:bg-slate-50 text-slate-700">
-            {{ $failedCount > 0 ? 'Lihat yang gagal' : 'Buka Riwayat' }}
+            {{ $failedCount > 0 ? 'Lihat yang gagal' : ($partialCount > 0 ? 'Lihat yang sebagian' : 'Buka Riwayat') }}
         </a>
     </div>
 @endsection

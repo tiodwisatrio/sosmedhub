@@ -15,6 +15,7 @@ class PostHistoryController extends Controller implements HasMiddleware
     private const STATUSES = [
         ScheduledPost::STATUS_PUBLISHED,
         ScheduledPost::STATUS_FAILED,
+        ScheduledPost::STATUS_PARTIAL,
         ScheduledPost::STATUS_CANCELLED,
         ScheduledPost::STATUS_DRAFT,
     ];
@@ -48,7 +49,7 @@ class PostHistoryController extends Controller implements HasMiddleware
 
         $historyPosts = (clone $base)
             ->when($filters['status'], fn (Builder $q, $status) => $q->where('status', $status))
-            ->with(['socialAccount', 'media'])
+            ->with(['socialAccount', 'media', 'publications'])
             ->latest('scheduled_at')
             ->paginate(15)
             ->withQueryString();

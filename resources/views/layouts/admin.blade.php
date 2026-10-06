@@ -31,7 +31,7 @@
             }
         }
     }"
-    class="flex h-screen overflow-hidden"
+    class="flex h-screen overflow-hidden overflow-clip"
 >
 
     {{-- Backdrop mobile --}}

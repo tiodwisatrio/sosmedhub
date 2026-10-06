@@ -15,7 +15,8 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Login, registrasi, dan persetujuan user oleh admin | Jalan |
 | Hubungkan akun Instagram lewat OAuth (token long-lived, terenkripsi) | Jalan, sudah dicoba dengan akun asli |
 | Satu user dengan banyak akun Instagram | Didukung (lihat bagian 9 nomor 1) |
-| Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel); upload hanya JPEG | Jalan |
+| Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel); foto hanya JPEG | Jalan |
+| Format Feed, Story, dan Reels (satu jadwal boleh lebih dari satu format), unggahan video MP4/MOV | Terpasang dan teruji (251 test, form dijalankan di Chrome); **belum dicoba menerbitkan ke Instagram asli** |
 | Kalender mingguan (halaman Penjadwalan) | Jalan |
 | Halaman Riwayat terpisah: tab status, filter akun, pencarian caption | Jalan |
 | Publikasi otomatis (cron + antrean) | Jalan, sudah terbit ke Instagram asli |
@@ -27,7 +28,7 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Refresh token otomatis harian | Terpasang, belum dites dengan Instagram asli |
 | Halaman publik: beranda, kebijakan privasi, ketentuan layanan, penghapusan data | Jalan (isi hardcode, lihat bagian 10) |
 | Batas akun atau jumlah post per user | Belum ada (sengaja, menunggu model bisnis) |
-| Facebook Page, Reels, Story, insight | Belum ada (di luar MVP) |
+| Facebook Page, Threads, insight | Belum ada (di luar MVP; kartu Facebook dan Threads hanya tampilan) |
 
 ## 3. Arsitektur
 
@@ -45,10 +46,31 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
 3. Server menukar `code` menjadi token, menukarnya lagi menjadi token long-lived (60 hari), mengambil profil lewat `/me`, lalu menyimpan akun dengan token terenkripsi.
 
 ### Alur menerbitkan postingan
-1. Cron `schedule:run` tiap menit menjalankan `scheduler:dispatch-due`. Command ini memilih jadwal berstatus `scheduled` yang waktunya sudah lewat dan mengirim satu job per jadwal ke antrean.
-2. Job mengklaim jadwal dengan mengubah status `scheduled` menjadi `publishing` (mencegah terbit dua kali), lalu memanggil Instagram: buat container, tunggu status `FINISHED`, publish. Satu foto memakai `image_url`, lebih dari satu memakai carousel.
-3. Berhasil: status `published`, `ig_media_id` dan `published_at` terisi. Gagal: status `failed`, pesan error tersimpan (maksimal 500 karakter, tanpa token).
-4. Job tidak diulang otomatis (`tries = 1`) agar tidak ada postingan ganda. Pengulangan dilakukan manual lewat **Jadwalkan Ulang**.
+1. Cron `schedule:run` menjalankan `scheduler:dispatch-due`, yang memilih jadwal berstatus `scheduled` yang waktunya sudah lewat dan mengirim `PublishScheduledPostJob` per jadwal.
+2. `PublishScheduledPostJob` mengklaim jadwal (`scheduled` menjadi `publishing`, mencegah terbit dua kali) lalu mengirim **satu `PublishPublicationJob` per format** (Feed, Story, Reels) yang belum terbit.
+3. `PublishPublicationJob` memanggil `PublicationRunner`, yang menjalankan satu format langkah demi langkah dan menyimpan kemajuannya di kolom `state` (container Instagram dan ID hasil terbit per item), jadi pemanggilan berikutnya melanjutkan tanpa container ganda atau terbit dua kali:
+   - **Feed**: satu foto memakai `image_url` + caption; lebih dari satu memakai carousel (container anak dibuat dulu; induk baru dibuat setelah semua anak `FINISHED`).
+   - **Story**: satu container `STORIES` per item (foto atau video), **tanpa caption**, masing-masing diterbitkan sendiri.
+   - **Reels**: satu container `REELS` dengan `video_url`, caption, dan `share_to_feed`.
+4. Instagram memproses video dalam hitungan menit. Runner mengembalikan "menunggu" dan job **melepas diri** (`release`, jeda `SCHEDULER_VIDEO_POLL_SECONDS`, bawaan 30 detik) tanpa menahan worker; batas total 10 menit, lewat itu format dinyatakan gagal. Foto dicek berkala di dalam satu pemanggilan.
+5. Setelah semua format selesai, status jadwal ditetapkan sekali: semua terbit menjadi `published`; sebagian menjadi `partial`; semua gagal menjadi `failed`. Email dikirim sekali (berhasil, atau gagal/sebagian berisi galat per format).
+6. Tidak ada percobaan ulang otomatis. **Jadwalkan Ulang** hanya mengulang format yang gagal: item Story yang sudah terbit tidak diterbitkan lagi, container lama dilepas (bisa sudah kedaluwarsa), dan format yang sudah terbit terkunci (media dan formatnya tidak bisa diubah).
+
+### Format Feed, Story, Reels
+| | Feed | Story | Reels |
+|---|---|---|---|
+| Isi | 1-10 foto JPEG | 1-10 item, tiap item satu Story (foto JPEG atau video) | tepat 1 video |
+| Caption | wajib | tidak didukung Instagram (disembunyikan di form) | opsional |
+| Rasio | 4:5 sampai 1,91:1 (dipaksa) | 9:16 disarankan (tidak dipaksa) | 9:16 disarankan |
+| Video | - | 3-60 detik, maks 100MB | 3 detik sampai `SCHEDULER_REEL_MAX_SECONDS` (bawaan 3 menit; Meta mengizinkan 15 menit), maks 300MB |
+
+**Urutan media** (Feed dan Story) diatur dengan seret-lepas (HTML5 native, tanpa dependensi) atau tombol panah untuk layar sentuh dan keyboard. Urutan mencampur media tersimpan dan unggahan baru; form mengirim `order[format][]` berisi `e:ID` (media tersimpan) dan `n:N` (unggahan ke-N, mengikuti urutan file di input). Server (`ScheduledPostService::applyOrder`) menyimpannya ke kolom `position`, mengabaikan token yang tidak valid atau milik jadwal lain, dan menaruh media yang tidak disebut di belakang. Urutan itu juga yang dipakai pratinjau dan penerbitan (carousel Feed dan urutan tayang Story). Format yang sudah terbit tidak bisa diurutkan.
+
+Syarat video diperiksa saat unggah (`FormatMedia` + `VideoSpec` + `Mp4Inspector`): container MP4/MOV, codec video H.264 atau HEVC, audio AAC (atau tanpa audio), frame rate 23-60 fps. Video **tidak dikonversi**; yang tidak memenuhi syarat ditolak dengan pesan yang menyebut penyebabnya. `Mp4Inspector` membaca metadata langsung dari struktur file (tanpa `ffprobe`), termasuk **MP4 fragmented** (video stok, perekam layar) yang menulis durasi 0 di `moov`: durasi dan frame rate dijumlahkan dari kotak `moof`/`trun` (atau `mehd`, bawaan `tfhd`/`trex`), dan sudah dicocokkan dengan AVFoundation pada file nyata, sudah dibandingkan dengan AVFoundation pada video nyata (durasi, ukuran, frame rate cocok) dan memakai MP4 sintetis di test untuk kasus rotasi iPhone dan `moov` di belakang.
+
+Video disimpan apa adanya di `storage/app/public/scheduled-posts/videos/` dan dihapus oleh `scheduler:prune-media` setelah `SCHEDULER_PUBLISH_RETENTION_DAYS` hari sejak format itu terbit (foto: versi terbit dihapus, thumbnail tetap).
+
+**Batas unggahan**: video hingga 300MB butuh `upload_max_filesize` >= 320M, `post_max_size` >= 512M, `max_execution_time` >= 120, dan `client_max_body_size` (Nginx) >= 512M. Bila total melebihi `post_max_size`, form menampilkan pesan batas server, bukan error 413 mentah. Di Herd lokal batasnya masih 10M.
 
 ### Slot jadwal dan cron
 Jam terbit dipilih lewat komponen `<x-scheduler::schedule-picker>` (tanggal, jam 00-23, dan menit per slot; selalu 24 jam, tanpa preset jam; menit di luar slot tidak bisa dipilih) dan terkirim sebagai satu field `scheduled_at` berformat `Y-m-d\TH:i` (WIB). Jam terbit wajib jatuh di slot yang sejajar dengan cron (`SCHEDULER_SLOT_MINUTES`, bawaan 15: menit 00, 15, 30, 45). Karena cron berjalan tepat di menit yang sama, jadwal 09.00 diproses di putaran 09.00, bukan 09.15. Validasi server (`OnScheduleSlot`) menolak jam di luar slot; form memakai `step` sesuai slot, nilai minimum dan default di slot berikutnya, dan duplikasi mengusulkan waktu di slot.
@@ -101,8 +123,10 @@ Setelah deploy pertama fitur ini, jalankan sekali `php artisan scheduler:process
 PHP harus mengizinkan upload sebesar validasi: `upload_max_filesize` minimal 8M dan `post_max_size` minimal 100M (carousel 10 foto x 8MB). Atur di MultiPHP INI Editor (cPanel) dan di Herd untuk lokal.
 
 ### Status postingan
-`draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `failed`, `cancelled`.
-Yang boleh diubah: `scheduled`, `failed`, `draft`. Menyimpan postingan `failed` atau `draft` mengembalikannya ke `scheduled`.
+`draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `partial` (sebagian format terbit), `failed`, `cancelled`.
+Yang boleh diubah: `scheduled`, `failed`, `partial`, `draft`. Menyimpan postingan `failed`, `partial`, atau `draft` mengembalikannya ke `scheduled`; hanya format yang gagal yang diulang.
+
+Status tiap format ada di `scheduled_post_publications`: `pending`, `publishing`, `published`, `failed`. Lencana format (Feed, Story, Reels) tampil di kalender, modal, riwayat (dengan titik status per format), dan form ubah.
 
 ### Halaman Akun Sosial
 Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram (aktif), Facebook dan Threads (tombol Hubungkan nonaktif, "Segera hadir"; disiapkan sebagai tampilan saja, tanpa backend). Komponen: `<x-social-account::platform-card>` dan `<x-social-account::brand-icon>` (logo SVG di dalam ubin warna merek) di `Modules/SocialAccount/resources/views/components/`.
@@ -113,7 +137,7 @@ Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram (akti
 - Form manual (`/admin/social-accounts/create`) tidak lagi ditautkan dari halaman ini tetapi masih bisa dibuka lewat URL.
 
 ### Komponen pratinjau
-Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya, jadi harus berada di dalam `x-data` yang menyediakan `previewList`, `currentIndex`, `caption`, `schedulePreview`, dan `photoCountLabel`. Props Blade: `username`, `app-name`, `app-initial`, `logo-url`.
+Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya, jadi harus berada di dalam `x-data` yang menyediakan `previewList`, `currentIndex`, `caption`, `schedulePreview`, dan `photoCountLabel`. Props Blade: `username`, `app-name`, `app-initial`, `logo-url`. Video Story dan Reels di pratinjau bisa diputar: klik bingkai untuk putar/jeda, tombol suara (kanan atas Reels), dan batang progres tipis. Semua video pratinjau (`data-preview-video`) dijeda dan dikembalikan ke awal saat format, item, atau media berganti (`stopPlayback()`).
 
 ### Halaman Riwayat
 `/admin/post-history` (route `admin.post-history.index`, izin `scheduler.view`) berisi postingan yang sudah lewat antrean: status selain `scheduled`, atau `scheduled` yang waktunya sudah lewat. Ada tab status (Semua, Terbit, Gagal, Dibatalkan, Draf) dengan jumlahnya, filter akun, dan pencarian caption. Halaman Penjadwalan hanya menampilkan kalender dan ringkasan jumlah postingan gagal dengan tautan ke Riwayat. Nama route sengaja tidak memakai awalan `admin.scheduled-posts.` supaya menu Penjadwalan tidak ikut aktif. Menu Riwayat ditambahkan di `MenuDatabaseSeeder`; di server yang sudah punya data menu, tambahkan lewat halaman Menu (route `admin.post-history.index`, pola aktif `admin.post-history.*`, izin `scheduler.view`) karena seeder menu menghapus seluruh tabel menu.
@@ -126,13 +150,14 @@ Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler
 
 ## 4. Data
 
-Tabel milik produk: `users`, `social_accounts`, `scheduled_posts`, `scheduled_post_media`.
+Tabel milik produk: `users`, `social_accounts`, `scheduled_posts`, `scheduled_post_publications`, `scheduled_post_media`.
 
 ```
 users 1──N social_accounts
 users 1──N scheduled_posts
 social_accounts 1──N scheduled_posts   (social_account_id boleh kosong)
-scheduled_posts 1──N scheduled_post_media
+scheduled_posts 1──N scheduled_post_publications   (satu baris per format: feed, story, reel)
+scheduled_posts 1──N scheduled_post_media          (kolom format dan type: image atau video)
 ```
 
 - `social_accounts.access_token` terenkripsi (cast `encrypted`). `provider_account_id` unik per platform.
@@ -158,6 +183,8 @@ scheduled_posts 1──N scheduled_post_media
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
+| `SCHEDULER_REEL_MAX_SECONDS` | Batas durasi Reels dalam detik (bawaan 180). Meta mengizinkan sampai 900. Story tetap 60 detik. |
+| `SCHEDULER_VIDEO_POLL_SECONDS` | Jeda cek status video yang masih diproses Instagram (bawaan 30). |
 | `DEVELOPER_NAME`, `DEVELOPER_EMAIL`, `DEVELOPER_PASSWORD` | Akun developer awal untuk `db:seed`. Dibaca lewat `config/sosmedhub.php`. Password hanya wajib saat akun belum ada; akun yang sudah ada tidak diubah. |
 
 ## 7. Perintah penting
@@ -167,7 +194,7 @@ php artisan schedule:work                       # lokal: menjalankan scheduler (
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 182 test otomatis
+php artisan test                                # 251 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
@@ -196,6 +223,8 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 3. `CLAUDE.md` sudah ada di `.gitignore`, tetapi masih dilacak git karena pernah di-commit. Untuk berhenti melacaknya: `git rm --cached CLAUDE.md`, lalu commit.
 4. Banyak perubahan belum di-commit (modul `SocialAccount`, `Scheduler`, migration `avatar_url`, jadwal ulang, duplikasi, notifikasi, JPEG saja, seeder dari `.env`).
 5. Mode Development Meta: hanya akun dengan role **Instagram Tester** yang bisa dihubungkan.
+7. **Story dan Reels belum pernah diterbitkan ke Instagram asli.** Alur dan parameternya mengikuti dokumentasi Meta dan teruji dengan Instagram palsu, tetapi tiga hal harus dicoba dengan akun tester: (a) apakah akun Creator boleh menerbitkan Story (satu sumber pihak ketiga bilang hanya Business), (b) apakah video dengan `moov` di belakang file, atau MP4 fragmented, diterima (dokumentasi resmi tidak menyebutnya; satu sumber bilang `moov` di belakang ditolak; belum ada remux otomatis. Bila ditolak, solusinya `ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4`), (c) apakah `share_to_feed` diterima pada Reels.
+8. Foto Story dan video tidak punya pratinjau gambar di daftar bila hanya berisi video (dipakai ubin ikon). Frame video pada pratinjau form belum terverifikasi di browser dengan GPU (Chrome headless tidak menampilkannya).
 6. `DEVELOPER_PASSWORD` di `.env` lokal masih kosong. Tidak masalah selama akun developer sudah ada di database; isi sebelum menjalankan seeder di database baru.
 
 ## 10. Langkah berikutnya
@@ -237,7 +266,7 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 ## 11. Catatan penting tentang Meta
 
 - Permission yang dipakai: `instagram_business_basic` dan `instagram_business_content_publish`.
-- Akun Instagram harus bertipe **Business** atau **Creator**.
+- Akun Instagram harus bertipe **Business** atau **Creator**. Story dan Reels memakai izin yang sama (`instagram_business_content_publish`); dokumentasi resmi tidak menyebut izin terpisah. Screencast App Review harus memperlihatkan alur Story dan Reels bila fitur itu aktif saat review.
 - Foto wajib berupa URL publik yang dapat diambil server Meta. Domain lokal (`.test`) tidak bisa.
 - Batas sekitar 100 postingan per 24 jam per akun dari Instagram.
 - Token long-lived berlaku 60 hari dan hanya bisa di-refresh jika umurnya lebih dari 24 jam dan belum kedaluwarsa.
