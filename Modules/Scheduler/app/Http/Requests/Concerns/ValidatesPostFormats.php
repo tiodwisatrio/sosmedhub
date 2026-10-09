@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Rules\FormatMedia;
+use Modules\SocialAccount\Models\SocialAccount;
 
 /**
  * Validasi format (Feed, Story, Reels) dan media tiap format, dipakai form buat dan ubah.
@@ -34,6 +35,14 @@ trait ValidatesPostFormats
         $selected = array_values(array_intersect(ScheduledPost::FORMATS, $input));
 
         return array_values(array_unique([...$selected, ...$this->lockedFormats()]));
+    }
+
+    /**
+     * Platform akun tujuan yang dipilih di form (null bila belum dipilih atau tidak ditemukan).
+     */
+    protected function selectedPlatform(): ?string
+    {
+        return SocialAccount::query()->whereKey($this->input('social_account_id'))->value('platform');
     }
 
     /**
@@ -119,7 +128,7 @@ trait ValidatesPostFormats
             $field = $limit['field'];
             $rules[$field] = ['nullable', 'array', 'max:'.$limit['max']];
             $rules["{$field}.*"] = in_array($format, $editable, true)
-                ? ['bail', 'file', new FormatMedia($format)]
+                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: $this->selectedPlatform() !== SocialAccount::PLATFORM_FACEBOOK)]
                 : ['prohibited'];
         }
 
@@ -129,6 +138,14 @@ trait ValidatesPostFormats
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            // Facebook baru mendukung Feed (foto). Story dan Reels hanya untuk Instagram.
+            $platform = $this->selectedPlatform();
+
+            if ($platform === SocialAccount::PLATFORM_FACEBOOK
+                && array_diff($this->selectedFormats(), [ScheduledPost::FORMAT_FEED]) !== []) {
+                $validator->errors()->add('formats', 'Akun Facebook baru mendukung format Feed. Hapus Story atau Reels, atau pilih akun Instagram.');
+            }
+
             foreach ($this->editableFormats() as $format) {
                 $limit = self::LIMITS[$format];
                 $count = $this->keptMediaCount($format) + count($this->file($limit['field']) ?? []);

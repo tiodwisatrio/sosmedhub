@@ -260,6 +260,12 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 - Jalankan `migrate --force` dan `db:seed`, login, lalu hubungkan ulang akun Instagram.
 - Jalankan manual tes B sampai F di server.
 
+### Facebook: langkah berikutnya
+1. ~~Publikasi **Feed** ke Page~~ sudah dibangun (foto saja; lihat bagian Facebook di bawah). Tinggal dites sungguhan di Page **Tio**.
+2. Sebelum membangun video, Story, dan Reels untuk Page: baca dokumentasi Meta untuk endpoint dan permission-nya. `publish_video` disebut di dokumentasi Pages API tetapi belum ada di kasus penggunaan app; apakah perlu ditambahkan belum dicek.
+3. Rapikan penanganan token kedaluwarsa atau dicabut untuk akun Facebook (jalur `expired` dan notifikasi hubungkan ulang sudah ada untuk Instagram).
+4. Tes dengan Page **Tio**; jangan memakai dua Page "Tio Dwi Satrio" yang batal diterbitkan.
+
 ### Setelah itu
 - Tambahkan client awal sebagai **Instagram Tester** di dashboard Meta (client menerima undangan di Settings, Apps and websites, Tester invites).
 - Siapkan syarat **App Review** supaya client bisa mendaftar dan menghubungkan akun sendiri: halaman Privacy Policy, Terms, dan Data Deletion sudah ada; tinggal screencast alur lengkap, dan alasan tiap permission (`instagram_business_basic`, `instagram_business_content_publish`). Mode Live saja tidak cukup; yang membuka akses umum adalah Advanced Access lewat App Review.
@@ -275,3 +281,20 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 - Batas sekitar 100 postingan per 24 jam per akun dari Instagram.
 - Token long-lived berlaku 60 hari dan hanya bisa di-refresh jika umurnya lebih dari 24 jam dan belum kedaluwarsa.
 - Webhook tidak dipakai di MVP, jadi langkah webhook di dashboard Meta boleh dikosongkan.
+
+### Facebook (Page)
+
+Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dibangun tetapi belum dites di Page sungguhan.** Story, Reels, dan video untuk Facebook belum ada: form menonaktifkan pilihan itu bila akun Facebook dipilih, dan validasi menolaknya.
+
+- Publikasi: `FacebookPublicationRunner` (dipilih `PublishPublicationJob` menurut platform akun) dan `FacebookPublisher`. Satu foto: `POST /{page-id}/photos` dengan file diunggah langsung dari server (tanpa URL publik). Beberapa foto: tiap foto diunggah `published=false`, lalu satu `POST /{page-id}/feed` dengan `attached_media`. Hasil langsung jadi, tanpa container yang ditunggu. ID postingan disimpan di kolom `ig_media_id` (nama kolom warisan Instagram).
+- Token ditolak (kode 190) menandai akun `expired` dan mengirim email hubungkan ulang, sama seperti Instagram.
+- Batasan: validasi foto memakai aturan Instagram (JPEG, rasio 4:5 sampai 1,91:1, maks 8 MB), lebih ketat dari Facebook.
+
+- Yang didukung adalah **Page**, bukan profil pribadi. Profil pribadi tidak bisa diposting lewat API. Di Akun Sosial, ID yang tampil (`ID ...`) adalah ID Page, bukan ID profil.
+- Alur: Facebook Login (`graph.facebook.com`, v26.0) di `FacebookConnectController` dan `FacebookGraphService`. Scope: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `business_management`. Aplikasi menolak koneksi jika ada izin yang tidak disetujui. Jika user punya lebih dari satu Page, muncul halaman pilih Page; token pengguna hanya disimpan terenkripsi di sesi sampai Page dipilih. Token Page dari token pengguna long-lived tidak kedaluwarsa (`token_expires_at` null), jadi tidak ada refresh.
+- **`business_management` wajib untuk Page milik Business Portfolio.** Tanpa izin itu `me/accounts` mengembalikan daftar kosong ("Tidak ada Halaman Facebook yang bisa kamu kelola"). Page klasik (milik akun pribadi) muncul tanpa izin itu. Ini kesimpulan dari uji di akun pengembang, bukan dari dokumentasi Meta. Untuk akun di luar role app, izin ini kemungkinan butuh Advanced Access lewat App Review; syarat resminya belum dibaca.
+- Page yang berstatus **batal diterbitkan** (unpublished) tidak bisa dibuka publik dan kemungkinan tidak bisa diposting. Dua Page "Tio Dwi Satrio" milik pengembang berstatus itu dan sudah ditinggalkan. Page uji yang dipakai: **Tio** (`1010989448772312`).
+- Pengaturan di dashboard Meta (sudah dilakukan): kasus penggunaan **Kelola segala sesuatu di Halaman Anda**; **Facebook Login > Settings > Valid OAuth Redirect URIs** berisi `https://DOMAIN/admin/social-accounts/facebook/callback` (dicek dengan Validator URI Pengalihan); **Settings > Basic > Domain Aplikasi** berisi domain app. `FACEBOOK_CLIENT_ID` dan `FACEBOOK_CLIENT_SECRET` adalah App ID dan App Secret dari Settings > Basic (bukan ID Instagram).
+- `FACEBOOK_REDIRECT_URI` harus persis sama dengan yang terdaftar di Meta. Jangan memakai `${APP_URL}` bila `APP_URL` diakhiri `/` (hasilnya `//admin`).
+- Menu kasus penggunaan bernama **Facebook Login for Business**. Aplikasi memakai parameter `scope`, dan itu berhasil di akun pengembang. Jika suatu hari dialog menolak scope atau meminta `config_id`, buat konfigurasi di menu Konfigurasi dan pakai ID-nya.
+- Di dashboard, tiap permission butuh minimal 1 panggilan API berhasil sebelum bisa diajukan ke App Review (kolom "0 dari 1 panggilan API diperlukan"). Yang sudah tercatat dari alur nyata: `pages_show_list`, `pages_read_engagement`, `public_profile`, `business_management` setelah connect. Yang belum: `pages_manage_posts` dan `pages_manage_engagement`; keduanya akan terpenuhi begitu publikasi dan balasan komentar dites.

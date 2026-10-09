@@ -255,7 +255,7 @@ test('akun Facebook tampil di kartu Facebook dan bukan di kartu Instagram', func
         ->assertSee(route('admin.social-accounts.facebook.redirect'), false);
 });
 
-test('akun Facebook tidak ditawarkan di form penjadwalan sebelum publikasinya ada', function () {
+test('akun Facebook ditawarkan di form penjadwalan', function () {
     $user = facebookUser();
     $user->givePermissionTo(
         Permission::firstOrCreate(['name' => 'scheduler.view', 'guard_name' => 'web']),
@@ -274,5 +274,5 @@ test('akun Facebook tidak ditawarkan di form penjadwalan sebelum publikasinya ad
     $this->actingAs($user)
         ->get(route('admin.scheduled-posts.create'))
         ->assertOk()
-        ->assertDontSee('Halaman Rahasia');
+        ->assertSee('Halaman Rahasia');
 });

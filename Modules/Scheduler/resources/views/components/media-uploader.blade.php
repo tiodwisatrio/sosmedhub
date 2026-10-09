@@ -12,7 +12,7 @@
     $add = ['feed' => 'Tambah foto', 'story' => 'Tambah foto/video', 'reel' => 'Pilih video'][$format];
     $reelMax = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'));
     $hint = [
-        'feed' => 'JPEG · maks 8 MB per foto · hingga 10 foto (carousel). Rasio 4:5 sampai 1,91:1.',
+        'feed' => 'JPEG · maks 8 MB per foto · hingga 10 foto (carousel).',
         'story' => 'Foto JPEG atau video MP4/MOV · hingga 10 item, masing-masing jadi satu Story. Video 3-60 detik, maks 100 MB. Rasio 9:16 disarankan. Story tidak memakai caption.',
         'reel' => 'Satu video MP4/MOV (H.264 atau HEVC, audio AAC) · 3 detik sampai '.$reelMax.' · maks 300 MB. Rasio 9:16 disarankan.',
     ][$format];
@@ -108,7 +108,7 @@
         Format ini sudah terbit, jadi medianya tidak bisa diubah.
     </p>
 
-    <p class="mt-2 text-xs text-slate-400">{{ $hint }}</p>
+    <p class="mt-2 text-xs text-slate-400">{{ $hint }}@if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span>@endif</p>
 
     <p x-show="checking['{{ $format }}']" x-cloak class="mt-1.5 text-xs text-slate-500" role="status">Memeriksa file…</p>
 

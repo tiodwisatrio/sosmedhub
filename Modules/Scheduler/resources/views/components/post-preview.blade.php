@@ -30,6 +30,8 @@
             <span>11:18</span>
             <div class="flex items-center gap-1.5"><svg class="h-3.5 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M1 16h2V9H1v7Zm4 0h2V6H5v10Zm4 0h2V3H9v13Zm4 0h2V1h-2v15Zm4 0h2V0h-2v16Z"/></svg><svg class="h-3.5 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 9.5a13.5 13.5 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.5 3.5 0 0 1 4 0"/></svg><span class="h-2.5 w-5 rounded-sm border border-slate-700 p-px"><span class="block h-full w-3 rounded-[1px] bg-slate-800"></span></span></div>
         </div>
+            {{-- ===== Instagram (Feed, Story, Reels) ===== --}}
+            <div x-show="! isFacebook">
             {{-- ===== Feed ===== --}}
             <div x-show="active === 'feed'">
             <div class="flex h-12 items-center justify-between border-b border-border/70 px-4 text-slate-900"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
@@ -42,7 +44,7 @@
                         {{ $appInitial }}
                     </div>
                 @endif
-                <p class="truncate text-[13px] font-semibold text-slate-900">{{ $username }}</p>
+                <p class="truncate text-[13px] font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></p>
                 <span class="ml-auto flex w-5 flex-col items-end gap-1" aria-hidden="true">
                     <span class="block h-0.5 w-5 rounded-full bg-slate-800"></span>
                     <span class="block h-0.5 w-3.5 rounded-full bg-slate-800"></span>
@@ -93,7 +95,7 @@
                     @else
                         <span class="grid h-5 w-5 place-items-center rounded-full bg-primary-light text-[8px] font-bold text-primary">{{ $appInitial }}</span>
                     @endif
-                    <p>Disukai oleh <span class="font-semibold text-slate-900">{{ $username }}</span> dan <span class="font-semibold text-slate-900">21 lainnya</span></p>
+                    <p>Disukai oleh <span class="font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></span> dan <span class="font-semibold text-slate-900">21 lainnya</span></p>
                 </div>
 
                 <p class="mt-2 text-[13px] text-slate-600">
@@ -140,7 +142,7 @@
                         @else
                             <div class="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-tr from-primary to-primary-light text-[11px] font-bold text-white">{{ $appInitial }}</div>
                         @endif
-                        <p class="truncate text-[13px] font-semibold">{{ $username }}</p>
+                        <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
                         <span class="text-xs text-white/70">Sekarang</span>
                     </div>
                 </div>
@@ -215,12 +217,12 @@
                         @else
                             <div class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-tr from-primary to-primary-light text-[10px] font-bold text-white">{{ $appInitial }}</div>
                         @endif
-                        <p class="truncate text-[13px] font-semibold">{{ $username }}</p>
+                        <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
                         <span class="rounded-md border border-white/60 px-2 py-0.5 text-[11px] font-semibold">Ikuti</span>
                     </div>
                     <p class="mt-2 line-clamp-2 whitespace-pre-line text-[12px] leading-snug" x-text="caption" x-show="caption"></p>
                     <p class="mt-2 text-[12px] text-white/50" x-show="! caption">Belum ada caption…</p>
-                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">Audio asli · {{ $username }}</span></p>
+                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">Audio asli · <span x-text="accountName">{{ $username }}</span></span></p>
                 </div>
 
                 {{-- Batang progres video --}}
@@ -240,6 +242,69 @@
                     <div class="grid h-7 w-7 place-items-center rounded-full border-2 border-rose-400 bg-primary-light text-[9px] font-bold text-primary">{{ $appInitial }}</div>
                 @endif
             </nav>
+            </div>
+
+            {{-- ===== Facebook (Feed) ===== --}}
+            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-7 bottom-0 overflow-hidden bg-slate-100">
+                <div class="flex h-11 items-center justify-between bg-white px-4">
+                    <p class="text-[22px] font-bold leading-none tracking-tight text-[#1877f2]">facebook</p>
+                    <div class="flex items-center gap-2 text-slate-800" aria-hidden="true">
+                        <span class="grid h-8 w-8 place-items-center rounded-full bg-slate-100"><x-heroicon-o-magnifying-glass class="h-4 w-4" /></span>
+                        <span class="grid h-8 w-8 place-items-center rounded-full bg-slate-100"><x-heroicon-o-chat-bubble-oval-left class="h-4 w-4" /></span>
+                    </div>
+                </div>
+
+                <div class="mt-2 bg-white pb-1">
+                    <div class="flex items-center gap-2.5 px-3 pt-3">
+                        <template x-if="accountAvatar">
+                            <img :src="accountAvatar" alt="" referrerpolicy="no-referrer" class="h-10 w-10 rounded-full bg-slate-100 object-cover">
+                        </template>
+                        <template x-if="! accountAvatar">
+                            <span class="grid h-10 w-10 place-items-center rounded-full bg-slate-200 text-sm font-semibold text-slate-500" x-text="accountInitial"></span>
+                        </template>
+                        <div class="min-w-0">
+                            <p class="truncate text-[13px] font-semibold leading-tight text-slate-900" x-text="accountName"></p>
+                            <p class="mt-0.5 flex items-center gap-1 text-[11px] leading-tight text-slate-500">Sekarang · <x-heroicon-o-globe-asia-australia class="h-3 w-3" /></p>
+                        </div>
+                        <span class="ml-auto flex items-center gap-3 text-slate-500" aria-hidden="true">
+                            <x-heroicon-o-ellipsis-horizontal class="h-5 w-5" />
+                            <x-heroicon-o-x-mark class="h-5 w-5" />
+                        </span>
+                    </div>
+
+                    <p class="whitespace-pre-line px-3 pb-2.5 pt-2.5 text-[13px] leading-snug text-slate-900" x-text="caption" x-show="caption"></p>
+                    <p class="px-3 pb-2.5 pt-2.5 text-[13px] text-slate-400" x-show="! caption">Belum ada caption…</p>
+
+                    {{-- Foto: satu foto penuh, beberapa foto dalam kisi (maks 4, sisanya "+N") --}}
+                    <div x-show="itemsFor('feed').length === 0" class="grid aspect-square place-items-center bg-slate-100 text-slate-300">
+                        <x-heroicon-o-photo class="h-12 w-12" />
+                    </div>
+                    <template x-if="itemsFor('feed').length === 1">
+                        <img :src="itemsFor('feed')[0].url" alt="Foto postingan" class="max-h-[22rem] w-full bg-slate-100 object-cover">
+                    </template>
+                    <div x-show="itemsFor('feed').length > 1" class="grid grid-cols-2 gap-0.5">
+                        <template x-for="(item, position) in itemsFor('feed').slice(0, 4)" :key="'fb-' + position">
+                            <div class="relative aspect-square bg-slate-100">
+                                <img :src="item.url" alt="" class="absolute inset-0 h-full w-full object-cover">
+                                <span x-show="position === 3 && itemsFor('feed').length > 4"
+                                    class="absolute inset-0 grid place-items-center bg-black/50 text-xl font-semibold text-white"
+                                    x-text="'+' + (itemsFor('feed').length - 4)"></span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500">
+                        <span class="flex items-center gap-1"><span class="grid h-4 w-4 place-items-center rounded-full bg-[#1877f2] text-white"><x-heroicon-s-hand-thumb-up class="h-2.5 w-2.5" /></span> 21</span>
+                        <span>3 komentar · 1 kali dibagikan</span>
+                    </div>
+                    <div class="mx-3 grid grid-cols-3 border-t border-slate-200 py-1.5 text-[12px] font-medium text-slate-600" aria-hidden="true">
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-hand-thumb-up class="h-4 w-4" /> Suka</span>
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-chat-bubble-oval-left class="h-4 w-4" /> Komentar</span>
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-arrow-uturn-right class="h-4 w-4" /> Bagikan</span>
+                    </div>
+                    <p class="px-3 pb-2 pt-1.5 text-[11px] text-slate-400" x-text="schedulePreview"></p>
+                </div>
+            </div>
             </div>
         </div>
         <span aria-hidden="true" class="absolute bottom-4 left-1/2 z-20 h-1 w-24 -translate-x-1/2 rounded-full" :class="active === 'feed' ? 'bg-slate-900/70' : 'bg-white/80'"></span>
@@ -289,10 +354,13 @@
         <div class="flex items-center justify-between gap-4 pt-2 border-t border-border/70">
             <dt class="text-slate-400">Tujuan</dt>
             <dd class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 448 512">
+                <svg x-show="! isFacebook" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 448 512" aria-hidden="true">
                     <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/>
                 </svg>
-                {{ $username }}
+                <svg x-show="isFacebook" x-cloak class="w-3.5 h-3.5 text-[#1877f2]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/>
+                </svg>
+                <span x-text="accountName">{{ $username }}</span>
             </dd>
         </div>
     </dl>

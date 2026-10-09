@@ -44,9 +44,8 @@ class StoreScheduledPostRequest extends FormRequest
 
     private function socialAccountRule(): Exists
     {
-        // Publikasi Facebook belum tersedia, jadi hanya akun Instagram yang bisa dijadwalkan.
         return Rule::exists('social_accounts', 'id')
-            ->where('platform', SocialAccount::PLATFORM_INSTAGRAM)
+            ->whereIn('platform', [SocialAccount::PLATFORM_INSTAGRAM, SocialAccount::PLATFORM_FACEBOOK])
             ->where('status', SocialAccount::STATUS_ACTIVE)
             ->when(! $this->user()?->isDeveloper(), fn ($rule) => $rule->where('user_id', $this->user()?->id));
     }

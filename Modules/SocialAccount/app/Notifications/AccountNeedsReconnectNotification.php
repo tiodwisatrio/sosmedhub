@@ -24,20 +24,22 @@ class AccountNeedsReconnectNotification extends Notification implements ShouldQu
 
     public function toMail(object $notifiable): MailMessage
     {
-        $handle = '@'.$this->account->username;
+        $isFacebook = $this->account->platform === SocialAccount::PLATFORM_FACEBOOK;
+        $platform = $isFacebook ? 'Facebook' : 'Instagram';
+        $handle = $isFacebook ? ($this->account->display_name ?: $this->account->username) : '@'.$this->account->username;
 
         $message = (new MailMessage)
             ->greeting('Halo '.$notifiable->name.',');
 
         if ($this->expired) {
             $message
-                ->subject("Akun Instagram {$handle} terputus")
-                ->line("Koneksi akun Instagram {$handle} sudah tidak berlaku, jadi postingan terjadwal untuk akun ini tidak bisa terbit.")
+                ->subject("Akun {$platform} {$handle} terputus")
+                ->line("Koneksi akun {$platform} {$handle} sudah tidak berlaku, jadi postingan terjadwal untuk akun ini tidak bisa terbit.")
                 ->line('Hubungkan ulang akun supaya penjadwalan berjalan lagi.');
         } else {
             $message
-                ->subject("Koneksi akun Instagram {$handle} akan berakhir")
-                ->line("Koneksi akun Instagram {$handle} akan berakhir pada {$this->expiresAtWib()} dan belum berhasil diperpanjang otomatis.")
+                ->subject("Koneksi akun {$platform} {$handle} akan berakhir")
+                ->line("Koneksi akun {$platform} {$handle} akan berakhir pada {$this->expiresAtWib()} dan belum berhasil diperpanjang otomatis.")
                 ->line('Hubungkan ulang akun sebelum tanggal itu supaya postingan terjadwal tetap terbit.');
         }
 

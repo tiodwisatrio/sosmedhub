@@ -9,6 +9,7 @@ use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostPublication;
 use Modules\Scheduler\Notifications\PostFailedNotification;
 use Modules\Scheduler\Notifications\PostPublishedNotification;
+use Modules\Scheduler\Services\FacebookPublicationRunner;
 use Modules\Scheduler\Services\PublicationRunner;
 use Modules\SocialAccount\Models\SocialAccount;
 use Modules\SocialAccount\Notifications\AccountNeedsReconnectNotification;
@@ -36,6 +37,12 @@ class PublishPublicationJob implements ShouldQueue
 
         if (! $publication || $publication->isFinal()) {
             return;
+        }
+
+        $platform = $publication->scheduledPost()->first()?->socialAccount?->platform;
+
+        if ($platform === SocialAccount::PLATFORM_FACEBOOK) {
+            $runner = app(FacebookPublicationRunner::class);
         }
 
         $result = $runner->advance($publication);

@@ -13,6 +13,10 @@
     use Modules\Scheduler\Services\VideoSpec;
 
     $isEdit = $post !== null;
+    // Instagram lebih dulu, lalu Facebook; di dalam platform urut nama. Akun pertama menjadi pilihan awal.
+    $socialAccounts = $socialAccounts
+        ->sortBy(fn ($account) => [$account->platform === 'instagram' ? 0 : 1, strtolower((string) $account->username)])
+        ->values();
     $minWib = ScheduledPost::nextSlot()->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i');
 
     if ($isEdit) {
@@ -42,7 +46,6 @@
     $siteLogoUrl = $siteLogo ? Storage::url($siteLogo) : null;
     $instaName = $siteSetting->instagram_nama ?? 'Instagram';
     $appInitial = strtoupper(Str::substr($appName, 0, 1));
-    $socialAccountOptions = $socialAccounts->mapWithKeys(fn ($account) => [$account->id => $account->label()])->toArray();
     $selectedSocialAccountId = old('social_account_id', $post?->social_account_id ?? $socialAccounts->first()?->id);
     $selectedSocialAccount = $socialAccounts->firstWhere('id', (int) $selectedSocialAccountId) ?: $post?->socialAccount;
     $previewAccountUsername = $selectedSocialAccount?->username ?: $instaName;
@@ -71,6 +74,14 @@
     }
 
     $composerConfig = [
+        'accountId' => (string) $selectedSocialAccountId,
+        // Data akun untuk pratinjau; berubah mengikuti kartu akun yang dipilih.
+        'accounts' => $socialAccounts->mapWithKeys(fn ($account) => [(string) $account->id => [
+            'platform' => $account->platform,
+            'name' => $account->platform === 'facebook' ? ($account->display_name ?: $account->username) : $account->username,
+            'avatar' => $account->avatar_url,
+        ]])->all(),
+        'fallbackName' => $previewAccountUsername,
         'formats' => $formats,
         'locked' => $locked,
         'shareToFeed' => $shareToFeed,
@@ -114,7 +125,7 @@
                                 <span class="w-1 h-1 rounded-full bg-primary"></span> {{ $post->statusLabel() }}
                             </span>
                         @else
-                            <span class="text-xs text-slate-400">Instagram</span>
+                            <span class="text-xs text-slate-400" x-text="isFacebook ? 'Facebook' : 'Instagram'">Instagram</span>
                         @endif
                     </div>
 
@@ -129,12 +140,39 @@
                                     Belum ada akun sosial aktif. Tambahkan akun dulu sebelum menjadwalkan postingan.
                                 </div>
                             @else
-                                <x-admin.select
-                                    name="social_account_id"
-                                    :options="$socialAccountOptions"
-                                    :selected="$selectedSocialAccountId"
-                                    placeholder="Pilih akun Instagram"
-                                />
+                                <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Akun tujuan">
+                                    @foreach ($socialAccounts as $account)
+                                        @php
+                                            $isFacebookAccount = $account->platform === 'facebook';
+                                            $accountName = $isFacebookAccount ? ($account->display_name ?: $account->username) : '@'.$account->username;
+                                        @endphp
+                                        <label class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-3 transition-colors duration-150 focus-within:ring-2 focus-within:ring-primary/30"
+                                            :class="accountId === '{{ $account->id }}' ? 'border-primary bg-primary-light/40' : 'border-border bg-white hover:border-primary/40 hover:bg-slate-50'">
+                                            <input type="radio" name="social_account_id" value="{{ $account->id }}" x-model="accountId" class="sr-only">
+
+                                            <span class="relative shrink-0">
+                                                @if ($account->avatar_url)
+                                                    <img src="{{ $account->avatar_url }}" alt="" class="h-10 w-10 rounded-full object-cover bg-slate-100" referrerpolicy="no-referrer">
+                                                @else
+                                                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-500">
+                                                        {{ strtoupper(Str::substr(ltrim($accountName, '@'), 0, 1)) }}
+                                                    </span>
+                                                @endif
+                                                <x-social-account::brand-icon :platform="$account->platform" size="sm" class="!h-[18px] !w-[18px] !rounded-full absolute -bottom-1 -right-1 ring-2 ring-white [&_svg]:!h-2.5 [&_svg]:!w-2.5" />
+                                            </span>
+
+                                            <span class="min-w-0">
+                                                <span class="block truncate text-sm font-semibold text-slate-800">{{ $accountName }}</span>
+                                                <span class="block text-xs text-slate-500">{{ $isFacebookAccount ? 'Facebook Page' : 'Instagram' }}</span>
+                                            </span>
+
+                                            <span x-show="accountId === '{{ $account->id }}'" x-cloak
+                                                class="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white" aria-hidden="true">
+                                                <svg class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
                             @endif
                             @error('social_account_id') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                         </div>
@@ -169,7 +207,7 @@
                                     name="caption"
                                     rows="6"
                                     x-model="caption"
-                                    placeholder="Tulis caption yang akan menjadi teks postingan Instagram…"
+                                    placeholder="Tulis caption yang akan menjadi teks postingan…"
                                 ></x-admin.textarea>
                                 <p class="mt-1.5 text-xs text-slate-400" x-show="has('story')" x-cloak>
                                     Caption dipakai untuk Feed dan Reels. Story tidak mendukung caption.

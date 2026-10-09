@@ -18,7 +18,10 @@ class FormatMedia implements ValidationRule
 {
     private const VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/x-m4v'];
 
-    public function __construct(private readonly string $format) {}
+    /**
+     * @param  bool  $enforceFeedRatio  Rasio Feed hanya dipaksa untuk Instagram; Facebook menerima rasio apa pun.
+     */
+    public function __construct(private readonly string $format, private readonly bool $enforceFeedRatio = true) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -63,7 +66,7 @@ class FormatMedia implements ValidationRule
             return;
         }
 
-        $rule = new InstagramPhoto(enforceRatio: $this->format === ScheduledPost::FORMAT_FEED);
+        $rule = new InstagramPhoto(enforceRatio: $this->format === ScheduledPost::FORMAT_FEED && $this->enforceFeedRatio);
         $rule->validate($attribute, $file, $fail);
     }
 

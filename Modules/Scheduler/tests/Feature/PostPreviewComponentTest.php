@@ -111,3 +111,29 @@ test('uploader menyediakan seret-lepas, tombol panah, dan token urutan untuk tia
         ->assertSee('name="order[reel][]"', false)
         ->assertSee('moveTo(format, fromKey, toKey)', false);
 });
+
+test('pratinjau menyediakan tampilan Facebook dan data akun yang berubah mengikuti pilihan', function () {
+    $user = previewUser();
+    previewAccount($user);
+    SocialAccount::create([
+        'user_id' => $user->id,
+        'platform' => SocialAccount::PLATFORM_FACEBOOK,
+        'provider_account_id' => 'fb-preview',
+        'username' => 'Halaman Preview',
+        'display_name' => 'Halaman Preview',
+        'avatar_url' => 'https://example.test/avatar.jpg',
+        'status' => SocialAccount::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($user)->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        // layar Facebook dan layar Instagram saling bergantian menurut platform akun
+        ->assertSee('x-show="isFacebook"', false)
+        ->assertSee('x-show="! isFacebook"', false)
+        ->assertSee('Komentar')
+        ->assertSee('Bagikan')
+        // nama dan foto akun dikirim ke Alpine untuk pratinjau
+        ->assertSee('Halaman Preview')
+        ->assertSee('example.test', false)
+        ->assertSee('avatar.jpg', false);
+});

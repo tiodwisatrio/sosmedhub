@@ -7,6 +7,9 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('postComposer', (cfg) => ({
+            accountId: cfg.accountId,
+            accounts: cfg.accounts,
+            fallbackName: cfg.fallbackName,
             keys: ['feed', 'story', 'reel'],
             labels: { feed: 'Feed', story: 'Story', reel: 'Reels' },
             limits: cfg.limits,
@@ -75,6 +78,33 @@
             },
 
             // ---- Format ----------------------------------------------------------------
+            // Facebook baru mendukung Feed; memilih akun Facebook mengembalikan format ke Feed.
+            init() {
+                this.$watch('accountId', () => {
+                    if (this.isFacebook) {
+                        this.formats = ['feed'];
+                        this.setActive('feed');
+                    }
+                });
+            },
+            get account() {
+                return this.accounts[this.accountId] || null;
+            },
+            get isFacebook() {
+                return this.account?.platform === 'facebook';
+            },
+            get accountName() {
+                return this.account?.name || this.fallbackName;
+            },
+            get accountAvatar() {
+                return this.account?.avatar || null;
+            },
+            get accountInitial() {
+                return (this.accountName || '?').trim().charAt(0).toUpperCase();
+            },
+            unsupported(format) {
+                return this.isFacebook && format !== 'feed';
+            },
             has(format) {
                 return this.formats.includes(format);
             },
@@ -82,7 +112,7 @@
                 return this.locked.includes(format);
             },
             toggle(format) {
-                if (this.isLocked(format)) return;
+                if (this.isLocked(format) || this.unsupported(format)) return;
 
                 if (this.has(format)) {
                     // Minimal satu format tetap terpilih.
