@@ -205,7 +205,7 @@
                                     placeholder="Tulis caption yang akan menjadi teks postingan…"
                                 ></x-admin.textarea>
                                 <p class="mt-1.5 text-xs text-slate-400" x-show="has('story')" x-cloak>
-                                    Caption dipakai untuk Feed dan Reels. Story tidak mendukung caption.
+                                    Caption dipakai untuk Feed dan Reels.
                                 </p>
                             </div>
                         </div>

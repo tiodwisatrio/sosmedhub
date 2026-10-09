@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <p class="mt-2 text-xs font-medium text-slate-600" x-text="schedulePreview"></p>
+    <p class="my-3 text-xs font-medium text-slate-600" x-text="schedulePreview"></p>
 
     <p x-cloak x-show="scheduled_at && scheduled_at < @js($min)" role="alert" class="mt-1.5 text-xs text-danger">
         Waktu ini sudah lewat. Pilih setelah {{ $minLabel }} WIB.
@@ -70,7 +70,10 @@
         <p class="mt-1.5 text-xs text-danger">{{ $message }}</p>
     @enderror
 
-    <p class="mt-1.5 text-xs text-slate-400">
-        {{ \Modules\Scheduler\Models\ScheduledPost::slotHint() }}
-    </p>
+    {{-- Slot 1 menit berarti menit bebas: tidak ada yang perlu dijelaskan. --}}
+    @if (\Modules\Scheduler\Models\ScheduledPost::slotMinutes() !== 1)
+        <p class="mt-1.5 text-xs text-slate-400">
+            {{ \Modules\Scheduler\Models\ScheduledPost::slotHint() }}
+        </p>
+    @endif
 </div>

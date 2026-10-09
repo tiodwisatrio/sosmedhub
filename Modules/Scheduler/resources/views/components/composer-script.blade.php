@@ -27,6 +27,8 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('postComposer', (cfg) => ({
             accountId: cfg.accountId,
+            // Pratinjau layar penuh (ponsel): bingkai ponsel tiruan diganti layar HP pengguna.
+            fullPreview: false,
             accounts: cfg.accounts,
             fallbackName: cfg.fallbackName,
             keys: ['feed', 'story', 'reel'],
@@ -145,6 +147,15 @@
 
                 if (! this.has(this.active)) this.setActive(this.formats[0]);
                 this.stopPlayback();
+            },
+            openFullPreview() {
+                this.stopPlayback();
+                this.fullPreview = true;
+            },
+            closeFullPreview() {
+                if (! this.fullPreview) return;
+                this.stopPlayback();
+                this.fullPreview = false;
             },
             setActive(format) {
                 this.active = format;

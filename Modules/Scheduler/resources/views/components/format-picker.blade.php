@@ -50,9 +50,7 @@
 
     <label x-show="has('reel') && ! isLocked('reel')" x-cloak class="mt-3 flex items-start gap-2.5 text-sm text-slate-600">
         <input type="checkbox" x-model="shareToFeed" class="mt-0.5 rounded border-border text-primary focus:ring-primary/30">
-        <span>Tampilkan Reels juga di Feed
-            <span class="block text-xs text-slate-400">Bila dimatikan, Reels hanya tampil di tab Reels profil.</span>
-        </span>
+        <span>Tampilkan Reels juga di Feed</span>
     </label>
     <input type="hidden" name="share_to_feed" :value="shareToFeed ? 1 : 0">
 

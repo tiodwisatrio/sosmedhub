@@ -13,17 +13,26 @@
 
 {{-- Pratinjau --}}
 <div>
-    <div class="relative mx-auto w-full max-w-[360px] px-3">
+    {{-- Di ponsel: pratinjau memenuhi layar HP pengguna sendiri, tanpa bingkai ponsel tiruan. --}}
+    <button type="button" @click="openFullPreview()"
+        class="mx-auto mb-4 flex w-full max-w-[300px] items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30 lg:hidden">
+        <x-heroicon-o-arrows-pointing-out class="h-4 w-4" />
+        Pratinjau layar penuh
+    </button>
+
+    <div class="relative mx-auto w-full max-w-[300px] px-3 sm:max-w-[360px]">
         {{-- Frame iPhone Pro: elemen dekoratif, preview tetap interaktif. --}}
-        <span aria-hidden="true" class="absolute -left-0.5 top-28 h-8 w-1 rounded-l bg-slate-500 shadow-sm"></span>
-        <span aria-hidden="true" class="absolute -left-0.5 top-40 h-14 w-1 rounded-l bg-slate-500 shadow-sm"></span>
-        <span aria-hidden="true" class="absolute -right-0.5 top-36 h-16 w-1 rounded-r bg-slate-500 shadow-sm"></span>
-        <div class="relative aspect-[9/19.5] rounded-[3.2rem] border-[7px] border-[#1c1c1e] bg-[#1c1c1e] p-[3px] shadow-[0_18px_40px_rgba(15,23,42,0.28)]">
-            <span aria-hidden="true" class="absolute left-1/2 top-2.5 z-20 h-6 w-24 -translate-x-1/2 rounded-full bg-[#050505]"></span>
-            <span aria-hidden="true" class="absolute left-[calc(50%-2.1rem)] top-[1.19rem] z-30 h-1.5 w-1.5 rounded-full bg-slate-700 ring-1 ring-slate-800"></span>
-            <div class="relative mx-auto h-full rounded-[2.8rem] pt-8 overflow-hidden" :class="active === 'feed' ? 'bg-white' : 'bg-black'">
+        <span aria-hidden="true" x-show="! fullPreview" class="absolute -left-0.5 top-28 h-8 w-1 rounded-l bg-slate-500 shadow-sm"></span>
+        <span aria-hidden="true" x-show="! fullPreview" class="absolute -left-0.5 top-40 h-14 w-1 rounded-l bg-slate-500 shadow-sm"></span>
+        <span aria-hidden="true" x-show="! fullPreview" class="absolute -right-0.5 top-36 h-16 w-1 rounded-r bg-slate-500 shadow-sm"></span>
+        <div class="relative aspect-[9/19.5] rounded-[3.2rem] border-[7px] border-[#1c1c1e] bg-[#1c1c1e] p-[3px] shadow-[0_18px_40px_rgba(15,23,42,0.28)]"
+                :class="fullPreview ? '!fixed !inset-0 !z-50 !aspect-auto !rounded-none !border-0 !p-0 !shadow-none' : ''">
+            <span aria-hidden="true" x-show="! fullPreview" class="absolute left-1/2 top-2.5 z-20 h-6 w-24 -translate-x-1/2 rounded-full bg-[#050505]"></span>
+            <span aria-hidden="true" x-show="! fullPreview" class="absolute left-[calc(50%-2.1rem)] top-[1.19rem] z-30 h-1.5 w-1.5 rounded-full bg-slate-700 ring-1 ring-slate-800"></span>
+            <div class="relative mx-auto h-full rounded-[2.8rem] pt-8 overflow-hidden"
+                :class="[active === 'feed' ? 'bg-white' : 'bg-black', fullPreview ? '!rounded-none !pt-[env(safe-area-inset-top)] !overflow-y-auto' : '']">
         {{-- Chrome aplikasi Instagram dalam light theme. --}}
-        <div class="absolute inset-x-0 top-0 z-10 flex h-8 items-center justify-between px-6 text-[10px] font-semibold" :class="active === 'feed' ? 'bg-white text-slate-900' : 'bg-transparent text-white'">
+        <div x-show="! fullPreview" class="absolute inset-x-0 top-0 z-10 flex h-8 items-center justify-between px-6 text-[10px] font-semibold" :class="active === 'feed' ? 'bg-white text-slate-900' : 'bg-transparent text-white'">
             <span>11:18</span>
             <div class="flex items-center gap-1.5"><svg class="h-3.5 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M1 16h2V9H1v7Zm4 0h2V6H5v10Zm4 0h2V3H9v13Zm4 0h2V1h-2v15Zm4 0h2V0h-2v16Z"/></svg><svg class="h-3.5 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 9.5a13.5 13.5 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.5 3.5 0 0 1 4 0"/></svg><span class="h-2.5 w-5 rounded-sm border border-slate-700 p-px"><span class="block h-full w-3 rounded-[1px] bg-slate-800"></span></span></div>
         </div>
@@ -31,7 +40,7 @@
             <div x-show="! isFacebook">
             {{-- ===== Feed ===== --}}
             <div x-show="active === 'feed'">
-            <div class="flex h-12 items-center justify-between border-b border-border/70 px-4 text-slate-900"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
+            <div class="flex h-10 items-center justify-between border-b border-border/70 px-4 text-slate-900 sm:h-12"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
             <div class="flex items-center gap-2.5 border-b border-border/70 px-4 py-3">
                 <x-scheduler::account-avatar class="h-8 w-8 rounded-full border border-border text-[11px]" />
                 <p class="truncate text-[13px] font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></p>
@@ -84,7 +93,8 @@
                     <p>Disukai oleh <span class="font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></span> dan <span class="font-semibold text-slate-900">21 lainnya</span></p>
                 </div>
 
-                <p class="mt-2 text-[13px] text-slate-600">
+                {{-- Seperti Instagram: caption dipangkas dua baris di layar kecil; layar penuh menampilkan semuanya. --}}
+                <p class="mt-2 line-clamp-2 text-[13px] text-slate-600 sm:line-clamp-none" :class="fullPreview ? '!line-clamp-none' : ''">
                     <span class="font-semibold text-slate-800" x-text="accountName">{{ $username }}</span>
                     <span x-text="caption" x-show="caption" class="whitespace-pre-line"></span>
                     <span x-show="! caption" class="text-slate-400">Belum ada caption…</span>
@@ -215,7 +225,8 @@
             </div>
 
             {{-- ===== Facebook (Feed) ===== --}}
-            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100">
+            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100"
+                :class="fullPreview ? '!top-[env(safe-area-inset-top)] !overflow-y-auto' : ''">
                 <div class="flex h-11 items-center justify-between bg-white px-4">
                     <p class="text-[22px] font-bold leading-none tracking-tight text-[#1877f2]">facebook</p>
                     <div class="flex items-center gap-2 text-slate-800" aria-hidden="true">
@@ -277,8 +288,14 @@
             </div>
             </div>
         </div>
-        <span aria-hidden="true" class="absolute bottom-4 left-1/2 z-20 h-1 w-24 -translate-x-1/2 rounded-full" :class="active === 'feed' ? 'bg-slate-900/70' : 'bg-white/80'"></span>
+        <span aria-hidden="true" x-show="! fullPreview" class="absolute bottom-4 left-1/2 z-20 h-1 w-24 -translate-x-1/2 rounded-full" :class="active === 'feed' ? 'bg-slate-900/70' : 'bg-white/80'"></span>
     </div>
+
+    {{-- Kontrol layar penuh: hanya tombol tutup, supaya tampil seperti aplikasi Instagram. Format yang tampil adalah yang aktif saat dibuka. --}}
+    <button type="button" x-show="fullPreview" x-cloak @click="closeFullPreview()" @keydown.escape.window="closeFullPreview()" aria-label="Tutup pratinjau layar penuh"
+        class="fixed right-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white shadow focus:outline-none focus:ring-2 focus:ring-white">
+        <x-heroicon-o-x-mark class="h-5 w-5" />
+    </button>
 
     {{-- Geser pratinjau antar format bila lebih dari satu format dipilih --}}
     <div x-show="formats.length > 1" x-cloak class="mt-5 flex items-center justify-center gap-2" role="group" aria-label="Pratinjau per format">

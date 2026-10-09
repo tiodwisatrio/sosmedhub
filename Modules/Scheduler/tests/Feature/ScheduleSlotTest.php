@@ -258,7 +258,7 @@ it('menampilkan peringatan scheduler di dashboard hanya untuk developer', functi
         ->assertDontSee('Scheduler tidak berjalan sejak');
 });
 
-it('slot 1 menit: menit bebas dipilih, jam tidak dibatasi, dan teks bantuan sesuai', function () {
+it('slot 1 menit: menit bebas dipilih, jam tidak dibatasi, dan teks bantuan tidak ditampilkan', function () {
     config(['scheduler.slot_minutes' => 1]);
     Carbon::setTestNow(wib('2026-10-06 09:07:30'));
     $user = slotUser();
@@ -270,7 +270,8 @@ it('slot 1 menit: menit bebas dipilih, jam tidak dibatasi, dan teks bantuan sesu
 
     $html = $this->actingAs($user)->get(route('admin.scheduled-posts.create'))
         ->assertOk()
-        ->assertSee('Pilih menit bebas.')
+        // Slot 1 menit tidak perlu penjelasan di form; teksnya tetap tersedia dari slotHint().
+        ->assertDontSee('Pilih menit bebas.')
         ->assertDontSee('kelipatan 1')
         ->assertSee('min="2026-10-06"', false)
         ->getContent();
