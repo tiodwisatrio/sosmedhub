@@ -17,13 +17,13 @@
         <span class="ml-1 text-xs font-normal text-slate-400">Pilih satu atau lebih</span>
     </span>
 
-    <div class="grid gap-2 sm:grid-cols-3">
+    <div class="grid grid-cols-3 gap-2">
         @foreach ($options as $key => $option)
             <button type="button" @click="toggle('{{ $key }}')"
                 :aria-pressed="has('{{ $key }}') ? 'true' : 'false'"
                 :disabled="isLocked('{{ $key }}') || unsupported('{{ $key }}')"
                 data-format-chip="{{ $key }}"
-                class="relative flex items-start gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed"
+                class="relative flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center transition-colors sm:flex-row sm:items-start sm:gap-3 sm:px-3.5 sm:text-left duration-150 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed"
                 :class="has('{{ $key }}')
                     ? 'border-primary bg-primary-light/40'
                     : 'border-border bg-white hover:border-primary/40 hover:bg-slate-50'">
@@ -34,16 +34,11 @@
 
                 <span class="min-w-0">
                     <span class="block text-sm font-semibold text-slate-800">{{ $option['label'] }}</span>
-                    <span class="block text-xs leading-snug text-slate-500">{{ $option['hint'] }}</span>
+                    <span class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
                     <span x-show="unsupported('{{ $key }}')" x-cloak class="mt-1 block text-[11px] font-medium text-slate-400">Belum untuk Facebook</span>
                     <span x-show="isLocked('{{ $key }}')" x-cloak class="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-success-text">
                         <x-heroicon-o-check-circle class="h-3.5 w-3.5" /> Sudah terbit
                     </span>
-                </span>
-
-                <span x-show="has('{{ $key }}') && ! isLocked('{{ $key }}')" x-cloak
-                    class="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white" aria-hidden="true">
-                    <svg class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                 </span>
             </button>
         @endforeach

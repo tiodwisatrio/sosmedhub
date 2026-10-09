@@ -32,6 +32,14 @@ class VideoSpec
     }
 
     /**
+     * Batas ukuran video sumber Story yang akan dipotong. Hasil potongan tetap mengikuti maxBytes().
+     */
+    public static function trimSourceMaxBytes(): int
+    {
+        return (int) config('scheduler.video.story_trim_source_max_mb', 500) * 1024 * 1024;
+    }
+
+    /**
      * @param  array{duration: float, video_codec: ?string, audio_codec: ?string, has_audio: bool, fps: ?float}  $info
      * @return string|null Pesan galat bila tidak memenuhi syarat
      */

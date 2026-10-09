@@ -13,8 +13,8 @@
     $reelMax = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'));
     $hint = [
         'feed' => 'JPEG · maks 8 MB per foto · hingga 10 foto (carousel).',
-        'story' => 'Foto JPEG atau video MP4/MOV · hingga 10 item, masing-masing jadi satu Story. Video 3-60 detik, maks 100 MB. Rasio 9:16 disarankan. Story tidak memakai caption.',
-        'reel' => 'Satu video MP4/MOV (H.264 atau HEVC, audio AAC) · 3 detik sampai '.$reelMax.' · maks 300 MB. Rasio 9:16 disarankan.',
+        'story' => 'Foto JPEG/Video MP4/MOV. Maksimal durasi video 1 menit.',
+        'reel' => 'Video MP4/MOV. Durasi maksimal '.$reelMax.'. Ukuran maksimal 300 MB.',
     ][$format];
 
     $serverErrors = collect($errors->get($field))
@@ -61,23 +61,23 @@
 
                 <span class="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                     <span class="tabular-nums" x-text="entry.position + 1"></span>
-                    <span x-show="entry.kind === 'new'" class="rounded bg-primary px-1 text-[9px] leading-tight">Baru</span>
+                    <span x-show="entry.kind === 'new'" class="text-[9px] leading-tight">Baru</span>
                 </span>
 
                 <button type="button" x-show="! isLocked('{{ $format }}')"
                     @click="entry.kind === 'existing' ? removeExisting('{{ $format }}', entry.id) : removeNew('{{ $format }}', entry.key)"
-                    class="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1 text-white transition-colors hover:bg-danger" title="Hapus media ini" aria-label="Hapus media ini">
+                    class="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1.5 text-white sm:p-1 transition-colors hover:bg-danger" title="Hapus media ini" aria-label="Hapus media ini">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                 </button>
 
                 <div x-show="canReorder('{{ $format }}')" x-cloak
                     class="absolute inset-x-1 bottom-1 flex justify-between transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover/tile:opacity-100">
                     <button type="button" @click="shift('{{ $format }}', entry.key, -1)" :disabled="entry.position === 0" aria-label="Geser ke kiri" title="Geser ke kiri"
-                        class="rounded-full bg-slate-900/70 p-1 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30">
+                        class="rounded-full bg-slate-900/70 p-1.5 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30 sm:p-1">
                         <x-heroicon-o-chevron-left class="h-3 w-3" />
                     </button>
                     <button type="button" @click="shift('{{ $format }}', entry.key, 1)" :disabled="entry.position === order['{{ $format }}'].length - 1" aria-label="Geser ke kanan" title="Geser ke kanan"
-                        class="rounded-full bg-slate-900/70 p-1 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30">
+                        class="rounded-full bg-slate-900/70 p-1.5 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30 sm:p-1">
                         <x-heroicon-o-chevron-right class="h-3 w-3" />
                     </button>
                 </div>
@@ -94,6 +94,40 @@
                 :disabled="! has('{{ $format }}')" class="sr-only">
         </label>
     </div>
+
+
+    @if ($format === 'story')
+        {{-- Video Story lebih dari 60 detik: pilih bagian yang ditayangkan. Rentang dikirim ke server, yang memotongnya. --}}
+        <template x-for="entry in trimEntries" :key="'trim-' + entry.uid">
+            <div class="mt-4 rounded-lg border border-primary/30 bg-primary-light/20 p-3" data-trim-editor>
+                <input type="hidden" :name="`trim_story[${entry.index}][start]`" :value="entry.trim.start.toFixed(2)">
+                <input type="hidden" :name="`trim_story[${entry.index}][end]`" :value="entry.trim.end.toFixed(2)">
+
+                <p class="text-sm font-medium text-slate-700">Pilih bagian yang ditayangkan</p>
+
+                <video :id="'trim-video-' + entry.uid" :src="blobs[entry.uid]?.url" controls playsinline preload="metadata"
+                    class="mt-3 mx-auto max-h-64 w-auto rounded-md bg-black"
+                    @loadedmetadata="$el.currentTime = entry.trim.start"
+                    @timeupdate="loopTrim(entry, $event)"></video>
+
+                <div class="relative mt-4 h-8" role="group" aria-label="Rentang potong">
+                    <div class="absolute inset-x-0 top-3 h-2 rounded-full bg-slate-200"></div>
+                    <div class="absolute top-3 h-2 rounded-full bg-primary"
+                        :style="`left: ${entry.trim.start / entry.trim.duration * 100}%; width: ${(entry.trim.end - entry.trim.start) / entry.trim.duration * 100}%`"></div>
+                    <input type="range" min="0" :max="entry.trim.duration" step="0.1" :value="entry.trim.start"
+                        @input="onTrimStart(entry, $event)" class="trim-range" aria-label="Mulai dari">
+                    <input type="range" min="0" :max="entry.trim.duration" step="0.1" :value="entry.trim.end"
+                        @input="onTrimEnd(entry, $event)" class="trim-range" aria-label="Sampai">
+                </div>
+
+                <div class="mt-1 flex items-center justify-between text-xs tabular-nums text-slate-500">
+                    <span x-text="clock(0)"></span>
+                    <span class="font-semibold text-slate-800" x-text="trimSummary(entry.trim)"></span>
+                    <span x-text="clock(entry.trim.duration)"></span>
+                </div>
+            </div>
+        </template>
+    @endif
 
     <template x-for="token in orderTokens('{{ $format }}')" :key="'order-' + token">
         <input type="hidden" name="order[{{ $format }}][]" :value="token" :disabled="! has('{{ $format }}') || isLocked('{{ $format }}')">

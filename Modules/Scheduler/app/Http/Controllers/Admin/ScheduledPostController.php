@@ -13,6 +13,7 @@ use Modules\Scheduler\Http\Requests\UpdateScheduledPostRequest;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Services\ScheduledPostService;
 use Modules\SocialAccount\Models\SocialAccount;
+use RuntimeException;
 
 class ScheduledPostController extends Controller implements HasMiddleware
 {
@@ -127,8 +128,13 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $data['formats'] = $request->selectedFormats();
         $data['share_to_feed'] = $request->boolean('share_to_feed', true);
         $data['order'] = $request->mediaOrder();
+        $data['trims'] = $request->trimsByFormat();
 
-        $this->service->store($data, $request->mediaByFormat(), auth()->id());
+        try {
+            $this->service->store($data, $request->mediaByFormat(), auth()->id());
+        } catch (RuntimeException $e) {
+            return back()->withInput()->withErrors(['media_story' => $e->getMessage()]);
+        }
 
         return redirect()->route('admin.scheduled-posts.index')
             ->with('success', 'Postingan berhasil dijadwalkan.');
@@ -154,13 +160,18 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $data['formats'] = $request->selectedFormats();
         $data['share_to_feed'] = $request->boolean('share_to_feed', true);
         $data['order'] = $request->mediaOrder();
+        $data['trims'] = $request->trimsByFormat();
 
-        $this->service->update(
-            $scheduled_post,
-            $data,
-            $request->mediaByFormat(),
-            $request->input('remove_media') ?? []
-        );
+        try {
+            $this->service->update(
+                $scheduled_post,
+                $data,
+                $request->mediaByFormat(),
+                $request->input('remove_media') ?? []
+            );
+        } catch (RuntimeException $e) {
+            return back()->withInput()->withErrors(['media_story' => $e->getMessage()]);
+        }
 
         return redirect()->route('admin.scheduled-posts.index')
             ->with('success', 'Postingan berhasil diperbarui.');

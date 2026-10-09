@@ -34,6 +34,11 @@ return [
         'min_seconds' => 3,
         'story_max_seconds' => 60,
         'story_max_mb' => 100,
+        // Story yang dipotong: batas ukuran video sumber (hasil potongan tetap harus muat di batas Story).
+        'story_trim_source_max_mb' => (int) env('SCHEDULER_STORY_TRIM_SOURCE_MAX_MB', 500),
+        // Pemotongan memakai ffmpeg. Bila tidak terpasang, video Story di atas 60 detik ditolak.
+        'ffmpeg' => env('SCHEDULER_FFMPEG', 'ffmpeg'),
+        'trim_timeout_seconds' => (int) env('SCHEDULER_TRIM_TIMEOUT_SECONDS', 600),
         'reel_max_seconds' => (int) env('SCHEDULER_REEL_MAX_SECONDS', 180),
         'reel_max_mb' => 300,
         'photo_max_mb' => 8,

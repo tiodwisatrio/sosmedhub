@@ -19,7 +19,8 @@
     $minDate = substr($min, 0, 10);
     $minLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m-d\TH:i', $min)->locale('id')->translatedFormat('j F Y, H.i');
     $hasError = $errors->has('scheduled_at');
-    $field = 'w-full rounded-md border px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-1 transition-colors duration-150 '
+    // 16px di ponsel: font lebih kecil membuat iOS memperbesar halaman saat kolom disentuh.
+    $field = 'w-full rounded-md border px-3 py-2 text-base sm:text-sm text-slate-800 bg-white focus:outline-none focus:ring-1 transition-colors duration-150 '
         . ($hasError
             ? 'border-danger focus:border-danger focus:ring-danger/20'
             : 'border-border focus:border-primary focus:ring-primary/20');

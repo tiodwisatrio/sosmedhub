@@ -79,6 +79,43 @@ trait ValidatesPostFormats
     }
 
     /**
+     * Rentang potong video per format dan urutan file unggahan. Saat ini hanya Story yang bisa dipotong
+     * (kolom trim_story[N][start|end], N = urutan file di media_story[]).
+     *
+     * @return array<int, array{start: mixed, end: mixed}>
+     */
+    protected function trimInput(string $format): array
+    {
+        if ($format !== ScheduledPost::FORMAT_STORY) {
+            return [];
+        }
+
+        $input = $this->input('trim_story');
+
+        return is_array($input) ? array_filter($input, 'is_array') : [];
+    }
+
+    /**
+     * Rentang potong yang sudah divalidasi, per format, untuk diteruskan ke penyimpanan media.
+     *
+     * @return array<string, array<int, array{start: float, end: float}>>
+     */
+    public function trimsByFormat(): array
+    {
+        $story = [];
+
+        foreach ($this->trimInput(ScheduledPost::FORMAT_STORY) as $index => $range) {
+            if (is_numeric($range['start'] ?? null) && is_numeric($range['end'] ?? null)) {
+                $story[(int) $index] = ['start' => (float) $range['start'], 'end' => (float) $range['end']];
+            }
+        }
+
+        return $story === [] || ! in_array(ScheduledPost::FORMAT_STORY, $this->editableFormats(), true)
+            ? []
+            : [ScheduledPost::FORMAT_STORY => $story];
+    }
+
+    /**
      * Urutan akhir media per format dari form: "e:ID" untuk media yang sudah tersimpan dan
      * "n:N" untuk file unggahan ke-N (urutan unggah). Hanya format yang bisa diubah.
      *
@@ -117,6 +154,9 @@ trait ValidatesPostFormats
             'formats' => ['nullable', 'array'],
             'formats.*' => [Rule::in(ScheduledPost::FORMATS)],
             'share_to_feed' => ['nullable', 'boolean'],
+            'trim_story' => ['nullable', 'array', 'max:10'],
+            'trim_story.*.start' => ['nullable', 'numeric', 'min:0'],
+            'trim_story.*.end' => ['nullable', 'numeric', 'min:0'],
             'order' => ['nullable', 'array'],
             'order.*' => ['nullable', 'array', 'max:10'],
             'order.*.*' => ['string', 'regex:/^[en]:\d+$/'],
@@ -128,7 +168,7 @@ trait ValidatesPostFormats
             $field = $limit['field'];
             $rules[$field] = ['nullable', 'array', 'max:'.$limit['max']];
             $rules["{$field}.*"] = in_array($format, $editable, true)
-                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: $this->selectedPlatform() !== SocialAccount::PLATFORM_FACEBOOK)]
+                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: $this->selectedPlatform() !== SocialAccount::PLATFORM_FACEBOOK, trims: $this->trimInput($format))]
                 : ['prohibited'];
         }
 

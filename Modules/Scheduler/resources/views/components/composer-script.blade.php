@@ -4,6 +4,25 @@
     "postComposer". Pemeriksaan di sini hanya untuk membantu pengguna lebih cepat; server tetap
     yang memutuskan (aturan yang sama ada di FormatMedia).
 --}}
+<style>
+    /* Dua pegangan rentang potong di atas satu lintasan: lintasan tidak menangkap klik, hanya pegangannya. */
+    .trim-range {
+        position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+        background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none;
+    }
+    .trim-range::-webkit-slider-runnable-track { background: transparent; }
+    .trim-range::-moz-range-track { background: transparent; }
+    .trim-range::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: grab;
+        width: 18px; height: 28px; border-radius: 6px; background: #fff; border: 2px solid var(--color-primary, #4f46e5);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .3);
+    }
+    .trim-range::-moz-range-thumb {
+        pointer-events: auto; cursor: grab; width: 14px; height: 24px; border-radius: 6px; background: #fff;
+        border: 2px solid var(--color-primary, #4f46e5); box-shadow: 0 1px 3px rgba(15, 23, 42, .3);
+    }
+    .trim-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--color-primary, #4f46e5); outline-offset: 2px; }
+</style>
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('postComposer', (cfg) => ({
@@ -26,6 +45,8 @@
             // tampil per format: kunci "e:ID" (media tersimpan) atau "n:UID" (file baru).
             files: { feed: [], story: [], reel: [] },
             blobs: {},
+            // Rentang potong video Story yang lebih panjang dari batas, per uid file: {duration, start, end}.
+            trims: {},
             order: {
                 feed: cfg.existing.feed.map((item) => 'e:' + item.id),
                 story: cfg.existing.story.map((item) => 'e:' + item.id),
@@ -153,7 +174,8 @@
                 }).filter(Boolean);
             },
             itemsFor(format) {
-                return this.entries(format).map((entry) => ({ url: entry.url, type: entry.type }));
+                // `trim` hanya ada pada video baru yang dipotong: pratinjau memutar bagian itu saja.
+                return this.entries(format).map((entry) => ({ url: entry.url, type: entry.type, trim: entry.kind === 'new' ? (this.trims[entry.uid] || null) : null }));
             },
             get items() {
                 return this.itemsFor(this.active);
@@ -192,10 +214,32 @@
             toggleMute() {
                 this.muted = ! this.muted;
             },
+            // Awal pemutaran pratinjau: awal rentang potong bila video dipotong, selain itu detik ke-0,1.
+            get previewStart() {
+                return this.current?.trim?.start ?? 0.1;
+            },
             trackProgress(event) {
                 if (! this.playing) return;
                 const video = event.target;
+                const trim = this.current?.trim;
+
+                if (trim) {
+                    // Bagian di luar rentang tidak ditayangkan: ulang dari awal rentang saat melewati akhirnya.
+                    if (video.currentTime >= trim.end) video.currentTime = trim.start;
+                    this.progress = Math.min(Math.max((video.currentTime - trim.start) / (trim.end - trim.start), 0), 1) * 100;
+
+                    return;
+                }
+
                 this.progress = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+            },
+            // Setelah rentang potong digeser, pratinjau yang sedang berhenti pindah ke awal rentang baru.
+            syncPreviewStart() {
+                this.$nextTick(() => {
+                    this.$root.querySelectorAll('video[data-preview-video]').forEach((video) => {
+                        if (video.paused) video.currentTime = Number(video.dataset.start || 0.1);
+                    });
+                });
             },
             // Menjeda semua video pratinjau (termasuk yang tersembunyi di bingkai lain) agar suaranya
             // tidak terus jalan saat format, item, atau media berganti.
@@ -203,7 +247,7 @@
                 this.playing = false;
                 this.$root.querySelectorAll('video[data-preview-video]').forEach((video) => {
                     if (! video.paused) video.pause();
-                    if (video.currentTime > 0.1) video.currentTime = 0.1;
+                    video.currentTime = Number(video.dataset.start || 0.1);
                 });
                 this.progress = 0;
             },
@@ -226,7 +270,7 @@
                 if (format === 'story') return 'image/jpeg,video/mp4,video/quicktime';
                 return 'video/mp4,video/quicktime';
             },
-            problemFor(format, file) {
+            problemFor(format, file, trimmable = false) {
                 const isPhoto = file.type === 'image/jpeg';
                 const isVideo = ['video/mp4', 'video/quicktime'].includes(file.type);
                 const mb = file.size / 1048576;
@@ -237,7 +281,7 @@
                 if (isPhoto && mb > this.limits.photoMb) return `Ukuran foto maksimal ${this.limits.photoMb} MB.`;
 
                 if (isVideo) {
-                    const max = this.limits[format].videoMb;
+                    const max = trimmable ? this.limits.trimSourceMb : this.limits[format].videoMb;
                     if (mb > max) return `Ukuran video ${mb.toFixed(1)} MB melebihi batas ${max} MB untuk ${this.labels[format]}.`;
                 }
 
@@ -282,11 +326,15 @@
                         break;
                     }
 
-                    let problem = this.problemFor(format, file);
+                    const isVideo = file.type.startsWith('video/');
+                    const duration = isVideo ? await this.probeDuration(file) : null;
+                    const max = this.limits[format].videoSeconds;
+                    // Story yang kepanjangan tidak ditolak: penggunanya memilih bagian yang ditayangkan.
+                    const trimmable = format === 'story' && this.limits.trimEnabled && duration !== null && duration > max;
 
-                    if (! problem && file.type.startsWith('video/')) {
-                        const duration = await this.probeDuration(file);
-                        const max = this.limits[format].videoSeconds;
+                    let problem = this.problemFor(format, file, trimmable);
+
+                    if (! problem && isVideo && ! trimmable) {
                         if (duration !== null && duration > max) {
                             problem = `Durasi video ${this.formatSeconds(duration)} melebihi batas ${this.formatSeconds(max)} untuk ${this.labels[format]}.`;
                         } else if (duration !== null && duration < this.limits.videoMinSeconds) {
@@ -294,12 +342,17 @@
                         }
                     }
 
+                    if (! problem && trimmable) file._trimDuration = duration;
+
                     problem ? messages.push(`${file.name}: ${problem}`) : accepted.push(file);
                 }
 
                 accepted.forEach((file) => {
                     file._uid = ++this.uidCounter;
                     this.blobs[file._uid] = { url: URL.createObjectURL(file), type: file.type.startsWith('video/') ? 'video' : 'image' };
+                    if (file._trimDuration) {
+                        this.trims[file._uid] = { duration: file._trimDuration, start: 0, end: Math.min(this.limits.story.videoSeconds, file._trimDuration) };
+                    }
                     this.order[format].push('n:' + file._uid);
                 });
                 this.files[format] = [...this.files[format], ...accepted];
@@ -308,6 +361,52 @@
                 this.checking[format] = false;
                 this.currentIndex = Math.min(this.currentIndex, Math.max(this.items.length - 1, 0));
             },
+            // ---- Potong video Story ----------------------------------------------------
+            // Video yang perlu dipotong, berurutan seperti file di input (nomor urut dikirim ke server).
+            get trimEntries() {
+                return this.files.story
+                    .map((file, index) => ({ file, index, uid: file._uid, trim: this.trims[file._uid] }))
+                    .filter((entry) => entry.trim);
+            },
+            onTrimStart(entry, event) {
+                const t = entry.trim;
+                const max = this.limits.story.videoSeconds;
+                const min = this.limits.videoMinSeconds;
+                t.start = Math.min(Number(event.target.value), t.duration - min);
+                if (t.end - t.start > max) t.end = t.start + max;
+                if (t.end - t.start < min) t.end = Math.min(t.start + min, t.duration);
+                this.seekTrim(entry, t.start);
+                this.syncPreviewStart();
+            },
+            onTrimEnd(entry, event) {
+                const t = entry.trim;
+                const max = this.limits.story.videoSeconds;
+                const min = this.limits.videoMinSeconds;
+                t.end = Math.max(Number(event.target.value), min);
+                if (t.end - t.start > max) t.start = t.end - max;
+                if (t.end - t.start < min) t.start = Math.max(t.end - min, 0);
+                this.seekTrim(entry, Math.max(t.end - 2, t.start));
+                this.syncPreviewStart();
+            },
+            seekTrim(entry, seconds) {
+                const video = document.getElementById('trim-video-' + entry.uid);
+                if (video) video.currentTime = seconds;
+            },
+            // Pratinjau hanya memutar bagian yang dipilih: lompat kembali ke awal saat melewati akhir.
+            loopTrim(entry, event) {
+                const video = event.target;
+                if (video.currentTime >= entry.trim.end || video.currentTime < entry.trim.start - 0.3) {
+                    video.currentTime = entry.trim.start;
+                }
+            },
+            clock(seconds) {
+                const whole = Math.max(Math.round(seconds), 0);
+                return Math.floor(whole / 60) + ':' + String(whole % 60).padStart(2, '0');
+            },
+            trimSummary(trim) {
+                return `${this.clock(trim.start)} – ${this.clock(trim.end)} (${this.formatSeconds(trim.end - trim.start)})`;
+            },
+
             // Urutan file di input mengikuti urutan tampil, supaya nomor "n:N" dari server cocok.
             syncInput(format) {
                 const rank = (file) => this.order[format].indexOf('n:' + file._uid);
@@ -327,6 +426,7 @@
                 const uid = key.slice(2);
                 if (this.blobs[uid]) URL.revokeObjectURL(this.blobs[uid].url);
                 delete this.blobs[uid];
+                delete this.trims[uid];
                 this.files[format] = this.files[format].filter((file) => String(file._uid) !== uid);
                 this.order[format] = this.order[format].filter((k) => k !== key);
                 this.syncInput(format);

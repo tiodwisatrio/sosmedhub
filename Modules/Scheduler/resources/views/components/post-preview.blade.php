@@ -1,8 +1,5 @@
 @props([
     'username',
-    'appName',
-    'appInitial',
-    'logoUrl' => null,
 ])
 
 {{--
@@ -22,11 +19,11 @@
         <span aria-hidden="true" class="absolute -left-0.5 top-40 h-14 w-1 rounded-l bg-slate-500 shadow-sm"></span>
         <span aria-hidden="true" class="absolute -right-0.5 top-36 h-16 w-1 rounded-r bg-slate-500 shadow-sm"></span>
         <div class="relative aspect-[9/19.5] rounded-[3.2rem] border-[7px] border-[#1c1c1e] bg-[#1c1c1e] p-[3px] shadow-[0_18px_40px_rgba(15,23,42,0.28)]">
-            <span aria-hidden="true" class="absolute left-1/2 top-2 z-20 h-6 w-24 -translate-x-1/2 rounded-full bg-[#050505]"></span>
-            <span aria-hidden="true" class="absolute left-[calc(50%-2.1rem)] top-[0.8rem] z-30 h-1.5 w-1.5 rounded-full bg-slate-700 ring-1 ring-slate-800"></span>
-            <div class="relative mx-auto h-full rounded-[2.8rem] border border-border pt-7 overflow-hidden shadow-card" :class="active === 'feed' ? 'bg-white' : 'bg-black'">
+            <span aria-hidden="true" class="absolute left-1/2 top-2.5 z-20 h-6 w-24 -translate-x-1/2 rounded-full bg-[#050505]"></span>
+            <span aria-hidden="true" class="absolute left-[calc(50%-2.1rem)] top-[1.19rem] z-30 h-1.5 w-1.5 rounded-full bg-slate-700 ring-1 ring-slate-800"></span>
+            <div class="relative mx-auto h-full rounded-[2.8rem] pt-8 overflow-hidden" :class="active === 'feed' ? 'bg-white' : 'bg-black'">
         {{-- Chrome aplikasi Instagram dalam light theme. --}}
-        <div class="absolute inset-x-0 top-0 z-10 flex h-7 items-center justify-between px-6 text-[10px] font-semibold" :class="active === 'feed' ? 'bg-white text-slate-900' : 'bg-transparent text-white'">
+        <div class="absolute inset-x-0 top-0 z-10 flex h-8 items-center justify-between px-6 text-[10px] font-semibold" :class="active === 'feed' ? 'bg-white text-slate-900' : 'bg-transparent text-white'">
             <span>11:18</span>
             <div class="flex items-center gap-1.5"><svg class="h-3.5 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M1 16h2V9H1v7Zm4 0h2V6H5v10Zm4 0h2V3H9v13Zm4 0h2V1h-2v15Zm4 0h2V0h-2v16Z"/></svg><svg class="h-3.5 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 9.5a13.5 13.5 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.5 3.5 0 0 1 4 0"/></svg><span class="h-2.5 w-5 rounded-sm border border-slate-700 p-px"><span class="block h-full w-3 rounded-[1px] bg-slate-800"></span></span></div>
         </div>
@@ -36,14 +33,7 @@
             <div x-show="active === 'feed'">
             <div class="flex h-12 items-center justify-between border-b border-border/70 px-4 text-slate-900"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
             <div class="flex items-center gap-2.5 border-b border-border/70 px-4 py-3">
-                @if ($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Logo {{ $appName }}"
-                        class="w-8 h-8 rounded-full object-cover border border-border">
-                @else
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-primary-light grid place-items-center text-white text-[11px] font-bold">
-                        {{ $appInitial }}
-                    </div>
-                @endif
+                <x-scheduler::account-avatar class="h-8 w-8 rounded-full border border-border text-[11px]" />
                 <p class="truncate text-[13px] font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></p>
                 <span class="ml-auto flex w-5 flex-col items-end gap-1" aria-hidden="true">
                     <span class="block h-0.5 w-5 rounded-full bg-slate-800"></span>
@@ -90,16 +80,12 @@
                 </div>
 
                 <div class="mt-2.5 flex items-center gap-2 text-[11px] text-slate-700">
-                    @if ($logoUrl)
-                        <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="h-5 w-5 rounded-full object-cover" />
-                    @else
-                        <span class="grid h-5 w-5 place-items-center rounded-full bg-primary-light text-[8px] font-bold text-primary">{{ $appInitial }}</span>
-                    @endif
+                    <x-scheduler::account-avatar class="h-5 w-5 rounded-full text-[8px]" />
                     <p>Disukai oleh <span class="font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></span> dan <span class="font-semibold text-slate-900">21 lainnya</span></p>
                 </div>
 
                 <p class="mt-2 text-[13px] text-slate-600">
-                    <span class="font-semibold text-slate-800">{{ $appName }}</span>
+                    <span class="font-semibold text-slate-800" x-text="accountName">{{ $username }}</span>
                     <span x-text="caption" x-show="caption" class="whitespace-pre-line"></span>
                     <span x-show="! caption" class="text-slate-400">Belum ada caption…</span>
                 </p>
@@ -116,9 +102,9 @@
                         :aria-label="current.type === 'video' ? 'Putar atau jeda video' : null"
                         @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                         <template x-if="current.type === 'video'">
-                            <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video class="h-full w-full object-cover"
+                            <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
                                 x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
-                                @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = 0.1"></video>
+                                @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
                         </template>
                         <template x-if="current.type !== 'video'">
                             <img :src="current.url" alt="Pratinjau Story" class="h-full w-full object-cover">
@@ -137,11 +123,7 @@
                         <span x-show="items.length === 0" class="h-0.5 flex-1 rounded-full bg-white/35"></span>
                     </div>
                     <div class="mt-2.5 flex items-center gap-2">
-                        @if ($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $appName }}" class="h-8 w-8 rounded-full border border-white/30 object-cover">
-                        @else
-                            <div class="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-tr from-primary to-primary-light text-[11px] font-bold text-white">{{ $appInitial }}</div>
-                        @endif
+                        <x-scheduler::account-avatar class="h-8 w-8 rounded-full border border-white/30 text-[11px]" />
                         <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
                         <span class="text-xs text-white/70">Sekarang</span>
                     </div>
@@ -173,9 +155,9 @@
                     role="button" tabindex="0" aria-label="Putar atau jeda video"
                     @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                     <template x-if="current">
-                        <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video class="h-full w-full object-cover"
+                        <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
                             x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
-                            @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = 0.1"></video>
+                            @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
                     </template>
                 </div>
                 <div x-show="! current" class="absolute inset-0 grid place-items-center bg-gradient-to-b from-slate-800 to-slate-900 text-white/30">
@@ -202,21 +184,13 @@
                     <div class="flex flex-col items-center gap-1"><x-heroicon-o-paper-airplane class="h-7 w-7 -rotate-45" stroke-width="1.75" /><span class="h-3 text-[11px] font-semibold leading-3">1</span></div>
                     <div class="flex flex-col items-center gap-1"><x-heroicon-o-bookmark class="h-7 w-7" stroke-width="1.75" /><span class="h-3"></span></div>
                     <div class="flex flex-col items-center gap-1"><x-heroicon-o-ellipsis-vertical class="h-7 w-7" stroke-width="1.75" /></div>
-                    @if ($logoUrl)
-                        <img src="{{ $logoUrl }}" alt="" class="h-7 w-7 rounded-md border-2 border-white object-cover">
-                    @else
-                        <div class="grid h-7 w-7 place-items-center rounded-md border-2 border-white bg-gradient-to-tr from-primary to-primary-light text-[10px] font-bold">{{ $appInitial }}</div>
-                    @endif
+                    <x-scheduler::account-avatar class="h-7 w-7 rounded-md border-2 border-white text-[10px]" />
                 </div>
 
                 {{-- Akun, caption, dan audio --}}
                 <div class="pointer-events-none absolute inset-x-0 bottom-[5.5rem] z-10 bg-gradient-to-t from-black/75 via-black/30 to-transparent pb-3 pl-4 pr-16 pt-14">
                     <div class="flex items-center gap-2">
-                        @if ($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="Logo {{ $appName }}" class="h-7 w-7 rounded-full border border-white/30 object-cover">
-                        @else
-                            <div class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-tr from-primary to-primary-light text-[10px] font-bold text-white">{{ $appInitial }}</div>
-                        @endif
+                        <x-scheduler::account-avatar class="h-7 w-7 rounded-full border border-white/30 text-[10px]" />
                         <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
                         <span class="rounded-md border border-white/60 px-2 py-0.5 text-[11px] font-semibold">Ikuti</span>
                     </div>
@@ -236,16 +210,12 @@
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path stroke-linecap="round" d="m16 16 4 4"/></svg>
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="4"/><path stroke-linecap="round" d="m9 9 6 3-6 3V9Z"/></svg>
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-label="Aktivitas"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
-                @if ($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Profil {{ $appName }}" class="h-7 w-7 rounded-full border-2 border-rose-400 object-cover p-0.5" />
-                @else
-                    <div class="grid h-7 w-7 place-items-center rounded-full border-2 border-rose-400 bg-primary-light text-[9px] font-bold text-primary">{{ $appInitial }}</div>
-                @endif
+                <x-scheduler::account-avatar class="h-7 w-7 rounded-full border-2 border-rose-400 text-[9px]" />
             </nav>
             </div>
 
             {{-- ===== Facebook (Feed) ===== --}}
-            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-7 bottom-0 overflow-hidden bg-slate-100">
+            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100">
                 <div class="flex h-11 items-center justify-between bg-white px-4">
                     <p class="text-[22px] font-bold leading-none tracking-tight text-[#1877f2]">facebook</p>
                     <div class="flex items-center gap-2 text-slate-800" aria-hidden="true">

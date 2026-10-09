@@ -11,6 +11,7 @@
     use Illuminate\Support\Str;
     use Modules\Scheduler\Models\ScheduledPost;
     use Modules\Scheduler\Services\VideoSpec;
+    use Modules\Scheduler\Services\VideoTrimmer;
 
     $isEdit = $post !== null;
     // Instagram lebih dulu, lalu Facebook; di dalam platform urut nama. Akun pertama menjadi pilihan awal.
@@ -41,11 +42,7 @@
     [$initDate, $initTime] = explode('T', $initialAt);
     [$initHour, $initMinute] = explode(':', $initTime);
 
-    $appName = $siteSetting->app_name ?? config('app.name');
-    $siteLogo = $siteSetting->icon ?? $siteSetting->logo_atas ?? null;
-    $siteLogoUrl = $siteLogo ? Storage::url($siteLogo) : null;
     $instaName = $siteSetting->instagram_nama ?? 'Instagram';
-    $appInitial = strtoupper(Str::substr($appName, 0, 1));
     $selectedSocialAccountId = old('social_account_id', $post?->social_account_id ?? $socialAccounts->first()?->id);
     $selectedSocialAccount = $socialAccounts->firstWhere('id', (int) $selectedSocialAccountId) ?: $post?->socialAccount;
     $previewAccountUsername = $selectedSocialAccount?->username ?: $instaName;
@@ -92,6 +89,9 @@
         'existing' => $existing,
         'limits' => [
             'photoMb' => (int) config('scheduler.video.photo_max_mb', 8),
+            // Video Story lebih dari 60 detik bisa dipotong bila ffmpeg tersedia di server.
+            'trimEnabled' => app(VideoTrimmer::class)->isAvailable(),
+            'trimSourceMb' => (int) config('scheduler.video.story_trim_source_max_mb', 500),
             'videoMinSeconds' => (int) config('scheduler.video.min_seconds', 3),
             'feed' => ['max' => 10],
             'story' => ['max' => 10, 'videoSeconds' => VideoSpec::maxSeconds('story'), 'videoMb' => (int) config('scheduler.video.story_max_mb', 100)],
@@ -113,7 +113,7 @@
             @endif
 
             {{-- Kolom kiri: pengaturan konten --}}
-            <div class="lg:col-span-7 space-y-6">
+            <div class="space-y-6 lg:col-span-7 lg:col-start-1 lg:row-start-1">
                 <div class="bg-card rounded-xl shadow-card border border-border overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-3.5 border-b border-border bg-white">
                         <div class="flex items-center gap-2.5">
@@ -165,11 +165,6 @@
                                                 <span class="block truncate text-sm font-semibold text-slate-800">{{ $accountName }}</span>
                                                 <span class="block text-xs text-slate-500">{{ $isFacebookAccount ? 'Facebook Page' : 'Instagram' }}</span>
                                             </span>
-
-                                            <span x-show="accountId === '{{ $account->id }}'" x-cloak
-                                                class="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white" aria-hidden="true">
-                                                <svg class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
-                                            </span>
                                         </label>
                                     @endforeach
                                 </div>
@@ -193,8 +188,8 @@
                             @endif
                         </div>
 
-                        {{-- Caption --}}
-                        <div>
+                        {{-- Caption: Story tidak memakai caption, jadi kolomnya hilang bila hanya Story yang dipilih --}}
+                        <div x-show="usesCaption" x-cloak>
                             <div class="flex items-baseline justify-between">
                                 <label for="caption" class="block text-sm font-medium text-slate-700 mb-1.5">
                                     Caption <span x-show="has('feed')" x-cloak class="text-danger ml-0.5">*</span>
@@ -213,10 +208,6 @@
                                     Caption dipakai untuk Feed dan Reels. Story tidak mendukung caption.
                                 </p>
                             </div>
-
-                            <p x-show="! usesCaption" x-cloak class="rounded-lg border border-border bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                Story tidak memakai caption. Bila ingin ada teks di Story, tulis langsung pada gambar atau videonya.
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -240,25 +231,22 @@
                         <x-scheduler::schedule-picker :min="$minWib" />
                     </div>
                 </div>
-
-                {{-- Aksi --}}
-                <div class="flex items-center gap-3">
-                    <x-admin.button type="submit" :disabled="$socialAccounts->isEmpty()">{{ $isEdit ? 'Simpan Perubahan' : 'Jadwalkan Terbit' }}</x-admin.button>
-                    <a href="{{ route('admin.scheduled-posts.index') }}">
-                        <x-admin.button type="button" variant="outline">Batal</x-admin.button>
-                    </a>
-                </div>
             </div>
 
             {{-- Kolom kanan: pratinjau dan ringkasan --}}
-            <div class="lg:col-span-5">
+            <div class="lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
                 <div class="space-y-6 lg:sticky lg:top-24">
                     <x-scheduler::post-preview
-                        :username="$previewAccountUsername"
-                        :app-name="$appName"
-                        :app-initial="$appInitial"
-                        :logo-url="$siteLogoUrl" />
+                        :username="$previewAccountUsername" />
                 </div>
+            </div>
+
+            {{-- Aksi: di ponsel paling bawah setelah pratinjau, tersusun ke bawah selebar layar; di desktop di bawah kolom kiri. --}}
+            <div class="flex flex-col gap-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 lg:flex-row lg:items-center">
+                <x-admin.button type="submit" class="w-full justify-center lg:w-auto" :disabled="$socialAccounts->isEmpty()">{{ $isEdit ? 'Simpan Perubahan' : 'Jadwalkan Terbit' }}</x-admin.button>
+                <a href="{{ route('admin.scheduled-posts.index') }}" class="block lg:inline-block">
+                    <x-admin.button type="button" variant="outline" class="w-full justify-center lg:w-auto">Batal</x-admin.button>
+                </a>
             </div>
         </form>
     </div>
