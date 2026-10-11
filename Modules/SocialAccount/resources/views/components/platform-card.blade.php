@@ -11,7 +11,7 @@
 {{--
     Kartu satu platform di halaman Akun Sosial.
     - Belum ada akun: tombol Hubungkan (nonaktif bila platform belum tersedia).
-    - Sudah ada akun: tiap akun tampil dengan avatar, nama, username, Edit, dan Putuskan;
+    - Sudah ada akun: tiap akun tampil dengan avatar, nama, username, dan Putuskan;
       tombol Tambah Akun di bawahnya.
 --}}
 
@@ -92,10 +92,6 @@
                                     <a href="{{ $connectUrl }}" class="{{ $outline }} w-full !border-primary !py-2 !text-primary">Hubungkan Ulang</a>
                                 @endcan
                             @endif
-
-                            @can('social-account.edit')
-                                <a href="{{ route('admin.social-accounts.edit', $account) }}" class="{{ $outline }}">Edit</a>
-                            @endcan
 
                             @can('social-account.delete')
                                 <form method="POST" action="{{ route('admin.social-accounts.destroy', $account) }}"

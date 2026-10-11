@@ -202,7 +202,7 @@ test('kartu Instagram tanpa akun menampilkan tombol Hubungkan ke OAuth', functio
         ->assertDontSee('+ Tambah Akun');
 });
 
-test('kartu Instagram menampilkan avatar, nama, username, Edit, Putuskan, dan Tambah Akun', function () {
+test('kartu Instagram menampilkan avatar, nama, username, Putuskan, dan Tambah Akun tanpa tombol Edit', function () {
     $user = socialAccountUser(['view', 'create', 'edit', 'delete']);
     $account = makeSocialAccount($user, [
         'username' => 'kopikita',
@@ -219,7 +219,7 @@ test('kartu Instagram menampilkan avatar, nama, username, Edit, Putuskan, dan Ta
         // avatar CDN Instagram bisa kedaluwarsa: ada cadangan inisial
         ->assertSee('onerror=', false)
         ->assertSee('KO')
-        ->assertSee('href="'.route('admin.social-accounts.edit', $account).'"', false)
+        ->assertDontSee(route('admin.social-accounts.edit', $account), false)
         ->assertSee('action="'.route('admin.social-accounts.destroy', $account).'"', false)
         ->assertSee('+ Tambah Akun')
         ->assertDontSee('Hubungkan akun Instagram untuk mulai');
@@ -257,7 +257,7 @@ test('akun yang sudah diputus tidak tampil dan kartu kembali meminta Hubungkan',
         ->assertSee('Belum ada akun terhubung');
 });
 
-test('tombol kartu mengikuti izin: tanpa izin tidak ada Hubungkan, Edit, atau Putuskan', function () {
+test('tombol kartu mengikuti izin: tanpa izin tidak ada Hubungkan atau Putuskan', function () {
     $user = socialAccountUser(['view']);
     $account = makeSocialAccount($user, ['username' => 'hanya_lihat']);
 
@@ -266,7 +266,6 @@ test('tombol kartu mengikuti izin: tanpa izin tidak ada Hubungkan, Edit, atau Pu
         ->assertSee('@hanya_lihat')
         ->assertSee('Anda tidak punya izin untuk menghubungkan akun.')
         ->assertDontSee('+ Tambah Akun')
-        ->assertDontSee(route('admin.social-accounts.edit', $account), false)
         ->assertDontSee(route('admin.social-accounts.destroy', $account), false);
 });
 

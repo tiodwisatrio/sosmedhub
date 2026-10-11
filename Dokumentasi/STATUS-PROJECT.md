@@ -150,9 +150,9 @@ Status tiap format ada di `scheduled_post_publications`: `pending`, `publishing`
 ### Halaman Akun Sosial
 Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram dan Facebook (aktif), Threads (tombol Hubungkan nonaktif, "Segera hadir"; tampilan saja, tanpa backend). Komponen: `<x-social-account::platform-card>` dan `<x-social-account::brand-icon>` (logo SVG di dalam ubin warna merek) di `Modules/SocialAccount/resources/views/components/`.
 - Tanpa akun: tombol **Hubungkan** (langsung ke OAuth Instagram).
-- Ada akun: tiap akun tampil dengan avatar (cadangan inisial bila gambar CDN kedaluwarsa), nama, `@username`, tombol **Edit** dan **Putuskan**, lalu **+ Tambah Akun** di bawah kartu. Akun berstatus `expired` menampilkan peringatan dan **Hubungkan Ulang**.
+- Ada akun: tiap akun tampil dengan avatar (cadangan inisial bila gambar CDN kedaluwarsa), nama, `@username`, dan tombol **Putuskan** (tanpa tombol Edit), lalu **+ Tambah Akun** di bawah kartu. Akun berstatus `expired` menampilkan peringatan dan **Hubungkan Ulang**.
 - Akun berstatus `disconnected` tidak ditampilkan; menghubungkannya lagi mengaktifkan barisnya kembali.
-- Tombol mengikuti izin (`social-account.create`, `.edit`, `.delete`). Developer melihat akun semua user dengan label pemilik.
+- Tombol mengikuti izin (`social-account.create`, `.delete`). Developer melihat akun semua user dengan label pemilik.
 - Form manual (`/admin/social-accounts/create`) tidak lagi ditautkan dari halaman ini tetapi masih bisa dibuka lewat URL.
 
 ### Form jadwal dan pratinjau
