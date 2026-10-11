@@ -139,7 +139,7 @@
                                 @foreach ($events as $event)
                                     <p title="{{ __($event->name) }}"
                                         class="mx-2 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold leading-tight truncate {{ $eventPalette[$event->hue]['chip'] }}">
-                                        {{ $event->name }}
+                                        {{ __($event->name) }}
                                     </p>
                                 @endforeach
 
@@ -164,7 +164,7 @@
                                             @endif
 
                                             <span class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/75 text-white text-[10px] font-semibold tabular-nums backdrop-blur-sm">
-                                                {{ $post->scheduled_at->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format('H:i') }}
+                                                {{ $post->scheduled_at->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->format(\Modules\Scheduler\Models\ScheduledPost::timeFormat()) }}
                                             </span>
 
                                             <x-scheduler::format-badges :post="$post" size="sm" class="absolute left-1.5 top-1.5 max-w-[58%]" />

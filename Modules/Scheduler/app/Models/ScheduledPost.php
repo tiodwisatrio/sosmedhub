@@ -112,7 +112,7 @@ class ScheduledPost extends Model
     {
         $slot = self::slotMinutes();
         $times = collect(range(0, 3))
-            ->map(fn (int $i) => Carbon::createFromTime(9, 0)->addMinutes($i * $slot)->format('H.i'))
+            ->map(fn (int $i) => Carbon::createFromTime(9, 0)->addMinutes($i * $slot)->format(self::uses12Hour() ? 'g:i A' : 'H.i'))
             ->unique()
             ->values();
 
@@ -261,7 +261,31 @@ class ScheduledPost extends Model
 
     public function formattedScheduledAt(): string
     {
-        return $this->scheduled_at?->setTimezone(self::WIB)->locale(app()->getLocale())->translatedFormat('d M Y H:i') ?? '';
+        return $this->scheduled_at?->setTimezone(self::WIB)->locale(app()->getLocale())->translatedFormat('d M Y '.self::timeFormat()) ?? '';
+    }
+
+    /**
+     * Bahasa Inggris memakai jam 12 jam (AM/PM); Indonesia memakai 24 jam.
+     */
+    public static function uses12Hour(): bool
+    {
+        return app()->getLocale() === 'en';
+    }
+
+    /**
+     * Format jam untuk tampilan: "15:00" (Indonesia) atau "3:00 PM" (English).
+     */
+    public static function timeFormat(): string
+    {
+        return self::uses12Hour() ? 'g:i A' : 'H:i';
+    }
+
+    /**
+     * Penanda zona waktu untuk tampilan: "WIB" (Indonesia) atau "UTC+7" (English). Zonanya sama.
+     */
+    public static function timezoneLabel(): string
+    {
+        return self::uses12Hour() ? 'UTC+7' : 'WIB';
     }
 
     /**

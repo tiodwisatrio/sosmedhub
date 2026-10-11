@@ -14,10 +14,12 @@
 @php
     $slot = \Modules\Scheduler\Models\ScheduledPost::slotMinutes();
     $pad = fn (int $n) => str_pad((string) $n, 2, '0', STR_PAD_LEFT);
-    $hours = array_map($pad, range(0, 23));
+    $twelveHour = \Modules\Scheduler\Models\ScheduledPost::uses12Hour();
+    // English: jam 01-12 dan AM/PM; Indonesia: 00-23. Nilai yang dikirim tetap 24 jam (schedHour).
+    $hours = $twelveHour ? array_map($pad, range(1, 12)) : array_map($pad, range(0, 23));
     $minutes = array_map($pad, range(0, 59, $slot));
     $minDate = substr($min, 0, 10);
-    $minLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m-d\TH:i', $min)->locale(app()->getLocale())->translatedFormat('j F Y, H.i');
+    $minLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m-d\TH:i', $min)->locale(app()->getLocale())->translatedFormat($twelveHour ? 'F j, Y, g:i A' : 'j F Y, H.i');
     $hasError = $errors->has('scheduled_at');
     // 16px di ponsel: font lebih kecil membuat iOS memperbesar halaman saat kolom disentuh.
     $field = 'w-full rounded-md border px-3 py-2 text-base sm:text-sm text-slate-800 bg-white focus:outline-none focus:ring-1 transition-colors duration-150 '
@@ -33,7 +35,7 @@
 
     <input type="hidden" name="scheduled_at" :value="scheduled_at">
 
-    <div class="grid grid-cols-[minmax(0,1fr)_5rem_auto_5rem] items-end gap-2">
+    <div class="grid {{ $twelveHour ? 'grid-cols-[minmax(0,1fr)_4.5rem_auto_4.5rem_4.75rem]' : 'grid-cols-[minmax(0,1fr)_5rem_auto_5rem]' }} items-end gap-2">
         <div>
             <label for="schedule-date" class="block text-xs text-slate-500 mb-1">{{ __('Tanggal') }}</label>
             <input id="schedule-date" type="date" x-model="schedDate" min="{{ $minDate }}" required class="{{ $field }}">
@@ -41,7 +43,7 @@
 
         <div>
             <label for="schedule-hour" class="block text-xs text-slate-500 mb-1">{{ __('Jam') }}</label>
-            <select id="schedule-hour" x-model="schedHour" class="{{ $field }} tabular-nums">
+            <select id="schedule-hour" x-model="{{ $twelveHour ? 'hour12' : 'schedHour' }}" class="{{ $field }} tabular-nums">
                 @foreach ($hours as $hour)
                     <option value="{{ $hour }}">{{ $hour }}</option>
                 @endforeach
@@ -58,6 +60,16 @@
                 @endforeach
             </select>
         </div>
+
+        @if ($twelveHour)
+            <div>
+                <label for="schedule-period" class="block text-xs text-slate-500 mb-1">{{ __('AM/PM') }}</label>
+                <select id="schedule-period" x-model="period" class="{{ $field }}">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                </select>
+            </div>
+        @endif
     </div>
 
     <p class="my-3 text-xs font-medium text-slate-600" x-text="schedulePreview"></p>

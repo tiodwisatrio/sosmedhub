@@ -87,7 +87,7 @@
                         <x-scheduler::format-badges :post="$post" status />
                     </div>
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                        <p class="text-xs text-slate-400">{{ $post->formattedScheduledAt() }} WIB</p>
+                        <p class="text-xs text-slate-400">{{ $post->formattedScheduledAt() }} {{ \Modules\Scheduler\Models\ScheduledPost::timezoneLabel() }}</p>
                         @if ($post->socialAccount)
                             <p class="text-xs text-slate-400">{{ '@'.$post->socialAccount->username }}</p>
                         @endif

@@ -117,7 +117,9 @@ it('form buat memakai tanggal, jam 24 jam, dan menit per slot yang terpisah', fu
         ->assertSee('type="date"', false)
         ->assertSee('min="2026-10-06"', false)
         ->assertDontSee('datetime-local', false)
-        ->assertDontSee('AM')
+        // tidak ada pilihan AM/PM di bahasa Indonesia (kata "AM" boleh muncul di skrip, jadi cek kontrolnya)
+        ->assertDontSee('id="schedule-period"', false)
+        ->assertDontSee('<option value="AM">', false)
         ->assertSee('Menit kelipatan 15 (09.00, 09.15, 09.30, atau 09.45)');
 
     preg_match('/<select id="schedule-hour".*?<\/select>/s', $html, $hour);

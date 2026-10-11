@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Blade;
 use Modules\Menu\Models\Menu;
+use Modules\Scheduler\Models\CalendarEvent;
 use Modules\Scheduler\Models\ScheduledPost;
 use Spatie\Permission\Models\Permission;
 
@@ -222,4 +223,74 @@ it('menampilkan bendera bahasa aktif di tombol dan kedua bendera di dropdown', f
 
 it('tidak menampilkan apa pun untuk kode bahasa tanpa bendera', function () {
     expect(trim(Blade::render('<x-flag locale="xx" />')))->toBe('');
+});
+
+it('menerjemahkan semua nama hari penting dari seeder kalender', function () {
+    $translations = json_decode(file_get_contents(base_path('lang/en.json')), true, flags: JSON_THROW_ON_ERROR);
+
+    $seeder = file_get_contents(base_path('Modules/Scheduler/database/seeders/CalendarEventSeeder.php'));
+    preg_match_all("/\['(?:\d{4}-)?\d{2}-\d{2}', '([^']+)'/", $seeder, $m);
+
+    expect($m[1])->not->toBeEmpty();
+
+    foreach (array_unique($m[1]) as $name) {
+        expect($translations)->toHaveKey($name);
+    }
+});
+
+it('menampilkan hari penting dalam bahasa Inggris di kalender', function () {
+    $user = localeAdminUser();
+    $today = now('Asia/Jakarta')->startOfDay();
+
+    CalendarEvent::create([
+        'date' => $today->toDateString(),
+        'name' => 'Hari Kartini',
+        'type' => CalendarEvent::TYPE_OBSERVANCE,
+    ]);
+
+    $this->actingAs($user)->get(route('admin.scheduled-posts.index'))->assertSee('Hari Kartini');
+
+    $this->actingAs($user)->withCookie('locale', 'en')->get(route('admin.scheduled-posts.index'))
+        ->assertSee('Kartini Day')
+        ->assertDontSee('Hari Kartini');
+});
+
+it('memakai jam 12 jam AM/PM dan penanda UTC+7 untuk bahasa Inggris', function () {
+    $user = localeAdminUser();
+    Permission::firstOrCreate(['name' => 'scheduler.create', 'guard_name' => 'web']);
+    $user->givePermissionTo('scheduler.create');
+
+    // Indonesia: 24 jam, tanpa pilihan AM/PM.
+    $this->actingAs($user)->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('<option value="00">00</option>', false)
+        ->assertSee('<option value="23">23</option>', false)
+        ->assertDontSee('schedule-period', false)
+        ->assertSee('Waktu Indonesia Barat');
+
+    // English: 12 jam + AM/PM, dan penanda UTC+7 sebagai ganti WIB.
+    $html = $this->actingAs($user)->withCookie('locale', 'en')->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('id="schedule-period"', false)
+        ->assertSee('<option value="AM">AM</option>', false)
+        ->assertSee('<option value="PM">PM</option>', false)
+        ->assertSee('<option value="12">12</option>', false)
+        ->assertDontSee('<option value="23">23</option>', false)
+        ->assertSee('Western Indonesia Time (UTC+7)')
+        ->getContent();
+
+    expect($html)->not->toContain('<option value="00">00</option>', 'Jam 00 tidak ada di 12 jam')
+        ->and($html)->toContain('timezoneLabel\\u0022:\\u0022UTC+7');
+});
+
+it('memformat jam jadwal sesuai bahasa: 24 jam dengan WIB atau 12 jam dengan UTC+7', function () {
+    $post = new ScheduledPost(['scheduled_at' => '2026-10-21 08:30:00']); // 15:30 WIB
+
+    app()->setLocale('id');
+    expect($post->formattedScheduledAt())->toContain('15:30')
+        ->and(ScheduledPost::timezoneLabel())->toBe('WIB');
+
+    app()->setLocale('en');
+    expect($post->formattedScheduledAt())->toContain('3:30 PM')
+        ->and(ScheduledPost::timezoneLabel())->toBe('UTC+7');
 });

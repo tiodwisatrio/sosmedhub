@@ -74,7 +74,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
                     ->map(fn (string $format) => ['key' => $format, 'label' => ScheduledPost::formatLabel($format)])
                     ->values(),
                 'uses_caption' => ! in_array($post->formats(), [[ScheduledPost::FORMAT_STORY]], true),
-                'scheduled_at' => $post->formattedScheduledAt().' WIB',
+                'scheduled_at' => $post->formattedScheduledAt().' '.ScheduledPost::timezoneLabel(),
                 'status' => $post->statusLabel(),
                 'created_at' => $post->created_at?->locale(app()->getLocale())->translatedFormat('d M Y'),
             ];

@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\Scheduler\Models\ScheduledPost;
 use Modules\SocialAccount\Models\SocialAccount;
 
 class AccountNeedsReconnectNotification extends Notification implements ShouldQueue
@@ -51,6 +52,6 @@ class AccountNeedsReconnectNotification extends Notification implements ShouldQu
         return $this->account->token_expires_at
             ?->setTimezone('Asia/Jakarta')
             ->locale(app()->getLocale())
-            ->translatedFormat('d M Y H:i').' WIB';
+            ->translatedFormat('d M Y '.ScheduledPost::timeFormat()).' '.ScheduledPost::timezoneLabel();
     }
 }

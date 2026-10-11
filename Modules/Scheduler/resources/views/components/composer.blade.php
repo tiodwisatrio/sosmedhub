@@ -89,6 +89,8 @@
         // Teks untuk skrip Alpine (bahasa mengikuti pilihan pengguna). Jamak dipisah "|": satu|banyak.
         'lang' => app()->getLocale(),
         'dateLocale' => app()->getLocale() === 'en' ? 'en-US' : 'id-ID',
+        'use12h' => ScheduledPost::uses12Hour(),
+        'timezoneLabel' => ScheduledPost::timezoneLabel(),
         'i18n' => [
             'notSet' => __('Belum diatur'),
             'noMedia' => __('Belum ada media'),

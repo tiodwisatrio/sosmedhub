@@ -8,7 +8,7 @@
 @if (auth()->user()?->isDeveloper() && $heartbeat->isStale())
     <div class="mb-6 rounded-xl border border-warning/40 bg-warning-light px-5 py-4 text-sm text-warning-text" role="alert">
         @if ($lastRun)
-            <p class="font-semibold">{{ __('Scheduler tidak berjalan sejak :date WIB.', ['date' => $lastRun->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->locale(app()->getLocale())->translatedFormat('d M Y H:i')]) }}</p>
+            <p class="font-semibold">{{ __('Scheduler tidak berjalan sejak :date WIB.', ['date' => $lastRun->setTimezone(\Modules\Scheduler\Models\ScheduledPost::WIB)->locale(app()->getLocale())->translatedFormat('d M Y '.\Modules\Scheduler\Models\ScheduledPost::timeFormat())]) }}</p>
         @else
             <p class="font-semibold">{{ __('Scheduler belum pernah berjalan.') }}</p>
         @endif

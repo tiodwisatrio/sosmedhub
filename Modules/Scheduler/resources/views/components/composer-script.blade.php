@@ -35,6 +35,8 @@
             i18n: cfg.i18n,
             lang: cfg.lang,
             dateLocale: cfg.dateLocale,
+            use12h: cfg.use12h,
+            timezoneLabel: cfg.timezoneLabel,
             keys: ['feed', 'story', 'reel'],
             labels: { feed: 'Feed', story: 'Story', reel: 'Reels' },
             limits: cfg.limits,
@@ -93,13 +95,36 @@
             get scheduled_at() {
                 return this.schedDate ? `${this.schedDate}T${this.schedHour}:${this.schedMinute}` : '';
             },
+            // Jam 12 jam untuk tampilan English; nilai sebenarnya tetap schedHour (00-23) yang dikirim ke server.
+            get hour12() {
+                const h = Number(this.schedHour) % 12;
+                return this.pad(h === 0 ? 12 : h);
+            },
+            set hour12(value) {
+                this.setHour12(value, this.period);
+            },
+            get period() {
+                return Number(this.schedHour) >= 12 ? 'PM' : 'AM';
+            },
+            set period(value) {
+                this.setHour12(this.hour12, value);
+            },
+            setHour12(hour, period) {
+                const base = Number(hour) % 12;
+                this.schedHour = this.pad(period === 'PM' ? base + 12 : base);
+            },
+            clockLabel(date) {
+                if (! this.use12h) return `${this.pad(date.getHours())}:${this.pad(date.getMinutes())}`;
+                const h = date.getHours() % 12 || 12;
+                return `${h}:${this.pad(date.getMinutes())} ${date.getHours() >= 12 ? 'PM' : 'AM'}`;
+            },
             get schedulePreview() {
                 const d = this.parseAt(this.scheduled_at || '');
                 if (! d) return this.t('notSet');
                 const tgl = d.toLocaleDateString(this.dateLocale, {
                     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                 });
-                return `${tgl} · ${this.pad(d.getHours())}:${this.pad(d.getMinutes())} WIB`;
+                return `${tgl} · ${this.clockLabel(d)} ${this.timezoneLabel}`;
             },
 
             // ---- Caption ---------------------------------------------------------------
