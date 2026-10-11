@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Http\Requests\StoreScheduledPostRequest;
 use Modules\Scheduler\Http\Requests\UpdateScheduledPostRequest;
+use Modules\Scheduler\Models\CalendarEvent;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Services\ScheduledPostService;
 use Modules\SocialAccount\Models\SocialAccount;
@@ -75,7 +76,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
                 'uses_caption' => ! in_array($post->formats(), [[ScheduledPost::FORMAT_STORY]], true),
                 'scheduled_at' => $post->formattedScheduledAt().' WIB',
                 'status' => $post->statusLabel(),
-                'created_at' => $post->created_at?->format('d M Y'),
+                'created_at' => $post->created_at?->locale('id')->translatedFormat('d M Y'),
             ];
         })->values();
 
@@ -102,7 +103,74 @@ class ScheduledPostController extends Controller implements HasMiddleware
             ->where('status', ScheduledPost::STATUS_PARTIAL)
             ->count();
 
+        $statusCounts = $this->visibleScheduledPosts()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $monthContentCount = $this->visibleScheduledPosts()
+            ->where('status', '!=', ScheduledPost::STATUS_CANCELLED)
+            ->whereBetween('scheduled_at', [
+                $todayWib->copy()->startOfMonth()->utc(),
+                $todayWib->copy()->endOfMonth()->utc(),
+            ])
+            ->count();
+
+        // Warna hari besar bergilir berurutan dalam setahun: merah, biru, hijau, ungu, oranye, merah muda,
+        // lalu mulai dari awal. Dua hari berturut-turut dengan nama sama (Idulfitri) berbagi satu warna.
+        $blockLast = $blockStart->copy()->addDays(27);
+        $firstYear = min($todayWib->year, $blockStart->year);
+        $lastYear = max($todayWib->year, $blockLast->year);
+
+        $events = CalendarEvent::query()
+            ->whereBetween('date', ["{$firstYear}-01-01", "{$lastYear}-12-31"])
+            ->orderBy('date')
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
+        foreach ($events->groupBy(fn (CalendarEvent $event) => $event->date->year) as $yearItems) {
+            $position = -1;
+            $previousName = null;
+
+            foreach ($yearItems as $event) {
+                if ($event->name !== $previousName) {
+                    $position++;
+                    $previousName = $event->name;
+                }
+
+                $event->setAttribute('hue', CalendarEvent::HUES[$position % count(CalendarEvent::HUES)]);
+            }
+        }
+
+        $eventsByDay = $events
+            ->filter(fn (CalendarEvent $event) => $event->date->between($blockStart->copy()->startOfDay(), $blockLast->copy()->endOfDay()))
+            ->groupBy(fn (CalendarEvent $event) => $event->date->toDateString());
+
+        // Hari besar yang berlangsung beberapa hari berturut-turut (Idulfitri) jadi satu item berentang.
+        $yearEvents = collect();
+
+        foreach ($events->filter(fn (CalendarEvent $event) => $event->date->year === $todayWib->year) as $event) {
+            $last = $yearEvents->last();
+
+            if ($last && $last->name === $event->name && $last->end_date->copy()->addDay()->isSameDay($event->date)) {
+                $last->setAttribute('end_date', $event->date);
+
+                continue;
+            }
+
+            $event->setAttribute('end_date', $event->date);
+            $yearEvents->push($event);
+        }
+
+
         return view('scheduler::admin.index', [
+            'eventsByDay' => $eventsByDay,
+            'yearEvents' => $yearEvents,
+            'eventsYear' => $todayWib->year,
+            'monthContentCount' => $monthContentCount,
+            'monthLabel' => $todayWib->copy()->locale('id')->translatedFormat('F Y'),
+            'statusCounts' => $statusCounts,
             'weeks' => $weeks,
             'blockStart' => $blockStart,
             'previousBlock' => $blockStart->copy()->subWeeks(4),

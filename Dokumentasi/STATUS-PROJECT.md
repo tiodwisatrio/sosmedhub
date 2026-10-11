@@ -1,12 +1,12 @@
 # Status Project Sosmedhub
 
-Dokumen ini merangkum keadaan sistem per **5 Oktober 2026** dan daftar langkah berikutnya. Acuan produk tetap [PRD_Sosmedhub.md](../PRD_Sosmedhub.md); aturan penulisan kode ada di [CLAUDE.md](../CLAUDE.md).
+Dokumen ini merangkum keadaan sistem per **10 Oktober 2026** dan daftar langkah berikutnya. Acuan produk tetap [PRD_Sosmedhub.md](../PRD_Sosmedhub.md); aturan penulisan kode ada di [CLAUDE.md](../CLAUDE.md).
 
 ## 1. Ringkasan
 
-Sosmedhub adalah aplikasi untuk menjadwalkan postingan Instagram. Pengguna menghubungkan akun Instagram lewat OAuth, membuat jadwal berisi foto dan caption, lalu sistem menerbitkannya otomatis lewat Instagram API.
+Sosmedhub adalah aplikasi untuk menjadwalkan postingan Instagram dan Facebook Page. Pengguna menghubungkan akun lewat OAuth, membuat jadwal berisi foto atau video dan caption untuk **satu akun tujuan**, lalu sistem menerbitkannya otomatis lewat Instagram API atau Graph API Facebook.
 
-Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron mengirim ke antrean, job menerbitkan ke Instagram, postingan muncul di profil. Aplikasi belum di-deploy.
+Alur utama sudah berjalan end-to-end di lokal untuk Instagram: hubungkan akun, buat jadwal, cron mengirim ke antrean, job menerbitkan ke Instagram, postingan muncul di profil. Publikasi Feed (foto) ke Facebook Page sudah dibangun dan **berhasil dites ke Page asli (10 Oktober 2026)**. Aplikasi belum di-deploy.
 
 ## 2. Status fitur
 
@@ -16,7 +16,7 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Hubungkan akun Instagram lewat OAuth (token long-lived, terenkripsi) | Jalan, sudah dicoba dengan akun asli |
 | Satu user dengan banyak akun Instagram | Didukung (lihat bagian 9 nomor 1) |
 | Buat, ubah, batalkan, hapus jadwal; foto lebih dari satu (carousel); foto hanya JPEG | Jalan |
-| Format Feed, Story, dan Reels (satu jadwal boleh lebih dari satu format), unggahan video MP4/MOV | Terpasang dan teruji (251 test, form dijalankan di Chrome); **belum dicoba menerbitkan ke Instagram asli** |
+| Format Feed, Story, dan Reels (satu jadwal boleh lebih dari satu format), unggahan video MP4/MOV | Terpasang dan teruji (321 test, form dijalankan di Chrome); **belum dicoba menerbitkan ke Instagram asli** |
 | Kalender mingguan (halaman Penjadwalan) | Jalan |
 | Halaman Riwayat terpisah: tab status, filter akun, pencarian caption | Jalan |
 | Publikasi otomatis (cron + antrean) | Jalan, sudah terbit ke Instagram asli |
@@ -28,7 +28,11 @@ Alur utama sudah berjalan end-to-end di lokal: hubungkan akun, buat jadwal, cron
 | Refresh token otomatis harian | Terpasang, belum dites dengan Instagram asli |
 | Halaman publik: beranda, kebijakan privasi, ketentuan layanan, penghapusan data | Jalan (isi hardcode, lihat bagian 10) |
 | Batas akun atau jumlah post per user | Belum ada (sengaja, menunggu model bisnis) |
-| Connect Facebook Page | Ada: Facebook Login, pilih Halaman, token Halaman terenkripsi. **Publikasi ke Facebook belum ada**; akun Facebook belum muncul di form penjadwalan |
+| Connect Facebook Page | Jalan: Facebook Login, pilih Halaman, token Halaman terenkripsi |
+| Publikasi Feed (foto) ke Facebook Page | Jalan: sudah dites ke Page asli oleh pengembang (foto), dan teruji dengan HTTP palsu (satu foto, beberapa foto, token ditolak). Album (beberapa foto) dan token ditolak belum dites di Page asli. Story, Reels, dan video untuk Facebook belum ada |
+| Pilih akun tujuan lewat kartu (Instagram dulu, lalu Facebook; foto profil, nama, logo platform) | Jalan |
+| Potong video Story lebih dari 60 detik (pilih rentang di form, dipotong ffmpeg di server saat simpan) | Terpasang dan teruji dengan ffmpeg palsu; **belum dicoba dengan ffmpeg asli** |
+| Pratinjau per platform (Instagram Feed/Story/Reels, Facebook Feed) dengan foto akun, dan pratinjau layar penuh di ponsel | Jalan; tampilan ponsel belum diperiksa di perangkat nyata |
 | Threads, insight | Belum ada (di luar MVP; kartu Threads hanya tampilan) |
 
 ## 3. Arsitektur
@@ -53,6 +57,7 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
    - **Feed**: satu foto memakai `image_url` + caption; lebih dari satu memakai carousel (container anak dibuat dulu; induk baru dibuat setelah semua anak `FINISHED`).
    - **Story**: satu container `STORIES` per item (foto atau video), **tanpa caption**, masing-masing diterbitkan sendiri.
    - **Reels**: satu container `REELS` dengan `video_url`, caption, dan `share_to_feed`.
+   Akun **Facebook** dijalankan oleh `FacebookPublicationRunner` (job yang sama memilihnya menurut `social_accounts.platform`), hanya format Feed: satu foto lewat `POST /{page-id}/photos` (file diunggah langsung dari server, tanpa URL publik); beberapa foto diunggah `published=false` lalu digabung lewat satu `POST /{page-id}/feed` dengan `attached_media`. Hasilnya langsung jadi, jadi tidak pernah "menunggu". Kemajuan disimpan di `state` dengan bentuk yang sama (ID foto per foto, ID postingan segera setelah terbit), jadi pemanggilan ulang tidak mengunggah ulang foto atau menerbitkan dua kali.
 4. Instagram memproses video dalam hitungan menit. Runner mengembalikan "menunggu" dan job **melepas diri** (`release`, jeda `SCHEDULER_VIDEO_POLL_SECONDS`, bawaan 30 detik) tanpa menahan worker; batas total 10 menit, lewat itu format dinyatakan gagal. Foto dicek berkala di dalam satu pemanggilan.
 5. Setelah semua format selesai, status jadwal ditetapkan sekali: semua terbit menjadi `published`; sebagian menjadi `partial`; semua gagal menjadi `failed`. Email dikirim sekali (berhasil, atau gagal/sebagian berisi galat per format).
 6. Tidak ada percobaan ulang otomatis. **Jadwalkan Ulang** hanya mengulang format yang gagal: item Story yang sudah terbit tidak diterbitkan lagi, container lama dilepas (bisa sudah kedaluwarsa), dan format yang sudah terbit terkunci (media dan formatnya tidak bisa diubah).
@@ -63,7 +68,7 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
 | Isi | 1-10 foto JPEG | 1-10 item, tiap item satu Story (foto JPEG atau video) | tepat 1 video |
 | Caption | wajib | tidak didukung Instagram (disembunyikan di form) | opsional |
 | Rasio | 4:5 sampai 1,91:1 (dipaksa) | 9:16 disarankan (tidak dipaksa) | 9:16 disarankan |
-| Video | - | 3-60 detik, maks 100MB | 3 detik sampai `SCHEDULER_REEL_MAX_SECONDS` (bawaan 3 menit; Meta mengizinkan 15 menit), maks 300MB |
+| Video | - | 3-60 detik, maks 100MB; video lebih panjang dipotong di form (lihat bagian bawah), sumber maks 500MB | 3 detik sampai `SCHEDULER_REEL_MAX_SECONDS` (bawaan 3 menit; Meta mengizinkan 15 menit), maks 300MB |
 
 **Urutan media** (Feed dan Story) diatur dengan seret-lepas (HTML5 native, tanpa dependensi) atau tombol panah untuk layar sentuh dan keyboard. Urutan mencampur media tersimpan dan unggahan baru; form mengirim `order[format][]` berisi `e:ID` (media tersimpan) dan `n:N` (unggahan ke-N, mengikuti urutan file di input). Server (`ScheduledPostService::applyOrder`) menyimpannya ke kolom `position`, mengabaikan token yang tidak valid atau milik jadwal lain, dan menaruh media yang tidak disebut di belakang. Urutan itu juga yang dipakai pratinjau dan penerbitan (carousel Feed dan urutan tayang Story). Format yang sudah terbit tidak bisa diurutkan.
 
@@ -72,6 +77,16 @@ Syarat video diperiksa saat unggah (`FormatMedia` + `VideoSpec` + `Mp4Inspector`
 Video disimpan apa adanya di `storage/app/public/scheduled-posts/videos/` dan dihapus oleh `scheduler:prune-media` setelah `SCHEDULER_PUBLISH_RETENTION_DAYS` hari sejak format itu terbit (foto: versi terbit dihapus, thumbnail tetap).
 
 **Batas unggahan**: video hingga 300MB butuh `upload_max_filesize` >= 320M, `post_max_size` >= 512M, `max_execution_time` >= 120, dan `client_max_body_size` (Nginx) >= 512M. Bila total melebihi `post_max_size`, form menampilkan pesan batas server, bukan error 413 mentah. Di Herd lokal batasnya masih 10M.
+
+Aturan per platform: **Instagram** menerima Feed, Story, dan Reels, dan Feed dipaksa rasio 4:5 sampai 1,91:1. **Facebook** hanya Feed (foto): rasio bebas, sedangkan jenis file (JPEG), ukuran (8 MB), jumlah (10 foto), dan panjang caption (2200 karakter) masih memakai batas Instagram, lebih ketat dari yang Facebook perlukan. Validasi server menolak Story atau Reels untuk akun Facebook (`ValidatesPostFormats`), dan form menonaktifkan pilihannya.
+
+### Potong video Story
+Video Story lebih dari 60 detik tidak ditolak bila ffmpeg tersedia: panel "Pilih bagian yang ditayangkan" muncul dengan pemutar dan dua pegangan geser (rentang 3-60 detik). Form mengirim `trim_story[N][start|end]` (N = urutan file di `media_story[]`).
+- **Validasi** (`FormatMedia`): rentang harus di dalam durasi video, 3-60 detik; ukuran sumber boleh sampai `SCHEDULER_STORY_TRIM_SOURCE_MAX_MB` (500); codec dan frame rate tetap diperiksa. Tanpa ffmpeg, rentang diabaikan dan batas 60 detik berlaku seperti biasa.
+- **Pemotongan** (`VideoTrimmer`, dipanggil `ScheduledPostService::storeVideo` saat simpan): ffmpeg memotong dan mengenkode ulang ke H.264 + AAC dengan `faststart` (presisi, dan bitrate dibatasi supaya potongan 60 detik muat di batas 100 MB). Yang disimpan hanya potongannya; file asli tidak disimpan.
+- **Berjalan sinkron** saat tombol simpan ditekan. Klip 60 detik biasanya beberapa belas detik, tetapi bisa kena batas waktu nginx atau PHP-FPM di server yang lambat. Galat pemotongan ditampilkan sebagai pesan di bawah kotak media Story.
+- Deteksi ffmpeg (`VideoTrimmer::isAvailable`) hanya menyimpan hasil "ada" di cache selama 1 jam, supaya fitur langsung aktif setelah ffmpeg dipasang. Bila PHP-FPM tidak melihat ffmpeg di `PATH`, isi `SCHEDULER_FFMPEG` dengan path penuh.
+- Video Story yang sudah tersimpan tidak bisa dipotong ulang; hapus dan unggah lagi. Pratinjau ponsel memutar hanya rentang yang dipilih.
 
 ### Slot jadwal dan cron
 Jam terbit dipilih lewat komponen `<x-scheduler::schedule-picker>` (tanggal, jam 00-23, dan menit per slot; selalu 24 jam, tanpa preset jam; menit di luar slot tidak bisa dipilih) dan terkirim sebagai satu field `scheduled_at` berformat `Y-m-d\TH:i` (WIB). Jam terbit wajib jatuh di slot yang sejajar dengan cron (`SCHEDULER_SLOT_MINUTES`, bawaan 15: menit 00, 15, 30, 45). Karena cron berjalan tepat di menit yang sama, jadwal 09.00 diproses di putaran 09.00, bukan 09.15. Validasi server (`OnScheduleSlot`) menolak jam di luar slot; form memakai `step` sesuai slot, nilai minimum dan default di slot berikutnya, dan duplikasi mengusulkan waktu di slot.
@@ -137,8 +152,13 @@ Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram dan F
 - Tombol mengikuti izin (`social-account.create`, `.edit`, `.delete`). Developer melihat akun semua user dengan label pemilik.
 - Form manual (`/admin/social-accounts/create`) tidak lagi ditautkan dari halaman ini tetapi masih bisa dibuka lewat URL.
 
-### Komponen pratinjau
-Pratinjau ala Instagram dan kartu ringkasan jadwal ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya, jadi harus berada di dalam `x-data` yang menyediakan `previewList`, `currentIndex`, `caption`, `schedulePreview`, dan `photoCountLabel`. Props Blade: `username`, `app-name`, `app-initial`, `logo-url`. Video Story dan Reels di pratinjau bisa diputar: klik bingkai untuk putar/jeda, tombol suara (kanan atas Reels), dan batang progres tipis. Semua video pratinjau (`data-preview-video`) dijeda dan dikembalikan ke awal saat format, item, atau media berganti (`stopPlayback()`).
+### Form jadwal dan pratinjau
+**Akun tujuan** dipilih lewat kartu (bukan dropdown): foto profil (cadangan inisial), nama (`@username` untuk Instagram, nama Page untuk Facebook), logo platform, urutan Instagram dulu lalu Facebook. Satu jadwal tetap satu akun. Memilih akun Facebook mengembalikan format ke Feed saja dan menonaktifkan Story dan Reels. Kolom Caption hilang bila hanya Story yang dipilih.
+
+**Pratinjau** ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya (`x-data` "postComposer" di `composer-script.blade.php`), jadi harus berada di dalamnya. Satu prop Blade: `username`; nama, foto, dan platform akun dibaca reaktif dari `accounts` yang dikirim form, mengikuti kartu akun yang dipilih.
+- **Instagram**: bingkai ponsel dengan Feed, Story, dan Reels; foto profil lewat `<x-scheduler::account-avatar>`. Video Story dan Reels bisa diputar (klik putar/jeda, tombol suara, batang progres); semua video pratinjau (`data-preview-video`) dijeda dan dikembalikan ke awal (atau awal rentang potong) saat format, item, atau media berganti (`stopPlayback()`). Video yang dipotong diputar hanya pada rentangnya.
+- **Facebook**: layar Feed ala Facebook (header, nama Page, caption, foto tunggal atau kisi hingga 4 foto dengan "+N", tombol Suka/Komentar/Bagikan).
+- **Ponsel**: bingkai lebih sempit (maks 300 px) dan tombol **Pratinjau layar penuh** (hanya di layar kecil) yang menampilkan pratinjau memenuhi layar HP tanpa bingkai tiruan, hanya dengan tombol tutup; yang tampil adalah format yang sedang aktif. Tombol **Jadwalkan Terbit** dan **Batal** ada di paling bawah halaman, selebar layar dan bertumpuk.
 
 ### Halaman Riwayat
 `/admin/post-history` (route `admin.post-history.index`, izin `scheduler.view`) berisi postingan yang sudah lewat antrean: status selain `scheduled`, atau `scheduled` yang waktunya sudah lewat. Ada tab status (Semua, Terbit, Gagal, Dibatalkan, Draf) dengan jumlahnya, filter akun, dan pencarian caption. Halaman Penjadwalan hanya menampilkan kalender dan ringkasan jumlah postingan gagal dengan tautan ke Riwayat. Nama route sengaja tidak memakai awalan `admin.scheduled-posts.` supaya menu Penjadwalan tidak ikut aktif. Menu Riwayat ditambahkan di `MenuDatabaseSeeder`; di server yang sudah punya data menu, tambahkan lewat halaman Menu (route `admin.post-history.index`, pola aktif `admin.post-history.*`, izin `scheduler.view`) karena seeder menu menghapus seluruh tabel menu.
@@ -189,6 +209,8 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
 | `SCHEDULER_REEL_MAX_SECONDS` | Batas durasi Reels dalam detik (bawaan 180). Meta mengizinkan sampai 900. Story tetap 60 detik. |
 | `SCHEDULER_VIDEO_POLL_SECONDS` | Jeda cek status video yang masih diproses Instagram (bawaan 30). |
+| `SCHEDULER_FFMPEG` | Path atau nama biner ffmpeg untuk memotong video Story (bawaan `ffmpeg`). Di Mac dengan Herd, mungkin perlu `/opt/homebrew/bin/ffmpeg`. Tanpa ffmpeg, fitur potong mati. |
+| `SCHEDULER_STORY_TRIM_SOURCE_MAX_MB` / `SCHEDULER_TRIM_TIMEOUT_SECONDS` | Batas ukuran video sumber yang akan dipotong (bawaan 500) dan batas waktu proses ffmpeg (bawaan 600 detik). |
 | `DEVELOPER_NAME`, `DEVELOPER_EMAIL`, `DEVELOPER_PASSWORD` | Akun developer awal untuk `db:seed`. Dibaca lewat `config/sosmedhub.php`. Password hanya wajib saat akun belum ada; akun yang sudah ada tidak diubah. |
 
 ## 7. Perintah penting
@@ -198,14 +220,14 @@ php artisan schedule:work                       # lokal: menjalankan scheduler (
 php artisan scheduler:dispatch-due              # kirim jadwal jatuh tempo ke antrean
 php artisan social-accounts:refresh-tokens      # perpanjang token yang hampir habis
 php artisan queue:retry all                     # kirim ulang job yang gagal
-php artisan test                                # 251 test otomatis
+php artisan test                                # 321 test otomatis
 ```
 
 Setelah mengubah `.env`, jalankan `php artisan config:clear` dan **restart `queue:work`** (worker menyimpan config di memori).
 
 ## 8. Pengujian
 
-**Otomatis**: 182 test lulus, mencakup penjadwalan, publikasi (dengan `Http::fake`), notifikasi, refresh token, duplikasi, dan jadwal ulang.
+**Otomatis**: 321 test (320 lulus, 1 dilewati), mencakup penjadwalan, publikasi Instagram dan Facebook (dengan `Http::fake`), pemotongan video (dengan `VideoTrimmer` palsu dan `Process::fake`), pratinjau, notifikasi, refresh token, duplikasi, dan jadwal ulang. Sekali ada satu test yang gagal pada satu kali jalan lalu lulus pada dua kali jalan berikutnya; penyebabnya belum diketahui.
 
 **Manual** (butuh server publik karena Meta harus bisa mengambil foto):
 
@@ -225,10 +247,12 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 1. **Satu akun Instagram yang sama dihubungkan oleh user berbeda.** Keputusan saat ini: dibiarkan, karena bisa ada dua client yang memakai satu akun, dan developer memakai akun yang sama untuk tes sebagai developer dan client. Perilakunya: tabel `social_accounts` unik per `platform` + `provider_account_id`, jadi saat user B menghubungkan akun yang sudah dihubungkan user A, baris yang sama berpindah ke user B (`user_id` berubah). User A tidak lagi melihat akun itu di daftarnya, dan jadwal lama A tetap terkait ke akun tersebut. Jika nanti dua user perlu memakai akun yang sama bersamaan, ubah unik menjadi per `user_id` + `platform` + `provider_account_id` (satu baris dan satu token per user), atau tolak dengan pesan yang jelas.
 2. Tabel sisa CMS lama di database lokal (lihat bagian 4).
 3. `CLAUDE.md` sudah ada di `.gitignore`, tetapi masih dilacak git karena pernah di-commit. Untuk berhenti melacaknya: `git rm --cached CLAUDE.md`, lalu commit.
-4. Banyak perubahan belum di-commit (modul `SocialAccount`, `Scheduler`, migration `avatar_url`, jadwal ulang, duplikasi, notifikasi, JPEG saja, seeder dari `.env`).
+4. **Pemotongan video Story butuh ffmpeg dan berjalan sinkron saat simpan.** Belum dicoba dengan ffmpeg asli (hanya dengan ffmpeg palsu di test). Di shared hosting cadangan ffmpeg kemungkinan tidak ada, jadi fitur potong mati dan video Story tetap maks 60 detik. Rincian di bagian 3.
 5. Mode Development Meta: hanya akun dengan role **Instagram Tester** yang bisa dihubungkan.
 7. **Story dan Reels belum pernah diterbitkan ke Instagram asli.** Alur dan parameternya mengikuti dokumentasi Meta dan teruji dengan Instagram palsu, tetapi tiga hal harus dicoba dengan akun tester: (a) apakah akun Creator boleh menerbitkan Story (satu sumber pihak ketiga bilang hanya Business), (b) apakah video dengan `moov` di belakang file, atau MP4 fragmented, diterima (dokumentasi resmi tidak menyebutnya; satu sumber bilang `moov` di belakang ditolak; belum ada remux otomatis. Bila ditolak, solusinya `ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4`), (c) apakah `share_to_feed` diterima pada Reels.
 8. Foto Story dan video tidak punya pratinjau gambar di daftar bila hanya berisi video (dipakai ubin ikon). Frame video pada pratinjau form belum terverifikasi di browser dengan GPU (Chrome headless tidak menampilkannya).
+9. Publikasi Feed Facebook sudah berhasil ke Page asli untuk foto. Yang belum dites di Page asli: album (beberapa foto), jalur token ditolak, dan apakah `publish_video` perlu untuk video nanti. ID postingan Facebook disimpan di kolom `ig_media_id` (nama warisan Instagram).
+10. Batas Facebook lebih longgar daripada yang dipaksa form (PNG, ukuran foto, jumlah foto, panjang caption); nilai pastinya belum dicek ke dokumentasi Meta.
 6. `DEVELOPER_PASSWORD` di `.env` lokal masih kosong. Tidak masalah selama akun developer sudah ada di database; isi sebelum menjalankan seeder di database baru.
 
 ## 10. Langkah berikutnya
@@ -261,10 +285,15 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 - Jalankan manual tes B sampai F di server.
 
 ### Facebook: langkah berikutnya
-1. ~~Publikasi **Feed** ke Page~~ sudah dibangun (foto saja; lihat bagian Facebook di bawah). Tinggal dites sungguhan di Page **Tio**.
+1. ~~Tes publikasi Feed foto ke Page sungguhan~~ berhasil (foto tunggal; ini juga memenuhi panggilan API `pages_manage_posts` untuk App Review). Tinggal tes album (beberapa foto) di Page **Tio**.
 2. Sebelum membangun video, Story, dan Reels untuk Page: baca dokumentasi Meta untuk endpoint dan permission-nya. `publish_video` disebut di dokumentasi Pages API tetapi belum ada di kasus penggunaan app; apakah perlu ditambahkan belum dicek.
-3. Rapikan penanganan token kedaluwarsa atau dicabut untuk akun Facebook (jalur `expired` dan notifikasi hubungkan ulang sudah ada untuk Instagram).
-4. Tes dengan Page **Tio**; jangan memakai dua Page "Tio Dwi Satrio" yang batal diterbitkan.
+3. ~~Penanganan token kedaluwarsa atau dicabut untuk akun Facebook~~ selesai (kode 190 menandai akun `expired` dan mengirim email hubungkan ulang). Belum dites dengan token asli.
+4. Gunakan Page **Tio** untuk tes; jangan memakai dua Page "Tio Dwi Satrio" yang batal diterbitkan.
+5. Longgarkan aturan foto dan caption untuk Facebook setelah membaca batas resminya (bagian 9 nomor 10).
+
+### Video Story: langkah berikutnya
+- Pasang ffmpeg di VPS (`apt install ffmpeg`) dan coba potong video 2-3 menit dengan ffmpeg asli di lokal (`brew install ffmpeg`), termasuk waktu proses saat simpan.
+- Pertimbangkan memindahkan pemotongan ke antrean bila waktu simpan terlalu lama.
 
 ### Setelah itu
 - Tambahkan client awal sebagai **Instagram Tester** di dashboard Meta (client menerima undangan di Settings, Apps and websites, Tester invites).
@@ -284,11 +313,11 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 
 ### Facebook (Page)
 
-Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dibangun tetapi belum dites di Page sungguhan.** Story, Reels, dan video untuk Facebook belum ada: form menonaktifkan pilihan itu bila akun Facebook dipilih, dan validasi menolaknya.
+Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dibangun, masuk form penjadwalan, dan berhasil dites ke Page asli oleh pengembang (foto tunggal; album belum).** Story, Reels, dan video untuk Facebook belum ada: form menonaktifkan pilihan itu bila akun Facebook dipilih, dan validasi menolaknya.
 
 - Publikasi: `FacebookPublicationRunner` (dipilih `PublishPublicationJob` menurut platform akun) dan `FacebookPublisher`. Satu foto: `POST /{page-id}/photos` dengan file diunggah langsung dari server (tanpa URL publik). Beberapa foto: tiap foto diunggah `published=false`, lalu satu `POST /{page-id}/feed` dengan `attached_media`. Hasil langsung jadi, tanpa container yang ditunggu. ID postingan disimpan di kolom `ig_media_id` (nama kolom warisan Instagram).
 - Token ditolak (kode 190) menandai akun `expired` dan mengirim email hubungkan ulang, sama seperti Instagram.
-- Batasan: validasi foto memakai aturan Instagram (JPEG, rasio 4:5 sampai 1,91:1, maks 8 MB), lebih ketat dari Facebook.
+- Batasan: rasio foto Feed tidak dipaksa untuk Facebook, tetapi JPEG, maks 8 MB, maks 10 foto, dan caption 2200 karakter masih mengikuti batas Instagram (lebih ketat dari Facebook).
 
 - Yang didukung adalah **Page**, bukan profil pribadi. Profil pribadi tidak bisa diposting lewat API. Di Akun Sosial, ID yang tampil (`ID ...`) adalah ID Page, bukan ID profil.
 - Alur: Facebook Login (`graph.facebook.com`, v26.0) di `FacebookConnectController` dan `FacebookGraphService`. Scope: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `business_management`. Aplikasi menolak koneksi jika ada izin yang tidak disetujui. Jika user punya lebih dari satu Page, muncul halaman pilih Page; token pengguna hanya disimpan terenkripsi di sesi sampai Page dipilih. Token Page dari token pengguna long-lived tidak kedaluwarsa (`token_expires_at` null), jadi tidak ada refresh.
@@ -297,4 +326,4 @@ Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dib
 - Pengaturan di dashboard Meta (sudah dilakukan): kasus penggunaan **Kelola segala sesuatu di Halaman Anda**; **Facebook Login > Settings > Valid OAuth Redirect URIs** berisi `https://DOMAIN/admin/social-accounts/facebook/callback` (dicek dengan Validator URI Pengalihan); **Settings > Basic > Domain Aplikasi** berisi domain app. `FACEBOOK_CLIENT_ID` dan `FACEBOOK_CLIENT_SECRET` adalah App ID dan App Secret dari Settings > Basic (bukan ID Instagram).
 - `FACEBOOK_REDIRECT_URI` harus persis sama dengan yang terdaftar di Meta. Jangan memakai `${APP_URL}` bila `APP_URL` diakhiri `/` (hasilnya `//admin`).
 - Menu kasus penggunaan bernama **Facebook Login for Business**. Aplikasi memakai parameter `scope`, dan itu berhasil di akun pengembang. Jika suatu hari dialog menolak scope atau meminta `config_id`, buat konfigurasi di menu Konfigurasi dan pakai ID-nya.
-- Di dashboard, tiap permission butuh minimal 1 panggilan API berhasil sebelum bisa diajukan ke App Review (kolom "0 dari 1 panggilan API diperlukan"). Yang sudah tercatat dari alur nyata: `pages_show_list`, `pages_read_engagement`, `public_profile`, `business_management` setelah connect. Yang belum: `pages_manage_posts` dan `pages_manage_engagement`; keduanya akan terpenuhi begitu publikasi dan balasan komentar dites.
+- Di dashboard, tiap permission butuh minimal 1 panggilan API berhasil sebelum bisa diajukan ke App Review (kolom "0 dari 1 panggilan API diperlukan"). Yang sudah tercatat dari alur nyata: `pages_show_list`, `pages_read_engagement`, `public_profile`, `business_management` setelah connect. Yang belum: `pages_manage_posts` dan `pages_manage_engagement`; `pages_manage_posts` terpenuhi setelah tes publikasi foto berhasil (periksa tampilannya di dashboard Meta); `pages_manage_engagement` baru terpenuhi setelah balasan komentar dites.

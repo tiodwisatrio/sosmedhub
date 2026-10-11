@@ -10,9 +10,19 @@
     @php
         $blockEnd = $blockStart->copy()->addDays(27);
         $dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+        // Kelas ditulis lengkap agar terbaca oleh Tailwind. Nama warna dari CalendarEvent::HUES.
+        $eventPalette = [
+            'red' => ['chip' => 'bg-red-100 text-red-700', 'dot' => 'bg-red-500', 'text' => 'text-red-600', 'cell' => 'bg-red-50/70'],
+            'blue' => ['chip' => 'bg-blue-100 text-blue-700', 'dot' => 'bg-blue-500', 'text' => 'text-blue-600', 'cell' => 'bg-blue-50/70'],
+            'green' => ['chip' => 'bg-green-100 text-green-700', 'dot' => 'bg-green-500', 'text' => 'text-green-600', 'cell' => 'bg-green-50/70'],
+            'purple' => ['chip' => 'bg-purple-100 text-purple-700', 'dot' => 'bg-purple-500', 'text' => 'text-purple-600', 'cell' => 'bg-purple-50/70'],
+            'orange' => ['chip' => 'bg-orange-100 text-orange-700', 'dot' => 'bg-orange-500', 'text' => 'text-orange-600', 'cell' => 'bg-orange-50/70'],
+            'pink' => ['chip' => 'bg-pink-100 text-pink-700', 'dot' => 'bg-pink-500', 'text' => 'text-pink-600', 'cell' => 'bg-pink-50/70'],
+        ];
     @endphp
 
-    <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden mb-8"
+    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] gap-6 items-start mb-8"
         x-data="{
             posts: @js($postsForModal),
             open: false,
@@ -39,10 +49,13 @@
         }"
     >
 
+        {{-- Kartu kalender --}}
+        <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden min-w-0">
+
         {{-- ================================================================
              Toolbar blok 4 minggu
              ================================================================ --}}
-        <div class="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-border">
+        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-3.5 border-b border-border">
             <div class="flex items-center gap-1">
                 <a href="{{ route('admin.scheduled-posts.index', ['week' => $previousBlock->toDateString()]) }}"
                     title="Blok sebelumnya"
@@ -58,27 +71,22 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
                     </svg>
                 </a>
-
-                <div class="mx-2 pl-2 border-l border-border">
-                    <p class="text-sm font-semibold text-slate-800 leading-tight">
-                        {{ $blockStart->format('d M') }} — {{ $blockEnd->format('d M Y') }}
-                    </p>
-                </div>
-
-                <a href="{{ route('admin.scheduled-posts.index', ['week' => $currentBlock->toDateString()]) }}"
-                    class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors {{ $blockStart->isSameDay($currentBlock) ? 'opacity-40 pointer-events-none' : '' }}">
-                    Hari Ini
-                </a>
             </div>
 
-            <div class="flex items-center gap-3">
+            <a href="{{ route('admin.scheduled-posts.index', ['week' => $currentBlock->toDateString()]) }}"
+                title="Kembali ke hari ini"
+                class="text-sm sm:text-base font-semibold text-slate-800 text-center hover:text-primary transition-colors">
+                {{ $blockStart->copy()->addWeeks(2)->locale('id')->translatedFormat('F Y') }}
+            </a>
+
+            <div class="flex items-center justify-end">
                 @can('scheduler.create')
-                    <a href="{{ route('admin.scheduled-posts.create') }}" class="inline-flex">
+                    <a href="{{ route('admin.scheduled-posts.create') }}" class="inline-flex" aria-label="Buat Postingan" title="Buat Postingan">
                         <x-admin.button>
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                             </svg>
-                            Jadwalkan
+                            <span class="hidden sm:inline">Buat Postingan</span>
                         </x-admin.button>
                     </a>
                 @endcan
@@ -89,13 +97,13 @@
              Grid 7 kolom x 4 baris
              ================================================================ --}}
         <div class="overflow-x-auto scrollbar-none">
-            <div class="min-w-[980px]">
+            <div class="min-w-[720px] p-3">
 
                 {{-- Baris kepala hari --}}
-                <div class="grid grid-cols-7 divide-x divide-border border-b border-border bg-slate-50/80">
+                <div class="grid grid-cols-7 gap-2 mb-2">
                     @foreach ($dayNames as $index => $name)
-                        <div class="px-3 py-3 text-center">
-                            <p class="text-[11px] font-semibold uppercase tracking-wider {{ $index === 5 || $index === 6 ? 'text-slate-400' : 'text-slate-500' }}">
+                        <div class="px-2 py-1 text-center">
+                            <p class="text-xs font-bold uppercase tracking-wider {{ $index === 5 || $index === 6 ? 'text-rose-500' : 'text-primary' }}">
                                 {{ $name }}
                             </p>
                         </div>
@@ -104,34 +112,39 @@
 
                 {{-- 4 baris minggu --}}
                 @foreach ($weeks as $days)
-                    <div class="grid grid-cols-7 divide-x divide-border {{ !$loop->last ? 'border-b border-border' : '' }}">
+                    <div class="grid grid-cols-7 gap-2 {{ !$loop->last ? 'mb-2' : '' }}">
                         @foreach ($days as $cell)
                             @php
                                 $isWeekend = $cell['date']->dayOfWeekIso >= 6;
+                                $events = $eventsByDay->get($cell['date']->toDateString(), collect());
+                                $mark = $events->isNotEmpty() ? $eventPalette[$events->first()->hue] : null;
                             @endphp
-                            <div class="group/date flex flex-col min-h-[13rem] transition-colors
-                                {{ $cell['isToday'] ? 'bg-primary-light/25 ring-1 ring-inset ring-primary/40' : ($isWeekend ? 'bg-slate-50/50' : 'bg-white') }}">
+                            <div class="group/date flex flex-col min-h-[6.5rem] sm:min-h-[9rem] rounded-xl border transition-all duration-150 hover:shadow-dropdown
+                                {{ $cell['isToday'] ? 'bg-primary-light/30 border-primary/50' : 'border-border/70 '.($mark ? $mark['cell'] : ($isWeekend ? 'bg-slate-50/70' : 'bg-white')) }}">
                                 {{-- Kepala tanggal --}}
-                                <div class="flex items-center justify-between px-3 pt-2.5 pb-2
-                                    border-b {{ $cell['isToday'] ? 'border-primary/25' : 'border-border/80' }}">
-                                    <div class="flex items-baseline gap-1">
-                                        <span class="text-sm font-semibold tabular-nums {{ $cell['isToday'] ? 'text-primary' : 'text-slate-800' }}">
-                                            {{ $cell['date']->format('d') }}
-                                        </span>
-                                        <span class="text-[10px] font-medium uppercase tracking-wide {{ $isWeekend ? 'text-slate-400' : 'text-slate-400' }}">
-                                            {{ $cell['date']->format('M') }}
-                                        </span>
-                                    </div>
-                                    @if ($cell['isToday'])
-                                        <span class="px-1.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-semibold">Hari Ini</span>
-                                    @endif
+                                <div class="flex items-center gap-1.5 px-2.5 pt-2">
+                                    <span class="inline-flex items-center justify-center text-sm font-semibold tabular-nums
+                                        {{ $cell['isToday'] ? 'min-w-6 h-6 px-1 rounded-full bg-primary text-white' : ($mark ? $mark['text'] : 'text-slate-700') }}">
+                                        {{ $cell['date']->format('j') }}
+                                    </span>
+                                    <span class="text-[11px] font-medium text-slate-400">
+                                        {{ $cell['date']->copy()->locale('id')->translatedFormat('M') }}
+                                    </span>
                                 </div>
 
+                                {{-- Hari libur dan hari besar --}}
+                                @foreach ($events as $event)
+                                    <p title="{{ $event->name }}"
+                                        class="mx-2 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold leading-tight truncate {{ $eventPalette[$event->hue]['chip'] }}">
+                                        {{ $event->name }}
+                                    </p>
+                                @endforeach
+
                                 {{-- Baki konten tanggal --}}
-                                <div class="flex flex-col flex-1 min-h-0 p-1.5 space-y-1.5">
+                                <div class="flex flex-col flex-1 min-h-0 p-2 space-y-1.5">
                                     @forelse ($cell['posts'] as $post)
                                         <button type="button" @click="openPost({{ $post->id }})"
-                                            class="relative block w-full flex-1 min-h-[5.5rem] text-left rounded-lg border border-border bg-slate-100 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:border-primary/40 hover:shadow-dropdown transition-all duration-150 cursor-pointer">
+                                            class="relative block w-full flex-1 min-h-[3.5rem] sm:min-h-[4.75rem] text-left rounded-lg border border-border/60 bg-slate-100 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:border-primary/40 hover:shadow-dropdown transition-all duration-150 cursor-pointer">
                                             @if ($post->thumbnail_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($post->thumbnail_path))
                                                 <img src="{{ Storage::url($post->thumbnail_path) }}" alt="Foto postingan"
                                                     class="absolute inset-0 w-full h-full object-cover">
@@ -169,8 +182,8 @@
                                         </button>
                                     @empty
                                         <a href="{{ route('admin.scheduled-posts.create', ['date' => $cell['date']->toDateString()]) }}"
-                                            title="Jadwalkan pada {{ $cell['date']->format('d M Y') }}"
-                                            class="flex flex-1 min-h-[4rem] items-center justify-center rounded-lg border border-dashed border-border text-slate-300
+                                            title="Jadwalkan pada {{ $cell['date']->copy()->locale('id')->translatedFormat('j M Y') }}"
+                                            class="flex flex-1 min-h-[2rem] sm:min-h-[3rem] items-center justify-center rounded-lg border border-dashed border-border text-slate-300
                                                 opacity-0 group-hover/date:opacity-100 group-hover/date:border-primary/40 group-hover/date:text-primary
                                                 focus:opacity-100 transition-opacity">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -186,22 +199,99 @@
             </div>
         </div>
 
-        {{-- Kaki kartu: legenda --}}
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 sm:px-6 py-3 border-t border-border bg-slate-50/60">
-            <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Status</span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-primary"></span> Terjadwal
-            </span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-warning"></span> Menerbitkan
-            </span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-success"></span> Terbit
-            </span>
-            <span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-danger"></span> Gagal
-            </span>
         </div>
+
+        {{-- ================================================================
+             Panel status postingan
+             ================================================================ --}}
+        <aside class="space-y-6">
+            <div class="bg-primary text-white rounded-2xl shadow-card px-5 py-6 text-center">
+                <p class="text-base font-semibold text-white">{{ $monthLabel }}</p>
+                <p class="mt-1 text-6xl font-bold tabular-nums">{{ $monthContentCount }}</p>
+                <p class="mt-1 text-sm font-medium text-white/80">Total Postingan</p>
+            </div>
+
+            <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-border">
+                    <h2 class="text-base font-semibold text-slate-800">Status Postingan</h2>
+                </div>
+                @php
+                    $statusRows = [
+                        ['key' => 'scheduled', 'label' => 'Terjadwal', 'color' => 'bg-primary'],
+                        ['key' => 'published', 'label' => 'Terbit', 'color' => 'bg-success'],
+                        ['key' => 'publishing', 'label' => 'Menerbitkan', 'color' => 'bg-warning'],
+                        ['key' => 'partial', 'label' => 'Sebagian terbit', 'color' => 'bg-purple-500'],
+                        ['key' => 'failed', 'label' => 'Gagal', 'color' => 'bg-danger'],
+                    ];
+                @endphp
+                <ul class="px-5 py-2">
+                    @foreach ($statusRows as $row)
+                        <li class="flex items-center justify-between gap-3 py-2.5">
+                            <span class="inline-flex items-center gap-2 text-sm text-slate-600">
+                                <span class="w-2 h-2 rounded-full {{ $row['color'] }}"></span>
+                                {{ $row['label'] }}
+                            </span>
+                            <span class="inline-flex items-center justify-center min-w-7 px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums text-white {{ $row['color'] }}">
+                                {{ $statusCounts[$row['key']] ?? 0 }}
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+            <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-border">
+                    <h2 class="text-base font-semibold text-slate-800">Hari Penting {{ $eventsYear }}</h2>
+                </div>
+                @if ($yearEvents->isEmpty())
+                    <p class="px-5 py-4 text-sm text-slate-400">Belum ada hari penting untuk tahun {{ $eventsYear }}.</p>
+                @else
+                    {{-- Daftar setahun penuh; saat dibuka, gulir ke hari penting terdekat. --}}
+                    <ul class="px-5 py-2 max-h-[28rem] overflow-y-auto"
+                        x-data
+                        x-init="$nextTick(() => { const next = $el.querySelector('[data-next]'); if (next) $el.scrollTop = next.offsetTop - $el.offsetTop; })">
+                        @php $nextMarked = false; @endphp
+                        @foreach ($yearEvents as $event)
+                            @php
+                                $today = now(\Modules\Scheduler\Models\ScheduledPost::WIB)->startOfDay();
+                                // Lewat setelah hari terakhirnya; tombol tambah ke hari pertama (atau hari ini bila sudah berjalan).
+                                $isPast = $event->end_date->lt($today);
+                                $linkDate = $event->date->lt($today) ? $today : $event->date;
+                                $color = $eventPalette[$event->hue];
+                                $start = $event->date->copy()->locale('id');
+                                $end = $event->end_date->copy()->locale('id');
+                                $dateLabel = match (true) {
+                                    $start->isSameDay($end) => $start->translatedFormat('l, d F Y'),
+                                    $start->month === $end->month => $start->translatedFormat('l, d').' – '.$end->translatedFormat('l, d F Y'),
+                                    default => $start->translatedFormat('d F').' – '.$end->translatedFormat('d F Y'),
+                                };
+                            @endphp
+                            @php
+                                $isNext = ! $isPast && ! $nextMarked;
+                                $nextMarked = $nextMarked || $isNext;
+                            @endphp
+                            <li @if ($isNext) data-next @endif class="flex items-start gap-3 py-2.5 {{ $isPast ? 'opacity-50' : '' }}">
+                                <span class="mt-1.5 w-2.5 h-2.5 shrink-0 rounded-full {{ $color['dot'] }}"></span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm text-slate-700 leading-snug">{{ $event->name }}</p>
+                                    <p class="text-xs font-medium {{ $color['text'] }}">{{ $dateLabel }}</p>
+                                </div>
+                                @if (! $isPast)
+                                    @can('scheduler.create')
+                                        <a href="{{ route('admin.scheduled-posts.create', ['date' => $linkDate->toDateString()]) }}"
+                                            title="Buat postingan untuk {{ $event->name }}"
+                                            class="mt-0.5 p-1 rounded-md text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                                            </svg>
+                                        </a>
+                                    @endcan
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </aside>
 
         {{-- ================================================================
              Modal detail postingan
@@ -219,11 +309,11 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                class="relative w-full sm:max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border shadow-dropdown overflow-hidden"
+                class="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-card rounded-t-2xl sm:rounded-2xl border border-border shadow-dropdown"
                 @click.outside="close()">
                 <template x-if="selected">
                     <div>
-                        <div class="relative h-72 bg-slate-100">
+                        <div class="relative h-56 sm:h-72 bg-slate-100">
                             <template x-if="selected.media.length > 0 && selected.media[mediaIndex].type !== 'video'">
                                 <img :src="selected.media[mediaIndex].url" alt="Media postingan"
                                     class="absolute inset-0 w-full h-full object-cover">
@@ -302,7 +392,7 @@
                                 </div>
                             </dl>
 
-                            <div class="mt-5 flex items-center gap-2.5">
+                            <div class="mt-5 flex flex-wrap items-center gap-2.5">
                                 @can('scheduler.edit')
                                     <a :href="'/admin/scheduled-posts/' + selected.id + '/edit'"
                                         class="inline-flex items-center gap-1.5 font-medium rounded-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/30 px-4 py-2 text-sm border border-border hover:bg-slate-50 text-slate-700">

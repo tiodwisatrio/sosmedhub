@@ -261,7 +261,7 @@ class ScheduledPost extends Model
 
     public function formattedScheduledAt(): string
     {
-        return $this->scheduled_at?->setTimezone(self::WIB)->format('d M Y H:i') ?? '';
+        return $this->scheduled_at?->setTimezone(self::WIB)->locale('id')->translatedFormat('d M Y H:i') ?? '';
     }
 
     public function statusLabel(): string
