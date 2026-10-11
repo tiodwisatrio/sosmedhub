@@ -50,19 +50,20 @@ function fbPost(array $types = ['image'], string $caption = 'Caption Facebook'):
 /**
  * Jadwal Story (foto) jatuh tempo untuk Page Facebook.
  */
-function fbStoryPost(int $photos = 1): ScheduledPost
+function fbStoryPost(int|array $items = 1): ScheduledPost
 {
+    $types = is_array($items) ? $items : array_fill(0, $items, 'image');
     $post = fbPost(['image']);
     $post->media()->delete();
     $post->publications()->delete();
     $post->publications()->create(['format' => ScheduledPost::FORMAT_STORY]);
 
-    foreach (range(0, $photos - 1) as $position) {
-        $path = "scheduled-posts/fb-story-{$position}.jpg";
+    foreach ($types as $position => $type) {
+        $path = "scheduled-posts/fb-story-{$position}".($type === 'video' ? '.mp4' : '.jpg');
         Storage::disk('public')->put($path, 'isi');
         $post->media()->create([
-            'format' => ScheduledPost::FORMAT_STORY, 'type' => 'image', 'media_path' => $path,
-            'mime' => 'image/jpeg', 'position' => $position,
+            'format' => ScheduledPost::FORMAT_STORY, 'type' => $type, 'media_path' => $path,
+            'mime' => $type === 'video' ? 'video/mp4' : 'image/jpeg', 'position' => $position,
         ]);
     }
 
@@ -72,12 +73,54 @@ function fbStoryPost(int $photos = 1): ScheduledPost
 /**
  * Facebook palsu yang mencatat setiap panggilan ke /photos dan /feed.
  */
-function fbFake(array &$calls, array $failPhotoAt = []): void
+function fbFake(array &$calls, array $failPhotoAt = [], array $videoStatuses = ['upload_complete']): void
 {
     $photos = 0;
+    $videos = 0;
 
-    Http::fake(function ($request) use (&$calls, &$photos, $failPhotoAt) {
+    Http::fake(function ($request) use (&$calls, &$photos, &$videos, $failPhotoAt, $videoStatuses) {
         $path = parse_url($request->url(), PHP_URL_PATH);
+        $host = parse_url($request->url(), PHP_URL_HOST);
+
+        if ($host === 'rupload.facebook.com') {
+            $calls[] = ['video_upload', [
+                'url' => $request->url(),
+                'authorization' => $request->header('Authorization')[0] ?? null,
+                'offset' => $request->header('offset')[0] ?? null,
+                'file_size' => $request->header('file_size')[0] ?? null,
+                'body' => $request->body(),
+            ]];
+
+            return Http::response(['success' => true]);
+        }
+
+        if (str_ends_with($path, '/1010/video_stories')) {
+            $data = $request->data();
+
+            if (($data['upload_phase'] ?? null) === 'start') {
+                $videos++;
+                $calls[] = ['video_start', $data];
+
+                return Http::response(['video_id' => "v{$videos}", 'upload_url' => "https://rupload.facebook.com/video-upload/v26.0/v{$videos}"]);
+            }
+
+            $calls[] = ['video_finish', $data];
+
+            return Http::response(['success' => true, 'post_id' => '1010_vstory']);
+        }
+
+        if (preg_match('#/(v\d+)$#', $path, $match) && $request->method() === 'GET') {
+            $status = count(array_filter($calls, fn ($c) => $c[0] === 'video_status'));
+            $calls[] = ['video_status', $match[1]];
+            $code = $videoStatuses[min($status, count($videoStatuses) - 1)];
+
+            // Seperti Facebook asli: setelah unggahan lengkap, pemrosesan belum dimulai sampai finish.
+            return Http::response(['status' => [
+                'video_status' => $code,
+                'uploading_phase' => ['status' => $code === 'uploading' ? 'in_progress' : 'complete'],
+                'processing_phase' => ['status' => $code === 'error' ? 'error' : 'not_started', 'error' => $code === 'error' ? ['message' => 'Resolusi terlalu rendah'] : null],
+            ]]);
+        }
 
         if (str_ends_with($path, '/1010/photos')) {
             $photos++;
@@ -256,6 +299,80 @@ it('tidak menerbitkan ulang Story yang sudah terbit saat dijalankan lagi setelah
         ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
 });
 
+it('menerbitkan video Story: start, unggah ke rupload, cek status, lalu finish', function () {
+    $calls = [];
+    fbFake($calls);
+    $post = fbStoryPost(['video']);
+
+    fbRun($post);
+
+    $upload = fbCalls($calls, 'video_upload');
+
+    expect(fbCalls($calls, 'video_start'))->toHaveCount(1)
+        ->and($upload)->toHaveCount(1)
+        ->and($upload[0][1]['url'])->toBe('https://rupload.facebook.com/video-upload/v26.0/v1')
+        ->and($upload[0][1]['authorization'])->toBe('OAuth token-page')
+        ->and($upload[0][1]['offset'])->toBe('0')
+        ->and($upload[0][1]['file_size'])->toBe('3')
+        ->and($upload[0][1]['body'])->toBe('isi')
+        ->and(fbCalls($calls, 'video_status'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_finish'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_finish')[0][1])->toMatchArray(['video_id' => 'v1', 'upload_phase' => 'finish'])
+        ->and($calls)->not->toContain(fn ($c) => $c[0] === 'photo');
+
+    $publication = $post->publications()->first()->fresh();
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHED)
+        ->and($publication->ig_media_id)->toBe('1010_vstory')
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
+it('menunggu bila unggahan video Story belum lengkap tanpa mengunggah ulang', function () {
+    $calls = [];
+    fbFake($calls, videoStatuses: ['uploading', 'upload_complete']);
+    $post = fbStoryPost(['video']);
+    $publication = $post->publications()->first();
+
+    $runner = app(FacebookPublicationRunner::class);
+
+    $first = $runner->advance($publication);
+
+    expect($first->isWaiting())->toBeTrue()
+        ->and($publication->fresh()->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHING)
+        ->and(fbCalls($calls, 'video_finish'))->toBeEmpty();
+
+    $second = $runner->advance($publication->fresh());
+
+    expect($second->isWaiting())->toBeFalse()
+        ->and(fbCalls($calls, 'video_start'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_upload'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_finish'))->toHaveCount(1)
+        ->and($publication->fresh()->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHED);
+});
+
+it('menandai gagal dengan pesan Facebook bila video Story gagal diproses', function () {
+    $calls = [];
+    fbFake($calls, videoStatuses: ['error']);
+    $post = fbStoryPost(['video']);
+
+    fbRun($post);
+
+    $publication = $post->publications()->first()->fresh();
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_FAILED)
+        ->and($publication->error_message)->toContain('Resolusi terlalu rendah')
+        ->and(fbCalls($calls, 'video_finish'))->toBeEmpty();
+});
+
+it('menerbitkan Story campuran foto dan video sesuai urutan', function () {
+    $calls = [];
+    fbFake($calls);
+    $post = fbStoryPost(['image', 'video']);
+
+    fbRun($post);
+
+    expect(array_column($calls, 0))->toBe(['photo', 'story', 'video_start', 'video_upload', 'video_status', 'video_finish'])
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
 it('menolak video karena Facebook baru mendukung foto', function () {
     $calls = [];
     fbFake($calls);
@@ -363,7 +480,7 @@ it('menerima Story foto untuk akun Facebook', function () {
         ->and($post->publications()->pluck('format')->all())->toBe(['story']);
 });
 
-it('menolak video Story untuk akun Facebook', function () {
+it('menerima video Story untuk akun Facebook', function () {
     $user = fbFormUser();
     $account = fbFormAccount($user);
 
@@ -372,7 +489,24 @@ it('menolak video Story untuk akun Facebook', function () {
         'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
         'formats' => ['story'],
         'media_story' => [fmtVideo(20)],
-    ])->assertSessionHasErrors('media_story.0');
+    ])->assertSessionHasNoErrors();
+
+    $post = ScheduledPost::query()->where('social_account_id', $account->id)->first();
+    expect($post)->not->toBeNull()
+        ->and($post->media()->where('format', 'story')->value('type'))->toBe('video');
+});
+
+it('tetap menolak video untuk Feed akun Facebook', function () {
+    $user = fbFormUser();
+    $account = fbFormAccount($user);
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), [
+        'social_account_id' => $account->id,
+        'caption' => 'Halo',
+        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
+        'formats' => ['feed'],
+        'media' => [fmtVideo(20)],
+    ])->assertSessionHasErrors('media.0');
 
     expect(ScheduledPost::query()->count())->toBe(0);
 });

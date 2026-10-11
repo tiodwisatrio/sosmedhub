@@ -2,6 +2,7 @@
 
 namespace Modules\Scheduler\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostPublication;
@@ -11,13 +12,15 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Menerbitkan Feed dan Story foto ke Page Facebook. Feed: satu foto langsung terbit lewat /photos;
- * beberapa foto diunggah dulu tanpa terbit, lalu digabung dalam satu postingan lewat /feed.
- * Story: tiap foto diunggah tanpa terbit lalu diterbitkan lewat /photo_stories (tanpa caption).
+ * Menerbitkan Feed (foto) dan Story (foto atau video) ke Page Facebook. Feed: satu foto langsung terbit
+ * lewat /photos; beberapa foto diunggah dulu tanpa terbit, lalu digabung dalam satu postingan lewat /feed.
+ * Story: foto lewat /photo_stories, video lewat /video_stories (start, unggah ke rupload, cek
+ * unggahan lengkap, finish); tanpa caption.
  *
- * Facebook memproses foto saat itu juga, jadi tidak pernah mengembalikan WAITING. Kemajuan
- * disimpan di state (bentuknya sama dengan Instagram) supaya pemanggilan ulang tidak
- * menerbitkan dua kali: ID foto tersimpan per foto, dan ID postingan disimpan segera setelah terbit.
+ * Foto diproses Facebook saat itu juga. Hanya video Story yang bisa mengembalikan WAITING, saat
+ * unggahan belum tercatat lengkap di Facebook. Kemajuan disimpan di state (bentuknya sama dengan Instagram)
+ * supaya pemanggilan ulang tidak menerbitkan dua kali: ID unggahan tersimpan per item, dan ID
+ * postingan disimpan segera setelah terbit.
  */
 class FacebookPublicationRunner
 {
@@ -47,7 +50,12 @@ class FacebookPublicationRunner
             $state = $this->state($publication, $media);
 
             if ($publication->format === ScheduledPost::FORMAT_STORY) {
-                $this->publishStories($publication, $account, $media, $state);
+                if (! $this->publishStories($publication, $account, $media, $state)) {
+                    // Video masih diproses Facebook: simpan kemajuan, job melepas diri lalu dicoba lagi.
+                    $this->save($publication, $state);
+
+                    return PublicationResult::waiting();
+                }
             } elseif (! $state['items'][0]['published_id']) {
                 $state['items'][0]['published_id'] = $media->count() === 1
                     ? $this->publishSingle($account, $post, $media->first())
@@ -99,27 +107,94 @@ class FacebookPublicationRunner
     }
 
     /**
-     * Story: satu foto satu Story. Foto diunggah tanpa terbit, lalu diterbitkan lewat /photo_stories.
-     * ID foto (container_id) dan ID Story (published_id) disimpan per item segera setelah didapat,
-     * jadi pemanggilan ulang tidak mengunggah ulang atau menerbitkan Story yang sudah terbit.
+     * Story: satu foto atau video satu Story. ID unggahan (container_id) dan ID Story (published_id)
+     * disimpan per item segera setelah didapat, jadi pemanggilan ulang tidak mengunggah ulang atau
+     * menerbitkan Story yang sudah terbit. Item diproses berurutan; video yang belum selesai
+     * diproses menghentikan putaran ini.
+     *
+     * @return bool false bila ada video yang masih diproses Facebook (tunggu, lalu panggil lagi)
      */
-    private function publishStories($publication, $account, $media, array &$state): void
+    private function publishStories($publication, $account, $media, array &$state): bool
     {
         foreach ($media as $index => $item) {
             if ($state['items'][$index]['published_id']) {
                 continue;
             }
 
-            if (! $state['items'][$index]['container_id']) {
-                $state['items'][$index]['container_id'] = $this->publisher
-                    ->uploadPhoto($account, $this->path($item), null, published: false)['id'];
-                $this->save($publication, $state);
-            }
+            $published = $item->isVideo()
+                ? $this->publishVideoStory($publication, $account, $item, $state, $index)
+                : $this->publishPhotoStory($publication, $account, $item, $state, $index);
 
-            $state['items'][$index]['published_id'] = $this->publisher
-                ->publishPhotoStory($account, $state['items'][$index]['container_id']);
+            if (! $published) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Foto: diunggah tanpa terbit lalu diterbitkan lewat /photo_stories (langsung jadi).
+     */
+    private function publishPhotoStory($publication, $account, $item, array &$state, int $index): bool
+    {
+        if (! $state['items'][$index]['container_id']) {
+            $state['items'][$index]['container_id'] = $this->publisher
+                ->uploadPhoto($account, $this->path($item), null, published: false)['id'];
             $this->save($publication, $state);
         }
+
+        $state['items'][$index]['published_id'] = $this->publisher
+            ->publishPhotoStory($account, $state['items'][$index]['container_id']);
+        $this->save($publication, $state);
+
+        return true;
+    }
+
+    /**
+     * Video: buka sesi unggah (start), kirim file ke rupload, pastikan unggahan lengkap, lalu
+     * terbitkan (finish); pemrosesan di Facebook baru berjalan setelah finish. Tiap tahap
+     * dicatat di state supaya tidak diulang.
+     */
+    private function publishVideoStory($publication, $account, $item, array &$state, int $index): bool
+    {
+        $entry = &$state['items'][$index];
+
+        if (! $entry['container_id']) {
+            $session = $this->publisher->startVideoStory($account);
+            $entry['container_id'] = $session['video_id'];
+            $entry['upload_url'] = $session['upload_url'];
+            $entry['uploaded'] = false;
+            $this->save($publication, $state);
+        }
+
+        if (empty($entry['uploaded'])) {
+            $this->publisher->uploadVideo($account, $entry['upload_url'], $this->path($item));
+            $entry['uploaded'] = true;
+            $this->save($publication, $state);
+        }
+
+        $status = $this->publisher->videoStatus($account, $entry['container_id']);
+
+        if ($status['failed']) {
+            throw new RuntimeException('Facebook gagal memproses video Story'.($status['error'] ? ": {$status['error']}" : '.'));
+        }
+
+        // Facebook baru memproses video setelah finish; yang ditunggu di sini hanya unggahan selesai.
+        if (! $status['uploaded']) {
+            $minutes = (int) config('scheduler.video.poll_max_minutes', 10);
+
+            if (now()->greaterThan(Carbon::parse($state['started_at'])->addMinutes($minutes))) {
+                throw new RuntimeException("Facebook belum selesai menerima video dalam {$minutes} menit. Coba jadwalkan ulang.");
+            }
+
+            return false;
+        }
+
+        $entry['published_id'] = $this->publisher->finishVideoStory($account, $entry['container_id']);
+        $this->save($publication, $state);
+
+        return true;
     }
 
     /**
@@ -158,7 +233,7 @@ class FacebookPublicationRunner
             throw new RuntimeException("{$label} tidak memiliki media. Unggah ulang medianya.");
         }
 
-        if ($media->contains(fn ($m) => $m->isVideo())) {
+        if ($format === ScheduledPost::FORMAT_FEED && $media->contains(fn ($m) => $m->isVideo())) {
             throw new RuntimeException("Facebook baru mendukung foto untuk {$label}.");
         }
 

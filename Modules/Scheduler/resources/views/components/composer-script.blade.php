@@ -101,7 +101,7 @@
             },
 
             // ---- Format ----------------------------------------------------------------
-            // Facebook mendukung Feed dan Story (foto); memilih akun Facebook membuang Reels.
+            // Facebook mendukung Feed dan Story; memilih akun Facebook membuang Reels.
             init() {
                 this.$watch('accountId', () => {
                     if (this.isFacebook) {
@@ -279,7 +279,7 @@
 
             accepts(format) {
                 if (format === 'feed') return 'image/jpeg';
-                if (format === 'story') return this.isFacebook ? 'image/jpeg' : 'image/jpeg,video/mp4,video/quicktime';
+                if (format === 'story') return 'image/jpeg,video/mp4,video/quicktime';
                 return 'video/mp4,video/quicktime';
             },
             problemFor(format, file, trimmable = false) {
@@ -289,7 +289,6 @@
 
                 if (format === 'feed' && ! isPhoto) return 'Feed hanya menerima foto JPEG.';
                 if (format === 'reel' && ! isVideo) return 'Reels hanya menerima video MP4 atau MOV.';
-                if (format === 'story' && this.isFacebook && ! isPhoto) return 'Story Facebook hanya menerima foto JPEG.';
                 if (! isPhoto && ! isVideo) return 'Format file tidak didukung. Gunakan JPEG, MP4, atau MOV.';
                 if (isPhoto && mb > this.limits.photoMb) return `Ukuran foto maksimal ${this.limits.photoMb} MB.`;
 

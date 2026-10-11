@@ -2,6 +2,7 @@
 
 namespace Modules\SocialAccount\Services;
 
+use GuzzleHttp\Psr7\Utils;
 use Illuminate\Http\Client\Factory as HttpClient;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -78,6 +79,106 @@ class FacebookPublisher
             ->post("/{$account->provider_account_id}/photo_stories", ['photo_id' => $photoId]);
 
         return (string) $this->data($response, 'post_id');
+    }
+
+    /**
+     * Membuka sesi unggah video Story. Video baru ada di Facebook setelah uploadVideo().
+     *
+     * @return array{video_id: string, upload_url: string}
+     */
+    public function startVideoStory(SocialAccount $account): array
+    {
+        $response = $this->request($account)
+            ->post("/{$account->provider_account_id}/video_stories", ['upload_phase' => 'start']);
+
+        $videoId = (string) $this->data($response, 'video_id');
+
+        return [
+            'video_id' => $videoId,
+            'upload_url' => (string) ($response->json('upload_url') ?: $this->uploadUrl($videoId)),
+        ];
+    }
+
+    /**
+     * Mengunggah file video langsung dari server ke rupload.facebook.com (tanpa URL publik).
+     */
+    public function uploadVideo(SocialAccount $account, string $uploadUrl, string $path): void
+    {
+        if (parse_url($uploadUrl, PHP_URL_HOST) !== 'rupload.facebook.com') {
+            throw new RuntimeException('Alamat unggah video Facebook tidak valid.');
+        }
+
+        $stream = fopen($path, 'r');
+
+        if ($stream === false) {
+            throw new RuntimeException('Video tidak bisa dibaca dari server.');
+        }
+
+        $response = $this->http
+            ->withHeaders([
+                'Authorization' => 'OAuth '.$account->access_token,
+                'offset' => '0',
+                'file_size' => (string) filesize($path),
+            ])
+            ->timeout(120)
+            ->connectTimeout(10)
+            ->withBody(Utils::streamFor($stream), 'application/octet-stream')
+            ->post($uploadUrl);
+
+        if ($response->failed() || $response->json('success') !== true) {
+            $message = $response->json('error.message') ?? $response->json('debug_info.message') ?? 'HTTP '.$response->status();
+
+            if ((int) $response->json('error.code') === 190) {
+                throw new FacebookAuthException("Token Facebook ditolak: {$message}");
+            }
+
+            throw new RuntimeException("Facebook menolak unggahan video: {$message}");
+        }
+    }
+
+    /**
+     * Status unggahan video Story. Facebook baru memproses video setelah finish, jadi yang
+     * ditunggu sebelum finish hanyalah unggahan selesai (video_status upload_complete).
+     *
+     * @return array{uploaded: bool, failed: bool, error: ?string}
+     */
+    public function videoStatus(SocialAccount $account, string $videoId): array
+    {
+        $response = $this->request($account)->get("/{$videoId}", ['fields' => 'status']);
+
+        $this->data($response, 'status');
+
+        $code = (string) $response->json('status.video_status');
+        $uploading = (string) $response->json('status.uploading_phase.status');
+        $processing = (string) $response->json('status.processing_phase.status');
+        $error = $response->json('status.processing_phase.error.message')
+            ?? $response->json('status.uploading_phase.error.message');
+
+        return [
+            'uploaded' => $uploading === 'complete' || in_array($code, ['upload_complete', 'processing', 'ready'], true),
+            'failed' => in_array($code, ['error', 'expired'], true) || $uploading === 'error' || $processing === 'error',
+            'error' => is_string($error) ? $error : null,
+        ];
+    }
+
+    /**
+     * Menerbitkan video Story yang sudah selesai diproses.
+     *
+     * @return string ID postingan Story
+     */
+    public function finishVideoStory(SocialAccount $account, string $videoId): string
+    {
+        $response = $this->request($account)
+            ->post("/{$account->provider_account_id}/video_stories", ['video_id' => $videoId, 'upload_phase' => 'finish']);
+
+        return (string) $this->data($response, 'post_id');
+    }
+
+    private function uploadUrl(string $videoId): string
+    {
+        $version = config('social-account.facebook.graph_version', 'v26.0');
+
+        return "https://rupload.facebook.com/video-upload/{$version}/{$videoId}";
     }
 
     private function data(Response $response, string $key): mixed
