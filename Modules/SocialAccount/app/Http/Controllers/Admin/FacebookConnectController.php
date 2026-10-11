@@ -28,7 +28,7 @@ class FacebookConnectController extends Controller implements HasMiddleware
     public function redirect(FacebookGraphService $service, Request $request)
     {
         if (! $service->isConfigured()) {
-            return $this->failure('OAuth Facebook belum dikonfigurasi. Hubungi administrator.');
+            return $this->failure(__('OAuth Facebook belum dikonfigurasi. Hubungi administrator.'));
         }
 
         // Hanya developer yang boleh memilih pemilik akun; client selalu untuk dirinya sendiri.
@@ -49,17 +49,17 @@ class FacebookConnectController extends Controller implements HasMiddleware
         $expected = session()->pull(self::STATE_KEY);
 
         if ($state === '' || ! hash_equals((string) $expected, $state)) {
-            return $this->failure('State OAuth tidak valid. Silakan coba lagi.');
+            return $this->failure(__('State OAuth tidak valid. Silakan coba lagi.'));
         }
 
         if ($request->filled('error')) {
-            return $this->failure('Koneksi Facebook dibatalkan atau ditolak.');
+            return $this->failure(__('Koneksi Facebook dibatalkan atau ditolak.'));
         }
 
         $code = $request->string('code')->toString();
 
         if ($code === '') {
-            return $this->failure('Facebook tidak mengembalikan kode otorisasi.');
+            return $this->failure(__('Facebook tidak mengembalikan kode otorisasi.'));
         }
 
         try {
@@ -71,25 +71,25 @@ class FacebookConnectController extends Controller implements HasMiddleware
             $missing = array_diff($service->scopes(), $service->grantedPermissions($userToken));
 
             if ($missing !== []) {
-                return $this->failure('Izin Facebook belum lengkap. Setujui semua izin yang diminta lalu coba lagi.');
+                return $this->failure(__('Izin Facebook belum lengkap. Setujui semua izin yang diminta lalu coba lagi.'));
             }
 
             $pages = $service->pages($userToken);
         } catch (Throwable $e) {
             report($e);
 
-            return $this->failure('Gagal menghubungkan Facebook. Silakan coba lagi.');
+            return $this->failure(__('Gagal menghubungkan Facebook. Silakan coba lagi.'));
         }
 
         if ($pages === []) {
-            return $this->failure('Tidak ada Halaman Facebook yang bisa kamu kelola. Pastikan kamu admin Halaman dan memilih Halaman itu saat memberi izin.');
+            return $this->failure(__('Tidak ada Halaman Facebook yang bisa kamu kelola. Pastikan kamu admin Halaman dan memilih Halaman itu saat memberi izin.'));
         }
 
         if (count($pages) === 1) {
             $this->persistPages($ownerId, $pages);
 
             return redirect()->route('admin.social-accounts.index')
-                ->with('success', 'Halaman Facebook berhasil dihubungkan.');
+                ->with('success', __('Halaman Facebook berhasil dihubungkan.'));
         }
 
         // Token pengguna disimpan terenkripsi di sesi hanya sampai Halaman dipilih.
@@ -106,7 +106,7 @@ class FacebookConnectController extends Controller implements HasMiddleware
         $pending = $this->pending();
 
         if (! $pending) {
-            return $this->failure('Sesi pemilihan Halaman berakhir. Silakan hubungkan lagi.');
+            return $this->failure(__('Sesi pemilihan Halaman berakhir. Silakan hubungkan lagi.'));
         }
 
         try {
@@ -115,7 +115,7 @@ class FacebookConnectController extends Controller implements HasMiddleware
             report($e);
             session()->forget(self::PENDING_KEY);
 
-            return $this->failure('Gagal mengambil daftar Halaman Facebook. Silakan coba lagi.');
+            return $this->failure(__('Gagal mengambil daftar Halaman Facebook. Silakan coba lagi.'));
         }
 
         $connected = SocialAccount::query()
@@ -136,15 +136,15 @@ class FacebookConnectController extends Controller implements HasMiddleware
         $pending = $this->pending();
 
         if (! $pending) {
-            return $this->failure('Sesi pemilihan Halaman berakhir. Silakan hubungkan lagi.');
+            return $this->failure(__('Sesi pemilihan Halaman berakhir. Silakan hubungkan lagi.'));
         }
 
         $data = $request->validate([
             'pages' => ['required', 'array', 'min:1'],
             'pages.*' => ['string'],
         ], [
-            'pages.required' => 'Pilih minimal satu Halaman.',
-            'pages.min' => 'Pilih minimal satu Halaman.',
+            'pages.required' => __('Pilih minimal satu Halaman.'),
+            'pages.min' => __('Pilih minimal satu Halaman.'),
         ]);
 
         try {
@@ -157,18 +157,18 @@ class FacebookConnectController extends Controller implements HasMiddleware
         } catch (Throwable $e) {
             report($e);
 
-            return $this->failure('Gagal menghubungkan Facebook. Silakan coba lagi.');
+            return $this->failure(__('Gagal menghubungkan Facebook. Silakan coba lagi.'));
         }
 
         if ($chosen === []) {
-            return back()->with('error', 'Halaman yang dipilih tidak ditemukan.');
+            return back()->with('error', __('Halaman yang dipilih tidak ditemukan.'));
         }
 
         $this->persistPages($pending['user_id'], $chosen);
         session()->forget(self::PENDING_KEY);
 
         return redirect()->route('admin.social-accounts.index')
-            ->with('success', count($chosen).' Halaman Facebook berhasil dihubungkan.');
+            ->with('success', __(':count Halaman Facebook berhasil dihubungkan.', ['count' => count($chosen)]));
     }
 
     private function persistPages(int $ownerId, array $pages): void

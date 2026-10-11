@@ -98,7 +98,7 @@
                         @php $active = $menu->isActive(); @endphp
                         <li>
                             <a href="{{ $menu->routeUrl() }}"
-                                :title="(!open && !mobileOpen) ? '{{ $menu->label }}' : null"
+                                :title="(!open && !mobileOpen) ? '{{ __($menu->label) }}' : null"
                                 @class([
                                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
                                     'bg-sidebar-active text-sidebar-text-active' => $active,
@@ -110,7 +110,7 @@
                                 @else
                                     <span class="w-5 h-5 flex-shrink-0"></span>
                                 @endif
-                                <span x-show="open || mobileOpen" x-cloak class="whitespace-nowrap">{{ $menu->label }}</span>
+                                <span x-show="open || mobileOpen" x-cloak class="whitespace-nowrap">{{ __($menu->label) }}</span>
                             </a>
                         </li>
                     @else
@@ -119,7 +119,7 @@
                         <li x-data="{ dropOpen: {{ $parentActive ? 'true' : 'false' }} }">
                             <button
                                 @click="(open || mobileOpen) ? (dropOpen = !dropOpen) : null"
-                                :title="(!open && !mobileOpen) ? '{{ $menu->label }}' : null"
+                                :title="(!open && !mobileOpen) ? '{{ __($menu->label) }}' : null"
                                 @class([
                                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 w-full',
                                     'bg-sidebar-active text-sidebar-text-active' => $parentActive,
@@ -131,7 +131,7 @@
                                 @else
                                     <span class="w-5 h-5 flex-shrink-0"></span>
                                 @endif
-                                <span x-show="open || mobileOpen" x-cloak class="flex-1 text-left whitespace-nowrap">{{ $menu->label }}</span>
+                                <span x-show="open || mobileOpen" x-cloak class="flex-1 text-left whitespace-nowrap">{{ __($menu->label) }}</span>
                                 <svg x-show="open || mobileOpen" x-cloak
                                     :class="dropOpen ? 'rotate-180' : ''"
                                     class="w-4 h-4 flex-shrink-0 transition-transform duration-200"
@@ -155,7 +155,7 @@
                                                 'text-sidebar-text/80 hover:bg-sidebar-hover hover:text-white' => ! $childActive,
                                             ])
                                         >
-                                            {{ $child->label }}
+                                            {{ __($child->label) }}
                                         </a>
                                     </li>
                                 @endforeach
@@ -209,7 +209,7 @@
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
                         </svg>
-                        Profil Saya
+                        {{ __('Profil Saya') }}
                     </a>
                     <div class="border-t border-border"></div>
                     <form method="POST" action="{{ route('logout') }}">
@@ -218,7 +218,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
                             </svg>
-                            Keluar
+                            {{ __('Keluar') }}
                         </button>
                     </form>
                 </div>
@@ -253,11 +253,7 @@
 
             {{-- Right actions --}}
             <div class="flex items-center gap-1">
-                <button class="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-                    </svg>
-                </button>
+                <x-language-switcher />
             </div>
         </header>
 

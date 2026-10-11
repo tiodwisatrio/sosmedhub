@@ -36,7 +36,7 @@ class Mp4Inspector
         $handle = @fopen($path, 'rb');
 
         if (! $handle) {
-            throw new RuntimeException('File video tidak bisa dibuka.');
+            throw new RuntimeException(__('File video tidak bisa dibuka.'));
         }
 
         try {
@@ -83,7 +83,7 @@ class Mp4Inspector
             }
 
             if ($size < $headerSize || $offset + $size > $fileSize + 8) {
-                throw new RuntimeException('Struktur file video rusak atau terpotong.');
+                throw new RuntimeException(__('Struktur file video rusak atau terpotong.'));
             }
 
             if ($type === 'ftyp' && $brand === null) {
@@ -96,7 +96,7 @@ class Mp4Inspector
                 $fragmentBytes += $size - $headerSize;
 
                 if ($fragmentBytes > self::MAX_FRAGMENT_BYTES) {
-                    throw new RuntimeException('Metadata fragmen video terlalu besar untuk dibaca.');
+                    throw new RuntimeException(__('Metadata fragmen video terlalu besar untuk dibaca.'));
                 }
 
                 fseek($handle, $offset + $headerSize);
@@ -105,7 +105,7 @@ class Mp4Inspector
                 $length = $size - $headerSize;
 
                 if ($length > self::MAX_MOOV_BYTES) {
-                    throw new RuntimeException('Metadata video terlalu besar untuk dibaca.');
+                    throw new RuntimeException(__('Metadata video terlalu besar untuk dibaca.'));
                 }
 
                 fseek($handle, $offset + $headerSize);
@@ -117,7 +117,7 @@ class Mp4Inspector
         }
 
         if ($moov === null) {
-            throw new RuntimeException('File ini bukan video MP4/MOV yang valid (metadata moov tidak ditemukan).');
+            throw new RuntimeException(__('File ini bukan video MP4/MOV yang valid (metadata moov tidak ditemukan).'));
         }
 
         return $this->summarize($moov, $fragments) + [
@@ -156,7 +156,7 @@ class Mp4Inspector
         }
 
         if ($video === null) {
-            throw new RuntimeException('Tidak ada jalur video di file ini.');
+            throw new RuntimeException(__('Tidak ada jalur video di file ini.'));
         }
 
         $seconds = $duration ?: ($video['duration'] ?? null);
@@ -180,7 +180,7 @@ class Mp4Inspector
         }
 
         if (! $seconds || $seconds <= 0) {
-            throw new RuntimeException('Durasi video tidak bisa dibaca. Ekspor ulang videonya sebagai MP4 standar.');
+            throw new RuntimeException(__('Durasi video tidak bisa dibaca. Ekspor ulang videonya sebagai MP4 standar.'));
         }
 
         $fps = $samples && $seconds ? $samples / ($video['duration'] ?: $seconds) : null;

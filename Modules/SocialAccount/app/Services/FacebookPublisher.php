@@ -106,7 +106,7 @@ class FacebookPublisher
     public function uploadVideo(SocialAccount $account, string $uploadUrl, mixed $stream, int $size): void
     {
         if (parse_url($uploadUrl, PHP_URL_HOST) !== 'rupload.facebook.com') {
-            throw new RuntimeException('Alamat unggah video Facebook tidak valid.');
+            throw new RuntimeException(__('Alamat unggah video Facebook tidak valid.'));
         }
 
         $response = $this->http
@@ -124,10 +124,10 @@ class FacebookPublisher
             $message = $response->json('error.message') ?? $response->json('debug_info.message') ?? 'HTTP '.$response->status();
 
             if ((int) $response->json('error.code') === 190) {
-                throw new FacebookAuthException("Token Facebook ditolak: {$message}");
+                throw new FacebookAuthException(__('Token Facebook ditolak: :message', ['message' => $message]));
             }
 
-            throw new RuntimeException("Facebook menolak unggahan video: {$message}");
+            throw new RuntimeException(__('Facebook menolak unggahan video: :message', ['message' => $message]));
         }
     }
 
@@ -186,7 +186,7 @@ class FacebookPublisher
             ->post("/{$account->provider_account_id}/video_reels", $payload);
 
         if ($this->data($response, 'success') !== true) {
-            throw new RuntimeException('Facebook tidak mengonfirmasi penerbitan Reels.');
+            throw new RuntimeException(__('Facebook tidak mengonfirmasi penerbitan Reels.'));
         }
     }
 
@@ -203,16 +203,16 @@ class FacebookPublisher
             $message = $response->json('error.message') ?? 'HTTP '.$response->status();
 
             if ((int) $response->json('error.code') === 190) {
-                throw new FacebookAuthException("Token Facebook ditolak: {$message}");
+                throw new FacebookAuthException(__('Token Facebook ditolak: :message', ['message' => $message]));
             }
 
-            throw new RuntimeException("Facebook menolak permintaan: {$message}");
+            throw new RuntimeException(__('Facebook menolak permintaan: :message', ['message' => $message]));
         }
 
         $value = $response->json($key);
 
         if ($value === null) {
-            throw new RuntimeException("Respons Facebook tidak berisi {$key}.");
+            throw new RuntimeException(__('Respons Facebook tidak berisi :key.', ['key' => $key]));
         }
 
         return $value;

@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Pilih Halaman Facebook')
+@section('title', __('Pilih Halaman Facebook'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Pilih Halaman Facebook</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Pilih Halaman Facebook') }}</h1>
 @endsection
 
 @section('content')
     <p class="mb-6 max-w-2xl text-sm text-slate-500">
-        Akun Facebook kamu mengelola beberapa Halaman. Pilih Halaman yang akan dipakai untuk menerbitkan postingan terjadwal.
+        {{ __('Akun Facebook Anda mengelola beberapa Halaman. Pilih Halaman yang akan dipakai untuk menerbitkan postingan terjadwal.') }}
     </p>
 
     @if ($errors->any())
@@ -30,7 +30,7 @@
                             @checked(in_array($page['id'], old('pages', [])))>
 
                         @if ($page['avatar_url'])
-                            <img src="{{ $page['avatar_url'] }}" alt="Foto Halaman {{ $page['name'] }}" loading="lazy" referrerpolicy="no-referrer"
+                            <img src="{{ $page['avatar_url'] }}" alt="{{ __('Foto Halaman :name', ['name' => $page['name']]) }}" loading="lazy" referrerpolicy="no-referrer"
                                 class="h-11 w-11 shrink-0 rounded-full border border-border object-cover">
                         @else
                             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-light text-sm font-semibold text-primary">
@@ -44,7 +44,7 @@
                         </span>
 
                         @if (in_array($page['id'], $connected, true))
-                            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">Sudah terhubung</span>
+                            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">{{ __('Sudah terhubung') }}</span>
                         @endif
                     </label>
                 </li>
@@ -53,9 +53,9 @@
 
         <div class="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
             <a href="{{ route('admin.social-accounts.index') }}"
-                class="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Batal</a>
+                class="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{{ __('Batal') }}</a>
             <button type="submit"
-                class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-hover">Hubungkan</button>
+                class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-hover">{{ __('Hubungkan') }}</button>
         </div>
     </form>
 @endsection

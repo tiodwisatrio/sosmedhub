@@ -86,6 +86,29 @@
         'fallbackName' => $previewAccountUsername,
         // Dipakai hanya bila belum ada akun yang dipilih; akun tanpa foto tetap menampilkan inisialnya.
         'fallbackAvatar' => $siteAvatarUrl,
+        // Teks untuk skrip Alpine (bahasa mengikuti pilihan pengguna). Jamak dipisah "|": satu|banyak.
+        'lang' => app()->getLocale(),
+        'dateLocale' => app()->getLocale() === 'en' ? 'en-US' : 'id-ID',
+        'i18n' => [
+            'notSet' => __('Belum diatur'),
+            'noMedia' => __('Belum ada media'),
+            'photoCount' => __(':count foto'),
+            'videoCount' => __(':count video'),
+            'remaining' => __(':count karakter tersisa'),
+            'characters' => __(':count karakter'),
+            'seconds' => __(':count detik'),
+            'minutes' => __(':count menit'),
+            'minutesSeconds' => __(':minutes menit :seconds detik'),
+            'unsupportedFile' => __('Format file tidak didukung. Gunakan JPEG, MP4, atau MOV.'),
+            'reelsVideoOnly' => __('Reels hanya menerima video MP4 atau MOV.'),
+            'feedFacebookPhotoOnly' => __('Feed Facebook hanya menerima foto JPEG.'),
+            'photoMax' => __('Ukuran foto maksimal :mb MB.'),
+            'videoMax' => __('Ukuran video :size MB melebihi batas :max MB untuk :format.'),
+            'reelOnlyOne' => __('Reels hanya bisa berisi satu video. Hapus video lama dulu.'),
+            'maxItems' => __(':format maksimal :count item.'),
+            'durationTooLong' => __('Durasi video :duration melebihi batas :max untuk :format.'),
+            'tooShort' => __('Video terlalu pendek. Minimal :count detik.'),
+        ],
         'formats' => $formats,
         'locked' => $locked,
         'shareToFeed' => $shareToFeed,
@@ -125,7 +148,7 @@
                     <div class="flex items-center justify-between px-5 py-3.5 border-b border-border bg-white">
                         <div class="flex items-center gap-2.5">
                             <span class="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[11px] font-semibold">1</span>
-                            <h2 class="text-sm font-semibold text-slate-800">Konten</h2>
+                            <h2 class="text-sm font-semibold text-slate-800">{{ __('Konten') }}</h2>
                         </div>
                         @if ($isEdit)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-light text-primary">
@@ -140,14 +163,14 @@
                         {{-- Akun tujuan --}}
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                                Akun Tujuan <span class="text-danger ml-0.5">*</span>
+                                {{ __('Akun Tujuan') }} <span class="text-danger ml-0.5">*</span>
                             </label>
                             @if ($socialAccounts->isEmpty())
                                 <div class="rounded-lg border border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning-text">
-                                    Belum ada akun sosial aktif. Tambahkan akun dulu sebelum menjadwalkan postingan.
+                                    {{ __('Belum ada akun sosial aktif. Tambahkan akun dulu sebelum menjadwalkan postingan.') }}
                                 </div>
                             @else
-                                <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Akun tujuan">
+                                <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="{{ __('Akun tujuan') }}">
                                     @foreach ($socialAccounts as $account)
                                         @php
                                             $isFacebookAccount = $account->platform === 'facebook';
@@ -170,7 +193,7 @@
 
                                             <span class="min-w-0">
                                                 <span class="block truncate text-sm font-semibold text-slate-800">{{ $accountName }}</span>
-                                                <span class="block text-xs text-slate-500">{{ $isFacebookAccount ? 'Facebook Page' : 'Instagram' }}</span>
+                                                <span class="block text-xs text-slate-500">{{ $isFacebookAccount ? __('Facebook Page') : 'Instagram' }}</span>
                                             </span>
                                         </label>
                                     @endforeach
@@ -199,9 +222,9 @@
                         <div x-show="usesCaption" x-cloak>
                             <div class="flex items-baseline justify-between">
                                 <label for="caption" class="block text-sm font-medium text-slate-700 mb-1.5">
-                                    Caption <span x-show="has('feed')" x-cloak class="text-danger ml-0.5">*</span>
+                                    {{ __('Caption') }} <span x-show="has('feed')" x-cloak class="text-danger ml-0.5">*</span>
                                 </label>
-                                <span x-show="usesCaption" class="text-xs tabular-nums" :class="counterClass" x-text="remaining + ' karakter tersisa'"></span>
+                                <span x-show="usesCaption" class="text-xs tabular-nums" :class="counterClass" x-text="t('remaining', { count: remaining })"></span>
                             </div>
 
                             <div x-show="usesCaption">
@@ -209,10 +232,10 @@
                                     name="caption"
                                     rows="6"
                                     x-model="caption"
-                                    placeholder="Tulis caption yang akan menjadi teks postingan…"
+                                    placeholder="{{ __('Tulis caption yang akan menjadi teks postingan…') }}"
                                 ></x-admin.textarea>
                                 <p class="mt-1.5 text-xs text-slate-400" x-show="has('story')" x-cloak>
-                                    Caption dipakai untuk Feed dan Reels.
+                                    {{ __('Caption dipakai untuk Feed dan Reels.') }}
                                 </p>
                             </div>
                         </div>
@@ -224,13 +247,13 @@
                     <div class="flex items-center justify-between px-5 py-3.5 border-b border-border bg-white">
                         <div class="flex items-center gap-2.5">
                             <span class="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[11px] font-semibold">2</span>
-                            <h2 class="text-sm font-semibold text-slate-800">Penjadwalan</h2>
+                            <h2 class="text-sm font-semibold text-slate-800">{{ __('Penjadwalan') }}</h2>
                         </div>
                         <span class="inline-flex items-center gap-1.5 text-xs text-slate-400">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
                             </svg>
-                            Waktu Indonesia Barat
+                            {{ __('Waktu Indonesia Barat') }}
                         </span>
                     </div>
 
@@ -250,9 +273,9 @@
 
             {{-- Aksi: di ponsel paling bawah setelah pratinjau, tersusun ke bawah selebar layar; di desktop di bawah kolom kiri. --}}
             <div class="flex flex-col gap-3 lg:col-span-7 lg:col-start-1 lg:row-start-2 lg:flex-row lg:items-center">
-                <x-admin.button type="submit" class="w-full justify-center lg:w-auto" :disabled="$socialAccounts->isEmpty()">{{ $isEdit ? 'Simpan Perubahan' : 'Jadwalkan Terbit' }}</x-admin.button>
+                <x-admin.button type="submit" class="w-full justify-center lg:w-auto" :disabled="$socialAccounts->isEmpty()">{{ $isEdit ? __('Simpan Perubahan') : __('Jadwalkan Terbit') }}</x-admin.button>
                 <a href="{{ route('admin.scheduled-posts.index') }}" class="block lg:inline-block">
-                    <x-admin.button type="button" variant="outline" class="w-full justify-center lg:w-auto">Batal</x-admin.button>
+                    <x-admin.button type="button" variant="outline" class="w-full justify-center lg:w-auto">{{ __('Batal') }}</x-admin.button>
                 </a>
             </div>
         </form>

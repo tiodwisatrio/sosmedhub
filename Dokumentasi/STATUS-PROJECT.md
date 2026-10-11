@@ -211,6 +211,20 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 - Tabel pendukung: `roles`, `permissions`, `model_has_*`, `role_has_permissions`, `menus`, `site_settings`, `jobs`.
 - **Tabel sisa CMS lama** masih ada di database lokal: `banners`, `categories`, `faqs`, `heroes`, `keunggulans`, `kliens`, `layanans`, `pakets`, `posts`, `teams`. Modul dan migration-nya sudah tidak ada, jadi server baru tidak akan membuatnya.
 
+## Bahasa antarmuka (Indonesia/English)
+
+- **Pemilih bahasa** ada di topbar admin (menggantikan ikon notifikasi) dan di halaman login/daftar. Pilihan disimpan di cookie `locale` (setahun) dan sesi, sehingga berlaku juga untuk tamu. Bawaan: Indonesia (`SOSMEDHUB_DEFAULT_LOCALE`).
+- **Teks sumber Indonesia** dibungkus `__('Teks Indonesia')`; terjemahan Inggris di `lang/en.json` (220 entri). Teks sumber Inggris bawaan Breeze diterjemahkan lewat `lang/id.json`. Bahasa Indonesia tidak butuh berkas apa pun.
+- **Skrip Alpine form jadwal** menerima teksnya dari server lewat `i18n` di konfigurasi komposer (`t()` dan `plural()`), karena JavaScript tidak bisa memanggil `__()`.
+- **Tes pengaman** (`tests/Feature/LocaleTest.php`): semua `__('...')` literal harus punya terjemahan di `en.json`/`id.json`, dan halaman Dashboard, Penjadwalan, form jadwal, Riwayat, serta Akun Sosial tidak boleh memuat frasa Indonesia saat English dipilih.
+- **Sudah diterjemahkan:** layout admin dan sidebar, login/daftar, Dashboard, Penjadwalan, form jadwal, pratinjau, Riwayat, Akun Sosial, label status, pesan flash dan galat controller Scheduler.
+- **Tahap 3 (selesai):** pesan validasi unggahan (`FormatMedia`, `InstagramPhoto`, `VideoSpec`, `Mp4Inspector`, `OnScheduleSlot`, `ValidatesPostFormats`), pesan flash dan galat controller semua modul, pesan galat penerbitan, email notifikasi, dan pesan validasi bawaan Laravel (`lang/id/validation.php`, `auth.php`, `passwords.php`, `pagination.php`). `en.json` kini 352 entri.
+- **Pesan galat tersimpan di database** (`error_message`) disimpan sebagai teks final dalam bahasa sumber. Saat ditampilkan, `App\Support\StoredMessage` mencocokkannya dengan kunci terjemahan (termasuk yang berplaceholder `:nama`) lewat `ScheduledPost::displayError()` dan `ScheduledPostPublication::displayError()`. Pesan yang tidak dikenal (teks lama atau dari Meta) tampil apa adanya.
+- **Bahasa email** mengikuti kolom `users.locale` (`User::preferredLocale()`), diisi saat pengguna memilih bahasa. Urutan penentuan bahasa web: cookie perangkat, lalu `users.locale`, lalu bawaan.
+- **Angka desimal** pada pesan mengikuti bahasa lewat `VideoSpec::number()` ("1,5" atau "1.5").
+- **Belum:** halaman publik (beranda, privasi, ketentuan, hapus data) dan tampilan modul User/Role/Menu/Site Setting. Output command Artisan (CLI) sengaja tetap Indonesia. Label menu buatan admin sendiri tampil apa adanya sampai ditambahkan ke `en.json`.
+- Di luar permintaan web (job, command, tes) bahasa mengikuti `SOSMEDHUB_DEFAULT_LOCALE`, bukan `APP_LOCALE`.
+
 ## 5. Role dan izin
 
 - **developer**: semua izin, melihat semua data.

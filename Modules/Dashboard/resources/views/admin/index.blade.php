@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', __('Dashboard'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Dashboard</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Dashboard') }}</h1>
 @endsection
 
 @section('content')
@@ -19,13 +19,13 @@
                 </div>
                 <div>
                     <h2 class="text-xl font-semibold text-slate-800">
-                        Selamat datang, {{ Auth::user()->name }}!
+                        {{ __('Selamat datang, :name!', ['name' => Auth::user()->name]) }}
                     </h2>
                 </div>
             </div>
 
             <p class="text-slate-600 leading-relaxed">
-                Anda berhasil masuk ke panel Sosmedhub. Langkah berikutnya adalah menghubungkan akun Instagram Business dan menyiapkan antrian konten pertama.
+                {{ __('Anda berhasil masuk ke panel Sosmedhub. Langkah berikutnya adalah menghubungkan akun Instagram Business atau Halaman Facebook dan menyiapkan antrian konten pertama.') }}
             </p>
 
             

@@ -21,7 +21,7 @@ class EnsureUserIsApproved
         }
 
         if ($request->expectsJson()) {
-            abort(403, 'Akun belum disetujui.');
+            abort(403, __('Akun belum disetujui.'));
         }
 
         if ($request->routeIs('approval.pending')) {

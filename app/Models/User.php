@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
     'email',
     'password',
     'phone',
+    'locale',
     'avatar',
     'status',
     'approval_status',
@@ -27,7 +29,7 @@ use Spatie\Permission\Traits\HasRoles;
     'suspended_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -60,6 +62,19 @@ class User extends Authenticatable
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(self::class, 'approved_by');
+    }
+
+    /**
+     * Bahasa yang dipakai untuk notifikasi dan email ke pengguna ini: pilihannya sendiri bila valid,
+     * selain itu bahasa bawaan aplikasi.
+     */
+    public function preferredLocale(): string
+    {
+        $supported = array_keys(config('sosmedhub.locales', []));
+
+        return in_array($this->locale, $supported, true)
+            ? $this->locale
+            : (string) config('sosmedhub.default_locale', 'id');
     }
 
     public function isApproved(): bool

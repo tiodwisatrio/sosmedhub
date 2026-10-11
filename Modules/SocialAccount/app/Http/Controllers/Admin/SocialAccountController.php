@@ -53,7 +53,7 @@ class SocialAccountController extends Controller implements HasMiddleware
     {
         if (! $service->isConfigured()) {
             return redirect()->route('admin.social-accounts.create')
-                ->with('error', 'OAuth Instagram belum dikonfigurasi. Hubungi administrator.');
+                ->with('error', __('OAuth Instagram belum dikonfigurasi. Hubungi administrator.'));
         }
 
         $ownerId = $request->string('owner_id')->toString() ?: (string) auth()->id();
@@ -70,17 +70,17 @@ class SocialAccountController extends Controller implements HasMiddleware
         $expected = session()->pull('instagram_oauth_state');
 
         if ($state === '' || ! hash_equals((string) $expected, $state)) {
-            return $this->oauthFailure('State OAuth tidak valid. Silakan coba lagi.');
+            return $this->oauthFailure(__('State OAuth tidak valid. Silakan coba lagi.'));
         }
 
         if ($request->filled('error')) {
-            return $this->oauthFailure('Koneksi Instagram dibatalkan atau ditolak.');
+            return $this->oauthFailure(__('Koneksi Instagram dibatalkan atau ditolak.'));
         }
 
         $code = $request->string('code')->toString();
 
         if ($code === '') {
-            return $this->oauthFailure('Instagram tidak mengembalikan kode otorisasi.');
+            return $this->oauthFailure(__('Instagram tidak mengembalikan kode otorisasi.'));
         }
 
         try {
@@ -99,11 +99,11 @@ class SocialAccountController extends Controller implements HasMiddleware
             $this->persistAccount($ownerId, $accessToken, $instagramUserId, $profile, $longLived['expires_in']);
 
             return redirect()->route('admin.social-accounts.index')
-                ->with('success', 'Akun Instagram berhasil dihubungkan.');
+                ->with('success', __('Akun Instagram berhasil dihubungkan.'));
         } catch (Throwable $e) {
             report($e);
 
-            return $this->oauthFailure('Gagal menghubungkan Instagram. Silakan coba lagi.');
+            return $this->oauthFailure(__('Gagal menghubungkan Instagram. Silakan coba lagi.'));
         }
     }
 
@@ -151,7 +151,7 @@ class SocialAccountController extends Controller implements HasMiddleware
         SocialAccount::create($this->validatedData($request));
 
         return redirect()->route('admin.social-accounts.index')
-            ->with('success', 'Akun sosial berhasil ditambahkan.');
+            ->with('success', __('Akun sosial berhasil ditambahkan.'));
     }
 
     public function edit(SocialAccount $social_account)
@@ -171,7 +171,7 @@ class SocialAccountController extends Controller implements HasMiddleware
         $social_account->update($this->validatedData($request, $social_account));
 
         return redirect()->route('admin.social-accounts.index')
-            ->with('success', 'Akun sosial berhasil diperbarui.');
+            ->with('success', __('Akun sosial berhasil diperbarui.'));
     }
 
     public function destroy(SocialAccount $social_account)
@@ -185,7 +185,7 @@ class SocialAccountController extends Controller implements HasMiddleware
         ]);
 
         return redirect()->route('admin.social-accounts.index')
-            ->with('success', 'Akun sosial berhasil diputuskan.');
+            ->with('success', __('Akun sosial berhasil diputuskan.'));
     }
 
     private function visibleAccounts(): Builder
@@ -246,7 +246,7 @@ class SocialAccountController extends Controller implements HasMiddleware
         abort_unless(
             auth()->user()?->isDeveloper() || $account->user_id === auth()->id(),
             403,
-            'Akun sosial ini bukan milik akun kamu.'
+            __('Akun sosial ini bukan milik akun kamu.')
         );
     }
 }

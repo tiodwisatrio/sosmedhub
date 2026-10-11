@@ -71,7 +71,7 @@ class MenuController extends Controller implements HasMiddleware
         Menu::create($data);
 
         return redirect()->route('admin.menus.index')
-            ->with('success', 'Menu berhasil ditambahkan.');
+            ->with('success', __('Menu berhasil ditambahkan.'));
     }
 
     public function edit(Menu $menu)
@@ -92,7 +92,7 @@ class MenuController extends Controller implements HasMiddleware
         $menu->update($data);
 
         return redirect()->route('admin.menus.index')
-            ->with('success', 'Menu berhasil diperbarui.');
+            ->with('success', __('Menu berhasil diperbarui.'));
     }
 
     public function destroy(Menu $menu)
@@ -101,7 +101,7 @@ class MenuController extends Controller implements HasMiddleware
         $menu->delete();
 
         return redirect()->route('admin.menus.index')
-            ->with('success', 'Menu berhasil dihapus.');
+            ->with('success', __('Menu berhasil dihapus.'));
     }
 
     public function reorder(Request $request)

@@ -30,17 +30,17 @@
             <h2 id="platform-{{ $platform }}" class="text-sm font-semibold text-slate-800">{{ $label }}</h2>
             <p class="truncate text-xs text-slate-400">
                 @if (! $available)
-                    {{ $description ?? 'Belum tersedia' }}
+                    {{ $description ?? __('Belum tersedia') }}
                 @elseif ($count > 0)
-                    {{ $count }} akun terhubung
+                    {{ __(':count akun terhubung', ['count' => $count]) }}
                 @else
-                    Belum ada akun terhubung
+                    {{ __('Belum ada akun terhubung') }}
                 @endif
             </p>
         </div>
 
         @unless ($available)
-            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">Segera hadir</span>
+            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">{{ __('Segera hadir') }}</span>
         @endunless
     </header>
 
@@ -56,7 +56,7 @@
                         <div class="flex items-center gap-3">
                             <div class="relative h-11 w-11 shrink-0">
                                 @if ($account->avatar_url)
-                                    <img src="{{ $account->avatar_url }}" alt="Foto profil {{ $account->username }}" loading="lazy" referrerpolicy="no-referrer"
+                                    <img src="{{ $account->avatar_url }}" alt="{{ __('Foto profil :name', ['name' => $account->username]) }}" loading="lazy" referrerpolicy="no-referrer"
                                         class="h-11 w-11 rounded-full border border-border object-cover"
                                         onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden')">
                                 @endif
@@ -75,30 +75,30 @@
                                     <p class="truncate text-xs text-slate-500">ID {{ $account->provider_account_id }}</p>
                                 @endif
                                 @if ($showOwner && $account->user)
-                                    <p class="truncate text-xs text-slate-400">Pemilik: {{ $account->user->name }}</p>
+                                    <p class="truncate text-xs text-slate-400">{{ __('Pemilik: :name', ['name' => $account->user->name]) }}</p>
                                 @endif
                             </div>
                         </div>
 
                         @if ($expired)
                             <p class="mt-3 rounded-md bg-warning-light px-3 py-2 text-xs text-warning-text">
-                                Koneksi berakhir. Hubungkan ulang agar jadwal tetap terbit.
+                                {{ __('Koneksi berakhir. Hubungkan ulang agar jadwal tetap terbit.') }}
                             </p>
                         @endif
 
                         <div class="mt-3 flex flex-wrap items-center gap-2">
                             @if ($expired && $available && $connectUrl)
                                 @can('social-account.create')
-                                    <a href="{{ $connectUrl }}" class="{{ $outline }} w-full !border-primary !py-2 !text-primary">Hubungkan Ulang</a>
+                                    <a href="{{ $connectUrl }}" class="{{ $outline }} w-full !border-primary !py-2 !text-primary">{{ __('Hubungkan Ulang') }}</a>
                                 @endcan
                             @endif
 
                             @can('social-account.delete')
                                 <form method="POST" action="{{ route('admin.social-accounts.destroy', $account) }}"
-                                    onsubmit="return confirm('Putuskan akun {{ $account->username }}? Postingan terjadwal untuk akun ini tidak akan terbit.')">
+                                    onsubmit="return confirm(@js(__('Putuskan akun :name? Postingan terjadwal untuk akun ini tidak akan terbit.', ['name' => $account->username])))">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="{{ $outline }} !border-danger/30 !text-danger hover:!bg-danger-light">Putuskan</button>
+                                    <button type="submit" class="{{ $outline }} !border-danger/30 !text-danger hover:!bg-danger-light">{{ __('Putuskan') }}</button>
                                 </form>
                             @endcan
                         </div>
@@ -109,9 +109,9 @@
             <div class="flex flex-1 items-center px-5 py-8">
                 <p class="text-sm text-slate-500">
                     @if ($available)
-                        Hubungkan akun {{ $label }} untuk mulai menjadwalkan postingan.
+                        {{ __('Hubungkan akun :platform untuk mulai menjadwalkan postingan.', ['platform' => $label]) }}
                     @else
-                        Dukungan {{ $label }} sedang disiapkan.
+                        {{ __('Dukungan :platform sedang disiapkan.', ['platform' => $label]) }}
                     @endif
                 </p>
             </div>
@@ -122,17 +122,17 @@
         @if (! $available)
             <button type="button" disabled aria-disabled="true"
                 class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400">
-                Hubungkan
+                {{ __('Hubungkan') }}
             </button>
         @else
             @can('social-account.create')
                 @if ($count > 0)
-                    <a href="{{ $connectUrl }}" class="{{ $outline }} w-full !py-2 !text-sm">+ Tambah Akun</a>
+                    <a href="{{ $connectUrl }}" class="{{ $outline }} w-full !py-2 !text-sm">{{ __('+ Tambah Akun') }}</a>
                 @else
-                    <a href="{{ $connectUrl }}" class="{{ $primary }}">Hubungkan</a>
+                    <a href="{{ $connectUrl }}" class="{{ $primary }}">{{ __('Hubungkan') }}</a>
                 @endif
             @else
-                <p class="text-center text-xs text-slate-400">Anda tidak punya izin untuk menghubungkan akun.</p>
+                <p class="text-center text-xs text-slate-400">{{ __('Anda tidak punya izin untuk menghubungkan akun.') }}</p>
             @endcan
         @endif
     </footer>

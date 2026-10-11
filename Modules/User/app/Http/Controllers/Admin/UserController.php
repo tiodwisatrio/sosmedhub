@@ -49,7 +49,7 @@ class UserController extends Controller implements HasMiddleware
         $this->service->store($data, $request->file('avatar'), $request->role);
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil ditambahkan.');
+            ->with('success', __('Pengguna berhasil ditambahkan.'));
     }
 
     public function edit(User $user)
@@ -81,18 +81,18 @@ class UserController extends Controller implements HasMiddleware
         );
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil diperbarui.');
+            ->with('success', __('Pengguna berhasil diperbarui.'));
     }
 
     public function destroy(User $user)
     {
         abort_if($user->hasRole('developer'), 403);
-        abort_if($user->id === auth()->id(), 403, 'Tidak dapat menghapus akun sendiri.');
+        abort_if($user->id === auth()->id(), 403, __('Tidak dapat menghapus akun sendiri.'));
 
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil dihapus.');
+            ->with('success', __('Pengguna berhasil dihapus.'));
     }
 
     public function approve(User $user)
@@ -115,13 +115,13 @@ class UserController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil di-approve.');
+            ->with('success', __('Pengguna berhasil di-approve.'));
     }
 
     public function suspend(User $user)
     {
         abort_if($user->hasRole('developer'), 403);
-        abort_if($user->id === auth()->id(), 403, 'Tidak dapat suspend akun sendiri.');
+        abort_if($user->id === auth()->id(), 403, __('Tidak dapat suspend akun sendiri.'));
 
         $user->forceFill([
             'approval_status' => User::APPROVAL_SUSPENDED,
@@ -129,13 +129,13 @@ class UserController extends Controller implements HasMiddleware
         ])->save();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil di-suspend.');
+            ->with('success', __('Pengguna berhasil di-suspend.'));
     }
 
     public function reject(User $user)
     {
         abort_if($user->hasRole('developer'), 403);
-        abort_if($user->id === auth()->id(), 403, 'Tidak dapat reject akun sendiri.');
+        abort_if($user->id === auth()->id(), 403, __('Tidak dapat reject akun sendiri.'));
 
         $user->forceFill([
             'approval_status' => User::APPROVAL_REJECTED,
@@ -147,6 +147,6 @@ class UserController extends Controller implements HasMiddleware
         ])->save();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'Pengguna berhasil ditolak.');
+            ->with('success', __('Pengguna berhasil ditolak.'));
     }
 }

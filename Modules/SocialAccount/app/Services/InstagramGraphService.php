@@ -58,7 +58,7 @@ class InstagramGraphService
         $data = $response->json('data.0') ?? $response->json();
 
         if (! isset($data['access_token'])) {
-            throw new RuntimeException('Respons OAuth Instagram tidak berisi access_token.');
+            throw new RuntimeException(__('Respons OAuth Instagram tidak berisi access_token.'));
         }
 
         return $data;
@@ -89,7 +89,7 @@ class InstagramGraphService
         $token = $response->json('access_token');
 
         if (! is_string($token)) {
-            throw new RuntimeException('Gagal menukar token Instagram menjadi long-lived.');
+            throw new RuntimeException(__('Gagal menukar token Instagram menjadi long-lived.'));
         }
 
         return [

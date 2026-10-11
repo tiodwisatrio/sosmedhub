@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Akun Sosial')
+@section('title', __('Akun Sosial'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Akun Sosial</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Akun Sosial') }}</h1>
 @endsection
 
 @section('content')
     <p class="mb-6 max-w-2xl text-sm text-slate-500">
-        Hubungkan akun media sosial yang akan dipakai untuk menerbitkan postingan terjadwal.
+        {{ __('Hubungkan akun media sosial yang akan dipakai untuk menerbitkan postingan terjadwal.') }}
     </p>
 
     <div class="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -31,7 +31,7 @@
         <x-social-account::platform-card
             platform="threads"
             label="Threads"
-            description="Akun Threads"
+            :description="__('Akun Threads')"
             :accounts="$accountsByPlatform->get('threads', collect())" />
     </div>
 @endsection

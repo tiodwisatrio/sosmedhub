@@ -53,8 +53,8 @@ class UpdateSiteSettingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'iframe_map.starts_with' => 'Isi hanya URL embed Google Maps (harus diawali https://www.google.com/maps/embed).',
-            'iframe_map.url' => 'Isi harus berupa URL, bukan kode HTML.',
+            'iframe_map.starts_with' => __('Isi hanya URL embed Google Maps (harus diawali https://www.google.com/maps/embed).'),
+            'iframe_map.url' => __('Isi harus berupa URL, bukan kode HTML.'),
         ];
     }
 }

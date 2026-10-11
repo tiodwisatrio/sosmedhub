@@ -290,7 +290,7 @@ class ScheduledPostService
             if ($stored['size'] > VideoSpec::maxBytes(ScheduledPost::FORMAT_STORY)) {
                 MediaDisk::get()->delete($stored['media_path']);
 
-                throw new RuntimeException('Hasil potongan lebih besar dari batas '.(VideoSpec::maxBytes(ScheduledPost::FORMAT_STORY) / 1048576).' MB untuk Story. Pilih rentang yang lebih pendek.');
+                throw new RuntimeException(__('Hasil potongan lebih besar dari batas :mb MB untuk Story. Pilih rentang yang lebih pendek.', ['mb' => (int) (VideoSpec::maxBytes(ScheduledPost::FORMAT_STORY) / 1048576)]));
             }
 
             return $stored;

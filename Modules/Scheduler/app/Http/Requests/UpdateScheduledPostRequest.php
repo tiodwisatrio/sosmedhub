@@ -63,7 +63,7 @@ class UpdateScheduledPostRequest extends FormRequest
     {
         return function (string $attribute, mixed $value, $fail): void {
             if (Carbon::parse($value, ScheduledPost::WIB)->isPast()) {
-                $fail('Tanggal terbit harus di masa depan.');
+                $fail(__('Tanggal terbit harus di masa depan.'));
             }
         };
     }

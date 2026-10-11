@@ -76,7 +76,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
                 'uses_caption' => ! in_array($post->formats(), [[ScheduledPost::FORMAT_STORY]], true),
                 'scheduled_at' => $post->formattedScheduledAt().' WIB',
                 'status' => $post->statusLabel(),
-                'created_at' => $post->created_at?->locale('id')->translatedFormat('d M Y'),
+                'created_at' => $post->created_at?->locale(app()->getLocale())->translatedFormat('d M Y'),
             ];
         })->values();
 
@@ -168,7 +168,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
             'yearEvents' => $yearEvents,
             'eventsYear' => $todayWib->year,
             'monthContentCount' => $monthContentCount,
-            'monthLabel' => $todayWib->copy()->locale('id')->translatedFormat('F Y'),
+            'monthLabel' => $todayWib->copy()->locale(app()->getLocale())->translatedFormat('F Y'),
             'statusCounts' => $statusCounts,
             'weeks' => $weeks,
             'blockStart' => $blockStart,
@@ -204,13 +204,13 @@ class ScheduledPostController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('admin.scheduled-posts.index')
-            ->with('success', 'Postingan berhasil dijadwalkan.');
+            ->with('success', __('Postingan berhasil dijadwalkan.'));
     }
 
     public function edit(ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
+        abort_unless($scheduled_post->canBeEdited(), 403, __('Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.'));
 
         return view('scheduler::admin.edit', [
             'post' => $scheduled_post->load(['media', 'socialAccount', 'publications']),
@@ -221,7 +221,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
     public function update(UpdateScheduledPostRequest $request, ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeEdited(), 403, 'Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.');
+        abort_unless($scheduled_post->canBeEdited(), 403, __('Postingan yang sudah terbit atau dibatalkan tidak bisa diubah lagi.'));
 
         $data = $request->safe()->only(['caption', 'scheduled_at', 'social_account_id']);
         $data['formats'] = $request->selectedFormats();
@@ -241,7 +241,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('admin.scheduled-posts.index')
-            ->with('success', 'Postingan berhasil diperbarui.');
+            ->with('success', __('Postingan berhasil diperbarui.'));
     }
 
     public function duplicate(ScheduledPost $scheduled_post)
@@ -252,11 +252,11 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $missing = $scheduled_post->media->count() - $copy->media()->count();
 
         $redirect = redirect()->route('admin.scheduled-posts.edit', $copy)
-            ->with('success', 'Postingan diduplikasi sebagai draf. Atur waktu terbit lalu simpan.');
+            ->with('success', __('Postingan diduplikasi sebagai draf. Atur waktu terbit lalu simpan.'));
 
         if ($missing > 0) {
             $days = (int) config('scheduler.media.publish_retention_days', 30);
-            $redirect->with('error', "{$missing} foto tidak ikut tersalin karena sudah dihapus dari sistem ({$days} hari setelah terbit). Unggah ulang fotonya sebelum menyimpan.");
+            $redirect->with('error', __(':count foto tidak ikut tersalin karena sudah dihapus dari sistem (:days hari setelah terbit). Unggah ulang fotonya sebelum menyimpan.', ['count' => $missing, 'days' => $days]));
         }
 
         return $redirect;
@@ -265,12 +265,12 @@ class ScheduledPostController extends Controller implements HasMiddleware
     public function cancel(ScheduledPost $scheduled_post)
     {
         $this->authorizePostAccess($scheduled_post);
-        abort_unless($scheduled_post->canBeCancelled(), 403, 'Postingan yang sudah lewat tidak bisa dibatalkan lagi.');
+        abort_unless($scheduled_post->canBeCancelled(), 403, __('Postingan yang sudah lewat tidak bisa dibatalkan lagi.'));
 
         $this->service->cancel($scheduled_post);
 
         return redirect()->route('admin.scheduled-posts.index')
-            ->with('success', 'Postingan berhasil dibatalkan.');
+            ->with('success', __('Postingan berhasil dibatalkan.'));
     }
 
     public function destroy(ScheduledPost $scheduled_post)
@@ -284,7 +284,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
         $scheduled_post->delete();
 
         return redirect()->route('admin.scheduled-posts.index')
-            ->with('success', 'Postingan berhasil dihapus.');
+            ->with('success', __('Postingan berhasil dihapus.'));
     }
 
     private function visibleScheduledPosts(): Builder
@@ -306,7 +306,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
         abort_unless(
             auth()->user()?->isDeveloper() || $post->user_id === auth()->id(),
             403,
-            'Postingan ini bukan milik akun kamu.'
+            __('Postingan ini bukan milik akun kamu.')
         );
     }
 

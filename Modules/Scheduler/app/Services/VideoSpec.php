@@ -65,30 +65,59 @@ class VideoSpec
         $maxBytes = self::maxBytes($format);
 
         if ($info['duration'] < $min) {
-            return sprintf('Video terlalu pendek (%s). Minimal %d detik.', self::duration($info['duration']), $min);
+            return __('Video terlalu pendek (:duration). Minimal :min detik.', ['duration' => self::duration($info['duration']), 'min' => $min]);
         }
 
         if ($info['duration'] > $maxSeconds) {
-            return sprintf('Durasi video %s melebihi batas %s untuk %s.', self::duration($info['duration']), self::duration($maxSeconds), $label);
+            return __('Durasi video :duration melebihi batas :max untuk :format.', [
+                'duration' => self::duration($info['duration']),
+                'max' => self::duration($maxSeconds),
+                'format' => $label,
+            ]);
         }
 
         if ($bytes > $maxBytes) {
-            return sprintf('Ukuran video %s MB melebihi batas %d MB untuk %s.', number_format($bytes / 1048576, 1, ',', '.'), $maxBytes / 1048576, $label);
+            return __('Ukuran video :size MB melebihi batas :max MB untuk :format.', [
+                'size' => self::number($bytes / 1048576),
+                'max' => (int) ($maxBytes / 1048576),
+                'format' => $label,
+            ]);
         }
 
         if (! in_array($info['video_codec'], ['h264', 'hevc'], true)) {
-            return sprintf('Codec video "%s" tidak didukung %s. Ekspor ulang sebagai MP4 dengan H.264 (atau HEVC) dan audio AAC.', $info['video_codec'] ?? 'tidak dikenal', $network);
+            return __('Codec video ":codec" tidak didukung :network. Ekspor ulang sebagai MP4 dengan H.264 (atau HEVC) dan audio AAC.', [
+                'codec' => $info['video_codec'] ?? __('tidak dikenal'),
+                'network' => $network,
+            ]);
         }
 
         if ($info['has_audio'] && $info['audio_codec'] !== 'aac') {
-            return sprintf('Codec audio "%s" tidak didukung %s. Gunakan audio AAC.', $info['audio_codec'] ?? 'tidak dikenal', $network);
+            return __('Codec audio ":codec" tidak didukung :network. Gunakan audio AAC.', [
+                'codec' => $info['audio_codec'] ?? __('tidak dikenal'),
+                'network' => $network,
+            ]);
         }
 
         if ($info['fps'] !== null && ($info['fps'] < self::FPS_MIN - self::FPS_TOLERANCE || $info['fps'] > self::FPS_MAX + self::FPS_TOLERANCE)) {
-            return sprintf('Frame rate %s fps di luar batas %d-%d fps yang diterima %s.', rtrim(rtrim(number_format($info['fps'], 2, ',', ''), '0'), ','), self::FPS_MIN, self::FPS_MAX, $network);
+            return __('Frame rate :fps fps di luar batas :min-:max fps yang diterima :network.', [
+                'fps' => rtrim(rtrim(self::number($info['fps'], 2), '0'), app()->getLocale() === 'en' ? '.' : ','),
+                'min' => self::FPS_MIN,
+                'max' => self::FPS_MAX,
+                'network' => $network,
+            ]);
         }
 
         return null;
+    }
+
+    /**
+     * Angka desimal dengan pemisah mengikuti bahasa aktif: "1,5" (Indonesia) atau "1.5" (English).
+     */
+    public static function number(float $value, int $decimals = 1): string
+    {
+        return app()->getLocale() === 'en'
+            ? number_format($value, $decimals, '.', ',')
+            : number_format($value, $decimals, ',', '.');
     }
 
     /**
@@ -99,12 +128,14 @@ class VideoSpec
         $whole = (int) round($seconds);
 
         if ($whole < 60) {
-            return $whole.' detik';
+            return __(':count detik', ['count' => $whole]);
         }
 
         $minutes = intdiv($whole, 60);
         $rest = $whole % 60;
 
-        return $rest === 0 ? "{$minutes} menit" : "{$minutes} menit {$rest} detik";
+        return $rest === 0
+            ? __(':count menit', ['count' => $minutes])
+            : __(':minutes menit :seconds detik', ['minutes' => $minutes, 'seconds' => $rest]);
     }
 }

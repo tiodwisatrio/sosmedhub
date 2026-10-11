@@ -17,7 +17,7 @@
     $hours = array_map($pad, range(0, 23));
     $minutes = array_map($pad, range(0, 59, $slot));
     $minDate = substr($min, 0, 10);
-    $minLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m-d\TH:i', $min)->locale('id')->translatedFormat('j F Y, H.i');
+    $minLabel = \Illuminate\Support\Carbon::createFromFormat('Y-m-d\TH:i', $min)->locale(app()->getLocale())->translatedFormat('j F Y, H.i');
     $hasError = $errors->has('scheduled_at');
     // 16px di ponsel: font lebih kecil membuat iOS memperbesar halaman saat kolom disentuh.
     $field = 'w-full rounded-md border px-3 py-2 text-base sm:text-sm text-slate-800 bg-white focus:outline-none focus:ring-1 transition-colors duration-150 '
@@ -28,19 +28,19 @@
 
 <div role="group" aria-labelledby="schedule-label">
     <p id="schedule-label" class="block text-sm font-medium text-slate-700 mb-1.5">
-        Tanggal & Jam Terbit <span class="text-danger ml-0.5">*</span>
+        {{ __('Tanggal & Jam Terbit') }} <span class="text-danger ml-0.5">*</span>
     </p>
 
     <input type="hidden" name="scheduled_at" :value="scheduled_at">
 
     <div class="grid grid-cols-[minmax(0,1fr)_5rem_auto_5rem] items-end gap-2">
         <div>
-            <label for="schedule-date" class="block text-xs text-slate-500 mb-1">Tanggal</label>
+            <label for="schedule-date" class="block text-xs text-slate-500 mb-1">{{ __('Tanggal') }}</label>
             <input id="schedule-date" type="date" x-model="schedDate" min="{{ $minDate }}" required class="{{ $field }}">
         </div>
 
         <div>
-            <label for="schedule-hour" class="block text-xs text-slate-500 mb-1">Jam</label>
+            <label for="schedule-hour" class="block text-xs text-slate-500 mb-1">{{ __('Jam') }}</label>
             <select id="schedule-hour" x-model="schedHour" class="{{ $field }} tabular-nums">
                 @foreach ($hours as $hour)
                     <option value="{{ $hour }}">{{ $hour }}</option>
@@ -51,7 +51,7 @@
         <span aria-hidden="true" class="pb-2 text-slate-400">:</span>
 
         <div>
-            <label for="schedule-minute" class="block text-xs text-slate-500 mb-1">Menit</label>
+            <label for="schedule-minute" class="block text-xs text-slate-500 mb-1">{{ __('Menit') }}</label>
             <select id="schedule-minute" x-model="schedMinute" class="{{ $field }} tabular-nums">
                 @foreach ($minutes as $minute)
                     <option value="{{ $minute }}">{{ $minute }}</option>
@@ -63,7 +63,7 @@
     <p class="my-3 text-xs font-medium text-slate-600" x-text="schedulePreview"></p>
 
     <p x-cloak x-show="scheduled_at && scheduled_at < @js($min)" role="alert" class="mt-1.5 text-xs text-danger">
-        Waktu ini sudah lewat. Pilih setelah {{ $minLabel }} WIB.
+        {{ __('Waktu ini sudah lewat. Pilih setelah :time WIB.', ['time' => $minLabel]) }}
     </p>
 
     @error('scheduled_at')

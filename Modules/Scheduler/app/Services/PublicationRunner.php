@@ -34,7 +34,7 @@ class PublicationRunner
 
         try {
             if (! $account?->isActive() || ! $account->access_token) {
-                throw new RuntimeException('Akun Instagram tidak aktif atau token tidak tersedia.');
+                throw new RuntimeException(__('Akun Instagram tidak aktif atau token tidak tersedia.'));
             }
 
             $media = $post->media()->where('format', $publication->format)->orderBy('position')->get();
@@ -93,7 +93,7 @@ class PublicationRunner
 
             if ($hasVideo || (microtime(true) - $started) > self::BUDGET_SECONDS || $i === $attempts - 1) {
                 if (now()->greaterThan($deadline)) {
-                    throw new RuntimeException('Instagram belum selesai memproses media dalam '.(int) config('scheduler.video.poll_max_minutes', 10).' menit. Coba jadwalkan ulang.');
+                    throw new RuntimeException(__('Instagram belum selesai memproses media dalam :minutes menit. Coba jadwalkan ulang.', ['minutes' => (int) config('scheduler.video.poll_max_minutes', 10)]));
                 }
 
                 $this->save($publication, $state);
@@ -282,11 +282,11 @@ class PublicationRunner
         $label = ScheduledPost::formatLabel($format);
 
         if ($media->isEmpty()) {
-            throw new RuntimeException("{$label} tidak memiliki media. Unggah ulang medianya.");
+            throw new RuntimeException(__(':label tidak memiliki media. Unggah ulang medianya.', ['label' => $label]));
         }
 
         if ($media->contains(fn (ScheduledPostMedia $m) => ! $m->media_path || ! MediaDisk::get()->exists($m->media_path))) {
-            throw new RuntimeException("Sebagian media {$label} sudah tidak tersedia di server. Unggah ulang medianya.");
+            throw new RuntimeException(__('Sebagian media :label sudah tidak tersedia di server. Unggah ulang medianya.', ['label' => $label]));
         }
     }
 
@@ -297,11 +297,13 @@ class PublicationRunner
 
     private function statusProblem(array $status): string
     {
-        $detail = $status['detail'] ? ' ('.$status['detail'].')' : '';
+        if ($status['code'] === 'EXPIRED') {
+            return __('Container Instagram kedaluwarsa sebelum diterbitkan. Coba jadwalkan ulang.');
+        }
 
-        return $status['code'] === 'EXPIRED'
-            ? 'Container Instagram kedaluwarsa sebelum diterbitkan. Coba jadwalkan ulang.'
-            : "Instagram gagal memproses media{$detail}.";
+        return $status['detail']
+            ? __('Instagram gagal memproses media (:detail).', ['detail' => $status['detail']])
+            : __('Instagram gagal memproses media.');
     }
 
     private function save(ScheduledPostPublication $publication, array $state): void

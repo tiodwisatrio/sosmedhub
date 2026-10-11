@@ -9,7 +9,7 @@
             name="user_id"
             :options="$users->pluck('name', 'id')->toArray()"
             :selected="$selectedUserId"
-            placeholder="Pilih owner"
+            placeholder="{{ __('Pilih owner') }}"
         />
     </div>
 @endif
@@ -25,19 +25,19 @@
 
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-1.5">Username</label>
-    <x-admin.input-text name="username" :value="old('username', $account->username)" placeholder="brand_kamu" />
+    <x-admin.input-text name="username" :value="old('username', $account->username)" placeholder="{{ __('brand_kamu') }}" />
     @error('username') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
 </div>
 
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-1.5">Display Name</label>
-    <x-admin.input-text name="display_name" :value="old('display_name', $account->display_name)" placeholder="Brand Kamu" />
+    <x-admin.input-text name="display_name" :value="old('display_name', $account->display_name)" placeholder="{{ __('Brand Kamu') }}" />
     @error('display_name') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
 </div>
 
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-1.5">Instagram Account ID</label>
-    <x-admin.input-text name="provider_account_id" :value="old('provider_account_id', $account->provider_account_id)" placeholder="Diisi otomatis oleh OAuth nanti" />
+    <x-admin.input-text name="provider_account_id" :value="old('provider_account_id', $account->provider_account_id)" placeholder="{{ __('Diisi otomatis oleh OAuth nanti') }}" />
     @error('provider_account_id') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
 </div>
 
@@ -49,7 +49,7 @@
 
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-1.5">Access Token</label>
-    <x-admin.textarea name="access_token" rows="3" placeholder="{{ $account->exists ? 'Kosongkan jika tidak ingin mengganti token' : 'Token dari OAuth nanti' }}"></x-admin.textarea>
+    <x-admin.textarea name="access_token" rows="3" placeholder="{{ $account->exists ? __('Kosongkan jika tidak ingin mengganti token') : __('Token dari OAuth nanti') }}"></x-admin.textarea>
     @error('access_token') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
 </div>
 

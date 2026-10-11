@@ -3,6 +3,7 @@
 namespace Modules\Scheduler\Models;
 
 use App\Models\User;
+use App\Support\StoredMessage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -95,14 +96,13 @@ class ScheduledPost extends Model
         $slot = self::slotMinutes();
 
         if ($slot === 1) {
-            return 'Pilih menit bebas. Postingan terbit pada menit yang dipilih, bisa mundur kurang dari satu menit.';
+            return __('Pilih menit bebas. Postingan terbit pada menit yang dipilih, bisa mundur kurang dari satu menit.');
         }
 
-        return sprintf(
-            'Menit kelipatan %d (%s). Postingan terbit pada jam yang dipilih, bisa mundur beberapa menit.',
-            $slot,
-            self::slotExamples()
-        );
+        return __('Menit kelipatan :slot (:examples). Postingan terbit pada jam yang dipilih, bisa mundur beberapa menit.', [
+            'slot' => $slot,
+            'examples' => self::slotExamples(),
+        ]);
     }
 
     /**
@@ -117,7 +117,7 @@ class ScheduledPost extends Model
             ->values();
 
         return $times->count() > 1
-            ? $times->slice(0, -1)->implode(', ').', atau '.$times->last()
+            ? $times->slice(0, -1)->implode(', ').__(', atau :last', ['last' => $times->last()])
             : $times->first();
     }
 
@@ -261,19 +261,27 @@ class ScheduledPost extends Model
 
     public function formattedScheduledAt(): string
     {
-        return $this->scheduled_at?->setTimezone(self::WIB)->locale('id')->translatedFormat('d M Y H:i') ?? '';
+        return $this->scheduled_at?->setTimezone(self::WIB)->locale(app()->getLocale())->translatedFormat('d M Y H:i') ?? '';
+    }
+
+    /**
+     * Pesan galat tersimpan, diterjemahkan ke bahasa aktif bila templatnya dikenal.
+     */
+    public function displayError(): ?string
+    {
+        return StoredMessage::translate($this->error_message);
     }
 
     public function statusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_DRAFT => 'Draf',
-            self::STATUS_SCHEDULED => 'Terjadwal',
-            self::STATUS_PUBLISHING => 'Menerbitkan',
-            self::STATUS_PUBLISHED => 'Terbit',
-            self::STATUS_FAILED => 'Gagal',
-            self::STATUS_PARTIAL => 'Sebagian terbit',
-            self::STATUS_CANCELLED => 'Dibatalkan',
+            self::STATUS_DRAFT => __('Draf'),
+            self::STATUS_SCHEDULED => __('Terjadwal'),
+            self::STATUS_PUBLISHING => __('Menerbitkan'),
+            self::STATUS_PUBLISHED => __('Terbit'),
+            self::STATUS_FAILED => __('Gagal'),
+            self::STATUS_PARTIAL => __('Sebagian terbit'),
+            self::STATUS_CANCELLED => __('Dibatalkan'),
             default => ucfirst($this->status),
         };
     }

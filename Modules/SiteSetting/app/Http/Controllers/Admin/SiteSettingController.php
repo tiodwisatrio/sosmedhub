@@ -41,6 +41,6 @@ class SiteSettingController extends Controller implements HasMiddleware
         ]);
 
         return redirect()->route('admin.site-settings.index')
-            ->with('success', 'Pengaturan berhasil disimpan.');
+            ->with('success', __('Pengaturan berhasil disimpan.'));
     }
 }

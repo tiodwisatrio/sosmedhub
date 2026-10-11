@@ -32,6 +32,9 @@
             accounts: cfg.accounts,
             fallbackName: cfg.fallbackName,
             fallbackAvatar: cfg.fallbackAvatar,
+            i18n: cfg.i18n,
+            lang: cfg.lang,
+            dateLocale: cfg.dateLocale,
             keys: ['feed', 'story', 'reel'],
             labels: { feed: 'Feed', story: 'Story', reel: 'Reels' },
             limits: cfg.limits,
@@ -71,6 +74,18 @@
             pad(n) {
                 return String(n).padStart(2, '0');
             },
+            // Teks antarmuka dari server (sudah diterjemahkan); :nama diganti nilai dari vars.
+            t(key, vars = {}) {
+                return Object.entries(vars).reduce(
+                    (text, [name, value]) => text.replaceAll(':' + name, String(value)),
+                    this.i18n[key] ?? key
+                );
+            },
+            // Bentuk jamak "satu|banyak"; bahasa tanpa pembeda memakai satu bentuk saja.
+            plural(key, count) {
+                const parts = (this.i18n[key] ?? key).split('|');
+                return (count === 1 ? parts[0] : (parts[1] ?? parts[0])).replaceAll(':count', String(count));
+            },
             parseAt(value) {
                 const d = new Date(value.replace('T', ' '));
                 return isNaN(d) ? null : d;
@@ -80,8 +95,8 @@
             },
             get schedulePreview() {
                 const d = this.parseAt(this.scheduled_at || '');
-                if (! d) return 'Belum diatur';
-                const tgl = d.toLocaleDateString('id-ID', {
+                if (! d) return this.t('notSet');
+                const tgl = d.toLocaleDateString(this.dateLocale, {
                     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                 });
                 return `${tgl} · ${this.pad(d.getHours())}:${this.pad(d.getMinutes())} WIB`;
@@ -261,12 +276,12 @@
             },
             summaryFor(format) {
                 const items = this.itemsFor(format);
-                if (items.length === 0) return 'Belum ada media';
+                if (items.length === 0) return this.t('noMedia');
                 const videos = items.filter((i) => i.type === 'video').length;
                 const photos = items.length - videos;
                 const parts = [];
-                if (photos) parts.push(`${photos} foto`);
-                if (videos) parts.push(`${videos} video`);
+                if (photos) parts.push(this.plural('photoCount', photos));
+                if (videos) parts.push(this.plural('videoCount', videos));
                 return parts.join(' + ');
             },
             get photoCountLabel() {
@@ -283,14 +298,14 @@
                 const isVideo = ['video/mp4', 'video/quicktime'].includes(file.type);
                 const mb = file.size / 1048576;
 
-                if (format === 'feed' && this.isFacebook && ! isPhoto) return 'Feed Facebook hanya menerima foto JPEG.';
-                if (format === 'reel' && ! isVideo) return 'Reels hanya menerima video MP4 atau MOV.';
-                if (! isPhoto && ! isVideo) return 'Format file tidak didukung. Gunakan JPEG, MP4, atau MOV.';
-                if (isPhoto && mb > this.limits.photoMb) return `Ukuran foto maksimal ${this.limits.photoMb} MB.`;
+                if (format === 'feed' && this.isFacebook && ! isPhoto) return this.t('feedFacebookPhotoOnly');
+                if (format === 'reel' && ! isVideo) return this.t('reelsVideoOnly');
+                if (! isPhoto && ! isVideo) return this.t('unsupportedFile');
+                if (isPhoto && mb > this.limits.photoMb) return this.t('photoMax', { mb: this.limits.photoMb });
 
                 if (isVideo) {
                     const max = trimmable ? this.limits.trimSourceMb : this.limits[format].videoMb;
-                    if (mb > max) return `Ukuran video ${mb.toFixed(1)} MB melebihi batas ${max} MB untuk ${this.labels[format]}.`;
+                    if (mb > max) return this.t('videoMax', { size: mb.toFixed(1), max, format: this.labels[format] });
                 }
 
                 return null;
@@ -313,10 +328,10 @@
             },
             formatSeconds(seconds) {
                 const whole = Math.round(seconds);
-                if (whole < 60) return `${whole} detik`;
+                if (whole < 60) return this.t('seconds', { count: whole });
                 const m = Math.floor(whole / 60);
                 const s = whole % 60;
-                return s ? `${m} menit ${s} detik` : `${m} menit`;
+                return s ? this.t('minutesSeconds', { minutes: m, seconds: s }) : this.t('minutes', { count: m });
             },
             async addFiles(format, event) {
                 const incoming = Array.from(event.target.files || []);
@@ -329,8 +344,8 @@
                 for (const file of incoming) {
                     if (accepted.length >= room) {
                         messages.push(format === 'reel'
-                            ? 'Reels hanya bisa berisi satu video. Hapus video lama dulu.'
-                            : `${this.labels[format]} maksimal ${this.capacity(format)} item.`);
+                            ? this.t('reelOnlyOne')
+                            : this.t('maxItems', { format: this.labels[format], count: this.capacity(format) }));
                         break;
                     }
 
@@ -344,9 +359,9 @@
 
                     if (! problem && isVideo && ! trimmable) {
                         if (duration !== null && duration > max) {
-                            problem = `Durasi video ${this.formatSeconds(duration)} melebihi batas ${this.formatSeconds(max)} untuk ${this.labels[format]}.`;
+                            problem = this.t('durationTooLong', { duration: this.formatSeconds(duration), max: this.formatSeconds(max), format: this.labels[format] });
                         } else if (duration !== null && duration < this.limits.videoMinSeconds) {
-                            problem = `Video terlalu pendek. Minimal ${this.limits.videoMinSeconds} detik.`;
+                            problem = this.t('tooShort', { count: this.limits.videoMinSeconds });
                         }
                     }
 

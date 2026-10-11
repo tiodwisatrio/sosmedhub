@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Jadwalkan Postingan')
+@section('title', __('Jadwalkan Postingan'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Jadwalkan Postingan</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Jadwalkan Postingan') }}</h1>
 @endsection
 
 @section('content')

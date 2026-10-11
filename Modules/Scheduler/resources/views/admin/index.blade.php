@@ -1,15 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Penjadwalan')
+@section('title', __('Penjadwalan'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Penjadwalan</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Penjadwalan') }}</h1>
 @endsection
 
 @section('content')
     @php
         $blockEnd = $blockStart->copy()->addDays(27);
-        $dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        // Nama hari singkat mengikuti bahasa aktif; blok selalu dimulai hari Senin.
+        $dayNames = collect(range(0, 6))
+            ->map(fn ($offset) => $blockStart->copy()->addDays($offset)->locale(app()->getLocale())->translatedFormat('D'))
+            ->all();
 
         // Kelas ditulis lengkap agar terbaca oleh Tailwind. Nama warna dari CalendarEvent::HUES.
         $eventPalette = [
@@ -37,12 +40,12 @@
                 this.open = false;
             },
             confirmCancel(event) {
-                if (! confirm('Batalkan postingan ini?')) {
+                if (! confirm(@js(__('Batalkan postingan ini?')))) {
                     event.preventDefault();
                 }
             },
             confirmDelete(event) {
-                if (! confirm('Hapus postingan ini?')) {
+                if (! confirm(@js(__('Hapus postingan ini?')))) {
                     event.preventDefault();
                 }
             },
@@ -58,14 +61,14 @@
         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-3.5 border-b border-border">
             <div class="flex items-center gap-1">
                 <a href="{{ route('admin.scheduled-posts.index', ['week' => $previousBlock->toDateString()]) }}"
-                    title="Blok sebelumnya"
+                    title="{{ __('Blok sebelumnya') }}"
                     class="p-2 rounded-lg border border-border text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
                     </svg>
                 </a>
                 <a href="{{ route('admin.scheduled-posts.index', ['week' => $nextBlock->toDateString()]) }}"
-                    title="Blok berikutnya"
+                    title="{{ __('Blok berikutnya') }}"
                     class="p-2 rounded-lg border border-border text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
@@ -74,19 +77,19 @@
             </div>
 
             <a href="{{ route('admin.scheduled-posts.index', ['week' => $currentBlock->toDateString()]) }}"
-                title="Kembali ke hari ini"
+                title="{{ __('Kembali ke hari ini') }}"
                 class="text-sm sm:text-base font-semibold text-slate-800 text-center hover:text-primary transition-colors">
-                {{ $blockStart->copy()->addWeeks(2)->locale('id')->translatedFormat('F Y') }}
+                {{ $blockStart->copy()->addWeeks(2)->locale(app()->getLocale())->translatedFormat('F Y') }}
             </a>
 
             <div class="flex items-center justify-end">
                 @can('scheduler.create')
-                    <a href="{{ route('admin.scheduled-posts.create') }}" class="inline-flex" aria-label="Buat Postingan" title="Buat Postingan">
+                    <a href="{{ route('admin.scheduled-posts.create') }}" class="inline-flex" aria-label="{{ __('Buat Postingan') }}" title="{{ __('Buat Postingan') }}">
                         <x-admin.button>
                             <svg class="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                             </svg>
-                            <span class="hidden sm:inline">Buat Postingan</span>
+                            <span class="hidden sm:inline">{{ __('Buat Postingan') }}</span>
                         </x-admin.button>
                     </a>
                 @endcan
@@ -128,13 +131,13 @@
                                         {{ $cell['date']->format('j') }}
                                     </span>
                                     <span class="text-[11px] font-medium text-slate-400">
-                                        {{ $cell['date']->copy()->locale('id')->translatedFormat('M') }}
+                                        {{ $cell['date']->copy()->locale(app()->getLocale())->translatedFormat('M') }}
                                     </span>
                                 </div>
 
                                 {{-- Hari libur dan hari besar --}}
                                 @foreach ($events as $event)
-                                    <p title="{{ $event->name }}"
+                                    <p title="{{ __($event->name) }}"
                                         class="mx-2 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold leading-tight truncate {{ $eventPalette[$event->hue]['chip'] }}">
                                         {{ $event->name }}
                                     </p>
@@ -146,7 +149,7 @@
                                         <button type="button" @click="openPost({{ $post->id }})"
                                             class="relative block w-full flex-1 min-h-[3.5rem] sm:min-h-[4.75rem] text-left rounded-lg border border-border/60 bg-slate-100 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:border-primary/40 hover:shadow-dropdown transition-all duration-150 cursor-pointer">
                                             @if ($post->thumbnail_path)
-                                                <img src="{{ \Modules\Scheduler\Services\MediaDisk::url($post->thumbnail_path) }}" alt="Foto postingan"
+                                                <img src="{{ \Modules\Scheduler\Services\MediaDisk::url($post->thumbnail_path) }}" alt="{{ __('Foto postingan') }}"
                                                     class="absolute inset-0 w-full h-full object-cover">
                                             @elseif ($post->has_video_only)
                                                 <div class="absolute inset-0 flex items-center justify-center bg-slate-800 text-white/70">
@@ -168,7 +171,7 @@
 
                                             <span class="absolute right-1.5 top-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-white/90 text-primary backdrop-blur-sm">
                                                 <span class="w-1 h-1 rounded-full bg-primary"></span>
-                                                Terjadwal
+                                                {{ __('Terjadwal') }}
                                             </span>
 
                                             @if ($post->media->count() > 1)
@@ -182,7 +185,7 @@
                                         </button>
                                     @empty
                                         <a href="{{ route('admin.scheduled-posts.create', ['date' => $cell['date']->toDateString()]) }}"
-                                            title="Jadwalkan pada {{ $cell['date']->copy()->locale('id')->translatedFormat('j M Y') }}"
+                                            title="{{ __('Jadwalkan pada :date', ['date' => $cell['date']->copy()->locale(app()->getLocale())->translatedFormat('j M Y')]) }}"
                                             class="flex flex-1 min-h-[2rem] sm:min-h-[3rem] items-center justify-center rounded-lg border border-dashed border-border text-slate-300
                                                 opacity-0 group-hover/date:opacity-100 group-hover/date:border-primary/40 group-hover/date:text-primary
                                                 focus:opacity-100 transition-opacity">
@@ -208,20 +211,20 @@
             <div class="bg-primary text-white rounded-2xl shadow-card px-5 py-6 text-center">
                 <p class="text-base font-semibold text-white">{{ $monthLabel }}</p>
                 <p class="mt-1 text-6xl font-bold tabular-nums">{{ $monthContentCount }}</p>
-                <p class="mt-1 text-sm font-medium text-white/80">Total Postingan</p>
+                <p class="mt-1 text-sm font-medium text-white/80">{{ __('Total Postingan') }}</p>
             </div>
 
             <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-border">
-                    <h2 class="text-base font-semibold text-slate-800">Status Postingan</h2>
+                    <h2 class="text-base font-semibold text-slate-800">{{ __('Status Postingan') }}</h2>
                 </div>
                 @php
                     $statusRows = [
-                        ['key' => 'scheduled', 'label' => 'Terjadwal', 'color' => 'bg-primary'],
-                        ['key' => 'published', 'label' => 'Terbit', 'color' => 'bg-success'],
-                        ['key' => 'publishing', 'label' => 'Menerbitkan', 'color' => 'bg-warning'],
-                        ['key' => 'partial', 'label' => 'Sebagian terbit', 'color' => 'bg-purple-500'],
-                        ['key' => 'failed', 'label' => 'Gagal', 'color' => 'bg-danger'],
+                        ['key' => 'scheduled', 'label' => __('Terjadwal'), 'color' => 'bg-primary'],
+                        ['key' => 'published', 'label' => __('Terbit'), 'color' => 'bg-success'],
+                        ['key' => 'publishing', 'label' => __('Menerbitkan'), 'color' => 'bg-warning'],
+                        ['key' => 'partial', 'label' => __('Sebagian terbit'), 'color' => 'bg-purple-500'],
+                        ['key' => 'failed', 'label' => __('Gagal'), 'color' => 'bg-danger'],
                     ];
                 @endphp
                 <ul class="px-5 py-2">
@@ -240,10 +243,10 @@
             </div>
             <div class="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-border">
-                    <h2 class="text-base font-semibold text-slate-800">Hari Penting {{ $eventsYear }}</h2>
+                    <h2 class="text-base font-semibold text-slate-800">{{ __('Hari Penting :year', ['year' => $eventsYear]) }}</h2>
                 </div>
                 @if ($yearEvents->isEmpty())
-                    <p class="px-5 py-4 text-sm text-slate-400">Belum ada hari penting untuk tahun {{ $eventsYear }}.</p>
+                    <p class="px-5 py-4 text-sm text-slate-400">{{ __('Belum ada hari penting untuk tahun :year.', ['year' => $eventsYear]) }}</p>
                 @else
                     {{-- Daftar setahun penuh; saat dibuka, gulir ke hari penting terdekat. --}}
                     <ul class="px-5 py-2 max-h-[28rem] overflow-y-auto"
@@ -257,8 +260,8 @@
                                 $isPast = $event->end_date->lt($today);
                                 $linkDate = $event->date->lt($today) ? $today : $event->date;
                                 $color = $eventPalette[$event->hue];
-                                $start = $event->date->copy()->locale('id');
-                                $end = $event->end_date->copy()->locale('id');
+                                $start = $event->date->copy()->locale(app()->getLocale());
+                                $end = $event->end_date->copy()->locale(app()->getLocale());
                                 $dateLabel = match (true) {
                                     $start->isSameDay($end) => $start->translatedFormat('l, d F Y'),
                                     $start->month === $end->month => $start->translatedFormat('l, d').' – '.$end->translatedFormat('l, d F Y'),
@@ -272,13 +275,13 @@
                             <li @if ($isNext) data-next @endif class="flex items-start gap-3 py-2.5 {{ $isPast ? 'opacity-50' : '' }}">
                                 <span class="mt-1.5 w-2.5 h-2.5 shrink-0 rounded-full {{ $color['dot'] }}"></span>
                                 <div class="min-w-0 flex-1">
-                                    <p class="text-sm text-slate-700 leading-snug">{{ $event->name }}</p>
+                                    <p class="text-sm text-slate-700 leading-snug">{{ __($event->name) }}</p>
                                     <p class="text-xs font-medium {{ $color['text'] }}">{{ $dateLabel }}</p>
                                 </div>
                                 @if (! $isPast)
                                     @can('scheduler.create')
                                         <a href="{{ route('admin.scheduled-posts.create', ['date' => $linkDate->toDateString()]) }}"
-                                            title="Buat postingan untuk {{ $event->name }}"
+                                            title="{{ __('Buat postingan untuk :name', ['name' => __($event->name)]) }}"
                                             class="mt-0.5 p-1 rounded-md text-slate-400 hover:text-primary hover:bg-slate-50 transition-colors">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
@@ -315,7 +318,7 @@
                     <div>
                         <div class="relative h-56 sm:h-72 bg-slate-100">
                             <template x-if="selected.media.length > 0 && selected.media[mediaIndex].type !== 'video'">
-                                <img :src="selected.media[mediaIndex].url" alt="Media postingan"
+                                <img :src="selected.media[mediaIndex].url" alt="{{ __('Media postingan') }}"
                                     class="absolute inset-0 w-full h-full object-cover">
                             </template>
                             <template x-if="selected.media.length > 0 && selected.media[mediaIndex].type === 'video'">
@@ -360,11 +363,11 @@
 
                         <div class="p-5">
                             <p x-show="selected.uses_caption" class="text-[15px] text-slate-700 leading-relaxed whitespace-pre-line" x-text="selected.caption"></p>
-                            <p x-show="! selected.uses_caption" class="text-sm text-slate-400">Story tidak memakai caption.</p>
+                            <p x-show="! selected.uses_caption" class="text-sm text-slate-400">{{ __('Story tidak memakai caption.') }}</p>
 
                             <dl class="mt-4 pt-4 border-t border-border space-y-3 text-[15px]">
                                 <div class="flex items-center justify-between gap-4">
-                                    <dt class="text-slate-400">Format</dt>
+                                    <dt class="text-slate-400">{{ __('Format') }}</dt>
                                     <dd class="flex flex-wrap justify-end gap-1">
                                         <template x-for="format in selected.formats" :key="format.key">
                                             <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
@@ -374,11 +377,11 @@
                                     </dd>
                                 </div>
                                 <div class="flex items-center justify-between gap-4">
-                                    <dt class="text-slate-400">Jadwal</dt>
+                                    <dt class="text-slate-400">{{ __('Jadwal') }}</dt>
                                     <dd class="font-medium text-slate-700" x-text="selected.scheduled_at"></dd>
                                 </div>
                                 <div class="flex items-center justify-between gap-4">
-                                    <dt class="text-slate-400">Status</dt>
+                                    <dt class="text-slate-400">{{ __('Status') }}</dt>
                                     <dd>
                                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-light text-primary">
                                             <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
@@ -387,7 +390,7 @@
                                     </dd>
                                 </div>
                                 <div class="flex items-center justify-between gap-4">
-                                    <dt class="text-slate-400">Dibuat</dt>
+                                    <dt class="text-slate-400">{{ __('Dibuat') }}</dt>
                                     <dd class="font-medium text-slate-700" x-text="selected.created_at"></dd>
                                 </div>
                             </dl>
@@ -399,20 +402,20 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
                                     </svg>
-                                    Ubah
+                                    {{ __('Ubah') }}
                                 </a>
                                     <form :action="'/admin/scheduled-posts/' + selected.id + '/cancel'" method="POST" @submit="confirmCancel($event)">
                                         @csrf
                                         <input type="hidden" name="_method" value="PATCH">
                                         <x-admin.button variant="danger">
-                                            Batalkan
+                                            {{ __('Batalkan') }}
                                         </x-admin.button>
                                     </form>
                                 @endcan
                                 @can('scheduler.create')
                                     <form :action="'/admin/scheduled-posts/' + selected.id + '/duplicate'" method="POST">
                                         @csrf
-                                        <x-admin.button variant="outline" type="submit">Duplikat</x-admin.button>
+                                        <x-admin.button variant="outline" type="submit">{{ __('Duplikat') }}</x-admin.button>
                                     </form>
                                 @endcan
                                 @can('scheduler.delete')
@@ -423,7 +426,7 @@
                                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
                                             </svg>
-                                            Hapus
+                                            {{ __('Hapus') }}
                                         </x-admin.button>
                                     </form>
                                 @endcan
@@ -440,26 +443,22 @@
          ================================================================ --}}
     <div class="flex flex-wrap items-center justify-between gap-3 bg-card rounded-2xl shadow-card border border-border px-6 py-4 mb-8">
         @if ($failedCount > 0 || $partialCount > 0)
-            <p class="text-sm text-danger-text">
-                @if ($failedCount > 0)
-                    <span class="font-semibold">{{ $failedCount }}</span> postingan gagal terbit{{ $partialCount > 0 ? ',' : '' }}
-                @endif
-                @if ($partialCount > 0)
-                    {{ $failedCount > 0 ? 'dan' : '' }} <span class="font-semibold">{{ $partialCount }}</span> postingan terbit sebagian.
-                @else
-                    dan perlu dijadwalkan ulang.
-                @endif
-                @if ($partialCount > 0)
-                    Perlu dijadwalkan ulang.
-                @endif
-            </p>
+            @php
+                $bold = fn ($n) => '<span class="font-semibold">'.e($n).'</span>';
+                $summary = match (true) {
+                    $failedCount > 0 && $partialCount > 0 => __(':failed postingan gagal terbit, dan :partial postingan terbit sebagian. Perlu dijadwalkan ulang.', ['failed' => $bold($failedCount), 'partial' => $bold($partialCount)]),
+                    $failedCount > 0 => __(':failed postingan gagal terbit dan perlu dijadwalkan ulang.', ['failed' => $bold($failedCount)]),
+                    default => __(':partial postingan terbit sebagian. Perlu dijadwalkan ulang.', ['partial' => $bold($partialCount)]),
+                };
+            @endphp
+            <p class="text-sm text-danger-text">{!! $summary !!}</p>
         @else
-            <p class="text-sm text-slate-500">Postingan yang sudah terbit, gagal, atau dibatalkan ada di halaman Riwayat.</p>
+            <p class="text-sm text-slate-500">{{ __('Postingan yang sudah terbit, gagal, atau dibatalkan ada di halaman Riwayat.') }}</p>
         @endif
 
         <a href="{{ route('admin.post-history.index', $failedCount > 0 ? ['status' => 'failed'] : ($partialCount > 0 ? ['status' => 'partial'] : [])) }}"
             class="inline-flex items-center gap-1.5 font-medium rounded-md px-4 py-2 text-sm border border-border hover:bg-slate-50 text-slate-700">
-            {{ $failedCount > 0 ? 'Lihat yang gagal' : ($partialCount > 0 ? 'Lihat yang sebagian' : 'Buka Riwayat') }}
+            {{ $failedCount > 0 ? __('Lihat yang gagal') : ($partialCount > 0 ? __('Lihat yang sebagian') : __('Buka Riwayat')) }}
         </a>
     </div>
 @endsection

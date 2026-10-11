@@ -72,7 +72,7 @@ class RoleController extends Controller implements HasMiddleware
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('admin.roles.index')
-            ->with('success', "Role \"{$role->name}\" berhasil dibuat.");
+            ->with('success', __('Role ":name" berhasil dibuat.', ['name' => $role->name]));
     }
 
     public function edit(Role $role)
@@ -94,7 +94,7 @@ class RoleController extends Controller implements HasMiddleware
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('admin.roles.index')
-            ->with('success', "Role \"{$role->name}\" berhasil diperbarui.");
+            ->with('success', __('Role ":name" berhasil diperbarui.', ['name' => $role->name]));
     }
 
     public function destroy(Role $role)
@@ -104,6 +104,6 @@ class RoleController extends Controller implements HasMiddleware
         $role->delete();
 
         return redirect()->route('admin.roles.index')
-            ->with('success', 'Role berhasil dihapus.');
+            ->with('success', __('Role berhasil dihapus.'));
     }
 }

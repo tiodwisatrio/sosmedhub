@@ -1,20 +1,20 @@
 @extends('layouts.admin')
 
-@section('title', 'Riwayat')
+@section('title', __('Riwayat'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Riwayat</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Riwayat') }}</h1>
 @endsection
 
 @section('content')
     @php
         $tabs = [
-            '' => 'Semua',
-            \Modules\Scheduler\Models\ScheduledPost::STATUS_PUBLISHED => 'Terbit',
-            \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED => 'Gagal',
-            \Modules\Scheduler\Models\ScheduledPost::STATUS_PARTIAL => 'Sebagian',
-            \Modules\Scheduler\Models\ScheduledPost::STATUS_CANCELLED => 'Dibatalkan',
-            \Modules\Scheduler\Models\ScheduledPost::STATUS_DRAFT => 'Draf',
+            '' => __('Semua'),
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_PUBLISHED => __('Terbit'),
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_FAILED => __('Gagal'),
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_PARTIAL => __('Sebagian'),
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_CANCELLED => __('Dibatalkan'),
+            \Modules\Scheduler\Models\ScheduledPost::STATUS_DRAFT => __('Draf'),
         ];
     @endphp
 
@@ -35,23 +35,23 @@
             <input type="hidden" name="status" value="{{ $filters['status'] }}">
         @endif
 
-        <input id="history-search" type="search" name="q" value="{{ $filters['q'] }}" placeholder="Cari caption"
+        <input id="history-search" type="search" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('Cari caption') }}"
             class="w-full sm:w-64 rounded-md border border-border bg-card px-3 py-2 text-sm text-slate-700 focus:border-primary focus:ring-primary/30">
 
         @if ($accounts->count() > 1)
             <select id="history-account" name="account" onchange="this.form.submit()"
                 class="rounded-md border border-border bg-card px-3 py-2 pr-8 text-sm text-slate-700 focus:border-primary focus:ring-primary/30">
-                <option value="">Semua akun</option>
+                <option value="">{{ __('Semua akun') }}</option>
                 @foreach ($accounts as $account)
                     <option value="{{ $account->id }}" @selected((string) $filters['account'] === (string) $account->id)>{{ '@'.$account->username }}</option>
                 @endforeach
             </select>
         @endif
 
-        <x-admin.button variant="outline" type="submit">Cari</x-admin.button>
+        <x-admin.button variant="outline" type="submit">{{ __('Cari') }}</x-admin.button>
 
         @if ($filters['status'] || $filters['account'] || $filters['q'])
-            <a href="{{ route('admin.post-history.index') }}" class="text-sm text-slate-500 hover:text-slate-700">Reset</a>
+            <a href="{{ route('admin.post-history.index') }}" class="text-sm text-slate-500 hover:text-slate-700">{{ __('Reset') }}</a>
         @endif
     </form>
 
@@ -60,7 +60,7 @@
             <div class="flex items-center gap-4 px-6 py-4 border-b border-border last:border-0">
                 <div class="flex-shrink-0">
                     @if ($post->thumbnail_path)
-                        <img src="{{ \Modules\Scheduler\Services\MediaDisk::url($post->thumbnail_path) }}" alt="Foto postingan"
+                        <img src="{{ \Modules\Scheduler\Services\MediaDisk::url($post->thumbnail_path) }}" alt="{{ __('Foto postingan') }}"
                             class="w-12 h-12 rounded-lg object-cover border border-border">
                     @elseif ($post->has_video_only)
                         <div class="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center text-white/70 border border-border">
@@ -81,7 +81,7 @@
                             @if ($post->caption !== '')
                                 {{ \Illuminate\Support\Str::limit(strip_tags($post->caption), 90) }}
                             @else
-                                <span class="text-slate-400">Tanpa caption (Story)</span>
+                                <span class="text-slate-400">{{ __('Tanpa caption (Story)') }}</span>
                             @endif
                         </p>
                         <x-scheduler::format-badges :post="$post" status />
@@ -94,12 +94,12 @@
                         @if ($post->needsAttention())
                             @php($failedPublications = $post->publications->filter->isFailed())
                             @forelse ($failedPublications as $publication)
-                                <p class="text-xs text-danger truncate" title="{{ $publication->error_message }}">
-                                    <span class="font-semibold">{{ $publication->label() }}:</span> {{ $publication->error_message }}
+                                <p class="text-xs text-danger truncate" title="{{ $publication->displayError() }}">
+                                    <span class="font-semibold">{{ $publication->label() }}:</span> {{ $publication->displayError() }}
                                 </p>
                             @empty
                                 @if ($post->error_message)
-                                    <p class="text-xs text-danger truncate">{{ $post->error_message }}</p>
+                                    <p class="text-xs text-danger truncate">{{ $post->displayError() }}</p>
                                 @endif
                             @endforelse
                         @endif
@@ -121,7 +121,7 @@
                     @if ($post->canBeEdited())
                         <a href="{{ route('admin.scheduled-posts.edit', $post) }}"
                             class="inline-flex items-center flex-shrink-0 font-medium rounded-md px-3 py-1.5 text-xs border border-border hover:bg-slate-50 text-slate-700">
-                            {{ $post->needsAttention() ? 'Jadwalkan Ulang' : 'Atur Jadwal' }}
+                            {{ $post->needsAttention() ? __('Jadwalkan Ulang') : __('Atur Jadwal') }}
                         </a>
                     @endif
                 @endcan
@@ -129,22 +129,22 @@
                 @can('scheduler.create')
                     <form method="POST" action="{{ route('admin.scheduled-posts.duplicate', $post) }}" class="flex-shrink-0">
                         @csrf
-                        <x-admin.button variant="outline" size="sm" type="submit">Duplikat</x-admin.button>
+                        <x-admin.button variant="outline" size="sm" type="submit">{{ __('Duplikat') }}</x-admin.button>
                     </form>
                 @endcan
 
                 @can('scheduler.delete')
                     <form method="POST" action="{{ route('admin.scheduled-posts.destroy', $post) }}" class="flex-shrink-0"
-                        onsubmit="return confirm('Hapus postingan ini?')">
+                        onsubmit="return confirm(@js(__('Hapus postingan ini?')))">
                         @csrf
                         @method('DELETE')
-                        <x-admin.button variant="outline" size="sm" type="submit">Hapus</x-admin.button>
+                        <x-admin.button variant="outline" size="sm" type="submit">{{ __('Hapus') }}</x-admin.button>
                     </form>
                 @endcan
             </div>
         @empty
             <p class="px-6 py-12 text-center text-slate-400 text-sm">
-                {{ $filters['status'] || $filters['account'] || $filters['q'] ? 'Tidak ada postingan yang cocok dengan filter ini.' : 'Belum ada riwayat postingan.' }}
+                {{ $filters['status'] || $filters['account'] || $filters['q'] ? __('Tidak ada postingan yang cocok dengan filter ini.') : __('Belum ada riwayat postingan.') }}
             </p>
         @endforelse
 

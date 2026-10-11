@@ -5,16 +5,16 @@
 
 @php
     $options = [
-        'feed' => ['label' => 'Feed', 'hint' => 'Foto atau carousel di profil', 'icon' => 'heroicon-o-squares-2x2'],
-        'story' => ['label' => 'Story', 'hint' => 'Foto atau video, tampil 24 jam', 'icon' => 'heroicon-o-clock'],
-        'reel' => ['label' => 'Reels', 'hint' => 'Video pendek, maks '.\Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel')), 'icon' => 'heroicon-o-film'],
+        'feed' => ['label' => 'Feed', 'hint' => __('Foto atau carousel di profil'), 'icon' => 'heroicon-o-squares-2x2'],
+        'story' => ['label' => 'Story', 'hint' => __('Foto atau video, tampil 24 jam'), 'icon' => 'heroicon-o-clock'],
+        'reel' => ['label' => 'Reels', 'hint' => __('Video pendek, maks :duration', ['duration' => \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'))]), 'icon' => 'heroicon-o-film'],
     ];
 @endphp
 
 <div role="group" aria-labelledby="format-label">
     <span id="format-label" class="block text-sm font-medium text-slate-700 mb-1.5">
-        Format <span class="text-danger ml-0.5">*</span>
-        <span class="ml-1 text-xs font-normal text-slate-400">Pilih satu atau lebih</span>
+        {{ __('Format') }} <span class="text-danger ml-0.5">*</span>
+        <span class="ml-1 text-xs font-normal text-slate-400">{{ __('Pilih satu atau lebih') }}</span>
     </span>
 
     <div class="grid grid-cols-3 gap-2">
@@ -36,12 +36,12 @@
                     <span class="block text-sm font-semibold text-slate-800">{{ $option['label'] }}</span>
                     @if ($key === 'reel')
                         <span x-show="! isFacebook" class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
-                        <span x-show="isFacebook" x-cloak class="hidden text-xs leading-snug text-slate-500 sm:block">Video pendek, maks {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}</span>
+                        <span x-show="isFacebook" x-cloak class="hidden text-xs leading-snug text-slate-500 sm:block">{{ __('Video pendek, maks :duration', ['duration' => \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook'))]) }}</span>
                     @else
                         <span class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
                     @endif
                     <span x-show="isLocked('{{ $key }}')" x-cloak class="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-success-text">
-                        <x-heroicon-o-check-circle class="h-3.5 w-3.5" /> Sudah terbit
+                        <x-heroicon-o-check-circle class="h-3.5 w-3.5" /> {{ __('Sudah terbit') }}
                     </span>
                 </span>
             </button>
@@ -54,7 +54,7 @@
 
     <label x-show="has('reel') && ! isLocked('reel') && ! isFacebook" x-cloak class="mt-3 flex items-start gap-2.5 text-sm text-slate-600">
         <input type="checkbox" x-model="shareToFeed" class="mt-0.5 rounded border-border text-primary focus:ring-primary/30">
-        <span>Tampilkan Reels juga di Feed</span>
+        <span>{{ __('Tampilkan Reels juga di Feed') }}</span>
     </label>
     <input type="hidden" name="share_to_feed" :value="shareToFeed ? 1 : 0">
 

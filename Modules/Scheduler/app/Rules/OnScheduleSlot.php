@@ -22,7 +22,10 @@ class OnScheduleSlot implements ValidationRule
         }
 
         if (! ScheduledPost::isOnSlot($time)) {
-            $fail('Pilih jam dengan kelipatan '.ScheduledPost::slotMinutes().' menit, misalnya '.ScheduledPost::slotExamples().'.');
+            $fail(__('Pilih jam dengan kelipatan :slot menit, misalnya :examples.', [
+                'slot' => ScheduledPost::slotMinutes(),
+                'examples' => ScheduledPost::slotExamples(),
+            ]));
         }
     }
 }

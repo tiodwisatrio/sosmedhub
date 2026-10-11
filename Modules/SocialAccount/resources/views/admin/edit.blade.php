@@ -1,9 +1,9 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Akun Sosial')
+@section('title', __('Edit Akun Sosial'))
 
 @section('header')
-    <h1 class="text-lg font-semibold text-slate-800">Edit Akun Sosial</h1>
+    <h1 class="text-lg font-semibold text-slate-800">{{ __('Edit Akun Sosial') }}</h1>
 @endsection
 
 @section('content')
@@ -15,9 +15,9 @@
             @include('social-account::admin._form')
 
             <div class="flex items-center gap-3 pt-2">
-                <x-admin.button type="submit">Perbarui</x-admin.button>
+                <x-admin.button type="submit">{{ __('Perbarui') }}</x-admin.button>
                 <a href="{{ route('admin.social-accounts.index') }}">
-                    <x-admin.button type="button" variant="outline">Batal</x-admin.button>
+                    <x-admin.button type="button" variant="outline">{{ __('Batal') }}</x-admin.button>
                 </a>
             </div>
         </form>

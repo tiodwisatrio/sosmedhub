@@ -17,7 +17,7 @@
     <button type="button" @click="openFullPreview()"
         class="mx-auto mb-4 flex w-full max-w-[300px] items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30 lg:hidden">
         <x-heroicon-o-arrows-pointing-out class="h-4 w-4" />
-        Pratinjau layar penuh
+        {{ __('Pratinjau layar penuh') }}
     </button>
 
     <div class="relative mx-auto w-full max-w-[300px] px-3 sm:max-w-[360px]">
@@ -40,7 +40,7 @@
             <div x-show="! isFacebook">
             {{-- ===== Feed ===== --}}
             <div x-show="active === 'feed'">
-            <div class="flex h-10 items-center justify-between border-b border-border/70 px-4 text-slate-900 sm:h-12"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
+            <div class="flex h-10 items-center justify-between border-b border-border/70 px-4 text-slate-900 sm:h-12"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">{{ __('Postingan') }}</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
             <div class="flex items-center gap-2.5 border-b border-border/70 px-4 py-3">
                 <x-scheduler::account-avatar class="h-8 w-8 rounded-full border border-border text-[11px]" />
                 <p class="truncate text-[13px] font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></p>
@@ -51,12 +51,12 @@
             </div>
 
             <div class="relative aspect-square bg-slate-100">
-                <img x-show="current && current.type !== 'video'" :src="current?.url" alt="Foto postingan"
+                <img x-show="current && current.type !== 'video'" :src="current?.url" alt="{{ __('Foto postingan') }}"
                     class="absolute inset-0 w-full h-full object-cover">
                 {{-- Video dalam carousel: klik untuk putar atau jeda --}}
                 <template x-if="current && current.type === 'video'">
                     <div class="absolute inset-0 cursor-pointer bg-black" @click="togglePlay($event)" role="button" tabindex="0"
-                        aria-label="Putar atau jeda video" @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
+                        aria-label="{{ __('Putar atau jeda video') }}" @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                         <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video class="h-full w-full object-cover"
                             x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
                             x-on:loadedmetadata="$el.currentTime = 0.1"></video>
@@ -93,23 +93,23 @@
 
             <div class="px-4 py-3">
                 <div class="flex items-center gap-3.5 text-slate-900">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="Suka"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
-                    <svg class="h-6 w-6 -rotate-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="Komentar"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="Repost"><path stroke-linecap="round" stroke-linejoin="round" d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-1v2a3 3 0 0 1-3 3H3"/></svg>
-                    <svg class="h-6 w-6 -rotate-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="Bagikan"><path stroke-linecap="round" stroke-linejoin="round" d="m22 2-7 20-4-9-9-4L22 2Z"/><path stroke-linecap="round" d="M22 2 11 13"/></svg>
-                    <svg class="ml-auto h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="Simpan"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75V22.5L12 18l-6 4.5V3.75Z"/></svg>
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="{{ __('Suka') }}"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+                    <svg class="h-6 w-6 -rotate-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="{{ __('Komentar') }}"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5a8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="{{ __('Repost') }}"><path stroke-linecap="round" stroke-linejoin="round" d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-1v2a3 3 0 0 1-3 3H3"/></svg>
+                    <svg class="h-6 w-6 -rotate-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="{{ __('Bagikan') }}"><path stroke-linecap="round" stroke-linejoin="round" d="m22 2-7 20-4-9-9-4L22 2Z"/><path stroke-linecap="round" d="M22 2 11 13"/></svg>
+                    <svg class="ml-auto h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-label="{{ __('Simpan') }}"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75A2.25 2.25 0 0 1 8.25 1.5h7.5A2.25 2.25 0 0 1 18 3.75V22.5L12 18l-6 4.5V3.75Z"/></svg>
                 </div>
 
                 <div class="mt-2.5 flex items-center gap-2 text-[11px] text-slate-700">
                     <x-scheduler::account-avatar class="h-5 w-5 rounded-full text-[8px]" />
-                    <p>Disukai oleh <span class="font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></span> dan <span class="font-semibold text-slate-900">21 lainnya</span></p>
+                    <p>{{ __('Disukai oleh') }} <span class="font-semibold text-slate-900"><span x-text="accountName">{{ $username }}</span></span> {{ __('dan') }} <span class="font-semibold text-slate-900">{{ __('21 lainnya') }}</span></p>
                 </div>
 
                 {{-- Seperti Instagram: caption dipangkas dua baris di layar kecil; layar penuh menampilkan semuanya. --}}
                 <p class="mt-2 line-clamp-2 text-[13px] text-slate-600 sm:line-clamp-none" :class="fullPreview ? '!line-clamp-none' : ''">
                     <span class="font-semibold text-slate-800" x-text="accountName">{{ $username }}</span>
                     <span x-text="caption" x-show="caption" class="whitespace-pre-line"></span>
-                    <span x-show="! caption" class="text-slate-400">Belum ada caption…</span>
+                    <span x-show="! caption" class="text-slate-400">{{ __('Belum ada caption…') }}</span>
                 </p>
 
                 <p class="mt-2 text-[11px] text-slate-400" x-text="schedulePreview"></p>
@@ -121,7 +121,7 @@
                 <template x-if="current">
                     <div class="absolute inset-0" @click="togglePlay($event)" :class="current.type === 'video' ? 'cursor-pointer' : ''"
                         :role="current.type === 'video' ? 'button' : null" :tabindex="current.type === 'video' ? 0 : null"
-                        :aria-label="current.type === 'video' ? 'Putar atau jeda video' : null"
+                        :aria-label="current.type === 'video' ? @js(__('Putar atau jeda video')) : null"
                         @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                         <template x-if="current.type === 'video'">
                             <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
@@ -129,7 +129,7 @@
                                 @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
                         </template>
                         <template x-if="current.type !== 'video'">
-                            <img :src="current.url" alt="Pratinjau Story" class="h-full w-full object-cover">
+                            <img :src="current.url" alt="{{ __('Pratinjau Story') }}" class="h-full w-full object-cover">
                         </template>
                     </div>
                 </template>
@@ -147,15 +147,15 @@
                     <div class="mt-2.5 flex items-center gap-2">
                         <x-scheduler::account-avatar class="h-8 w-8 rounded-full border border-white/30 text-[11px]" />
                         <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
-                        <span class="text-xs text-white/70">Sekarang</span>
+                        <span class="text-xs text-white/70">{{ __('Sekarang') }}</span>
                     </div>
                 </div>
 
-                <button type="button" x-show="items.length > 1" @click="step(-1)" aria-label="Story sebelumnya"
+                <button type="button" x-show="items.length > 1" @click="step(-1)" aria-label="{{ __('Story sebelumnya') }}"
                     class="absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
                     <x-heroicon-o-chevron-left class="h-4 w-4" />
                 </button>
-                <button type="button" x-show="items.length > 1" @click="step(1)" aria-label="Story berikutnya"
+                <button type="button" x-show="items.length > 1" @click="step(1)" aria-label="{{ __('Story berikutnya') }}"
                     class="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
                     <x-heroicon-o-chevron-right class="h-4 w-4" />
                 </button>
@@ -164,7 +164,7 @@
                 </span>
 
                 <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center gap-3 bg-gradient-to-t from-black/60 to-transparent px-4 pb-7 pt-10">
-                    <span class="flex-1 rounded-full border border-white/50 px-4 py-2 text-xs text-white/80">Kirim pesan</span>
+                    <span class="flex-1 rounded-full border border-white/50 px-4 py-2 text-xs text-white/80">{{ __('Kirim pesan') }}</span>
                     <x-heroicon-o-heart class="h-6 w-6" />
                     <x-heroicon-o-paper-airplane class="h-6 w-6 -rotate-45" />
                 </div>
@@ -174,7 +174,7 @@
             <div x-show="active === 'reel'" x-cloak class="absolute inset-0 bg-black text-white">
                 {{-- Video: klik untuk putar atau jeda --}}
                 <div x-show="current" class="absolute inset-0 cursor-pointer" @click="togglePlay($event)"
-                    role="button" tabindex="0" aria-label="Putar atau jeda video"
+                    role="button" tabindex="0" aria-label="{{ __('Putar atau jeda video') }}"
                     @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                     <template x-if="current">
                         <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
@@ -193,7 +193,7 @@
                 <div class="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/55 to-transparent px-4 pb-8 pt-10">
                     <p class="text-lg font-semibold">Reels</p>
                 </div>
-                <button type="button" x-show="current" @click.stop="toggleMute()" :aria-label="muted ? 'Nyalakan suara' : 'Matikan suara'"
+                <button type="button" x-show="current" @click.stop="toggleMute()" :aria-label="muted ? @js(__('Nyalakan suara')) : @js(__('Matikan suara'))"
                     class="absolute right-3 top-10 z-20 grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white/60">
                     <x-heroicon-o-speaker-wave x-show="! muted" class="h-4 w-4" />
                     <x-heroicon-o-speaker-x-mark x-show="muted" x-cloak class="h-4 w-4" />
@@ -214,11 +214,11 @@
                     <div class="flex items-center gap-2">
                         <x-scheduler::account-avatar class="h-7 w-7 rounded-full border border-white/30 text-[10px]" />
                         <p class="truncate text-[13px] font-semibold"><span x-text="accountName">{{ $username }}</span></p>
-                        <span class="rounded-md border border-white/60 px-2 py-0.5 text-[11px] font-semibold">Ikuti</span>
+                        <span class="rounded-md border border-white/60 px-2 py-0.5 text-[11px] font-semibold">{{ __('Ikuti') }}</span>
                     </div>
                     <p class="mt-2 line-clamp-2 whitespace-pre-line text-[12px] leading-snug" x-text="caption" x-show="caption"></p>
-                    <p class="mt-2 text-[12px] text-white/50" x-show="! caption">Belum ada caption…</p>
-                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">Audio asli · <span x-text="accountName">{{ $username }}</span></span></p>
+                    <p class="mt-2 text-[12px] text-white/50" x-show="! caption">{{ __('Belum ada caption…') }}</p>
+                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">{{ __('Audio asli') }} · <span x-text="accountName">{{ $username }}</span></span></p>
                 </div>
 
                 {{-- Batang progres video --}}
@@ -231,7 +231,7 @@
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.15" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m3 10.5 9-7.5 9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-9Z"/></svg>
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path stroke-linecap="round" d="m16 16 4 4"/></svg>
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="4"/><path stroke-linecap="round" d="m9 9 6 3-6 3V9Z"/></svg>
-                <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-label="Aktivitas"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+                <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-label="{{ __('Aktivitas') }}"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
                 <x-scheduler::account-avatar class="h-7 w-7 rounded-full border-2 border-rose-400 text-[9px]" />
             </nav>
             </div>
@@ -257,7 +257,7 @@
                         </template>
                         <div class="min-w-0">
                             <p class="truncate text-[13px] font-semibold leading-tight text-slate-900" x-text="accountName"></p>
-                            <p class="mt-0.5 flex items-center gap-1 text-[11px] leading-tight text-slate-500">Sekarang · <x-heroicon-o-globe-asia-australia class="h-3 w-3" /></p>
+                            <p class="mt-0.5 flex items-center gap-1 text-[11px] leading-tight text-slate-500">{{ __('Sekarang') }} · <x-heroicon-o-globe-asia-australia class="h-3 w-3" /></p>
                         </div>
                         <span class="ml-auto flex items-center gap-3 text-slate-500" aria-hidden="true">
                             <x-heroicon-o-ellipsis-horizontal class="h-5 w-5" />
@@ -266,14 +266,14 @@
                     </div>
 
                     <p class="whitespace-pre-line px-3 pb-2.5 pt-2.5 text-[13px] leading-snug text-slate-900" x-text="caption" x-show="caption"></p>
-                    <p class="px-3 pb-2.5 pt-2.5 text-[13px] text-slate-400" x-show="! caption">Belum ada caption…</p>
+                    <p class="px-3 pb-2.5 pt-2.5 text-[13px] text-slate-400" x-show="! caption">{{ __('Belum ada caption…') }}</p>
 
                     {{-- Foto: satu foto penuh, beberapa foto dalam kisi (maks 4, sisanya "+N") --}}
                     <div x-show="itemsFor('feed').length === 0" class="grid aspect-square place-items-center bg-slate-100 text-slate-300">
                         <x-heroicon-o-photo class="h-12 w-12" />
                     </div>
                     <template x-if="itemsFor('feed').length === 1">
-                        <img :src="itemsFor('feed')[0].url" alt="Foto postingan" class="max-h-[22rem] w-full bg-slate-100 object-cover">
+                        <img :src="itemsFor('feed')[0].url" alt="{{ __('Foto postingan') }}" class="max-h-[22rem] w-full bg-slate-100 object-cover">
                     </template>
                     <div x-show="itemsFor('feed').length > 1" class="grid grid-cols-2 gap-0.5">
                         <template x-for="(item, position) in itemsFor('feed').slice(0, 4)" :key="'fb-' + position">
@@ -288,12 +288,12 @@
 
                     <div class="flex items-center justify-between px-3 py-2 text-[11px] text-slate-500">
                         <span class="flex items-center gap-1"><span class="grid h-4 w-4 place-items-center rounded-full bg-[#1877f2] text-white"><x-heroicon-s-hand-thumb-up class="h-2.5 w-2.5" /></span> 21</span>
-                        <span>3 komentar · 1 kali dibagikan</span>
+                        <span>{{ __('3 komentar · 1 kali dibagikan') }}</span>
                     </div>
                     <div class="mx-3 grid grid-cols-3 border-t border-slate-200 py-1.5 text-[12px] font-medium text-slate-600" aria-hidden="true">
-                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-hand-thumb-up class="h-4 w-4" /> Suka</span>
-                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-chat-bubble-oval-left class="h-4 w-4" /> Komentar</span>
-                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-arrow-uturn-right class="h-4 w-4" /> Bagikan</span>
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-hand-thumb-up class="h-4 w-4" /> {{ __('Suka') }}</span>
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-chat-bubble-oval-left class="h-4 w-4" /> {{ __('Komentar') }}</span>
+                        <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-arrow-uturn-right class="h-4 w-4" /> {{ __('Bagikan') }}</span>
                     </div>
                     <p class="px-3 pb-2 pt-1.5 text-[11px] text-slate-400" x-text="schedulePreview"></p>
                 </div>
@@ -304,7 +304,7 @@
                 <template x-if="current">
                     <div class="absolute inset-0" @click="togglePlay($event)" :class="current.type === 'video' ? 'cursor-pointer' : ''"
                         :role="current.type === 'video' ? 'button' : null" :tabindex="current.type === 'video' ? 0 : null"
-                        :aria-label="current.type === 'video' ? 'Putar atau jeda video' : null"
+                        :aria-label="current.type === 'video' ? @js(__('Putar atau jeda video')) : null"
                         @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                         <template x-if="current.type === 'video'">
                             <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
@@ -312,7 +312,7 @@
                                 @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
                         </template>
                         <template x-if="current.type !== 'video'">
-                            <img :src="current.url" alt="Pratinjau Story Facebook" class="h-full w-full object-cover">
+                            <img :src="current.url" alt="{{ __('Pratinjau Story Facebook') }}" class="h-full w-full object-cover">
                         </template>
                     </div>
                 </template>
@@ -337,7 +337,7 @@
                         </template>
                         <div class="min-w-0">
                             <p class="truncate text-[13px] font-semibold leading-tight" x-text="accountName"></p>
-                            <p class="text-[11px] leading-tight text-white/70">Sekarang · <x-heroicon-o-globe-asia-australia class="inline h-3 w-3 align-[-1px]" /></p>
+                            <p class="text-[11px] leading-tight text-white/70">{{ __('Sekarang') }} · <x-heroicon-o-globe-asia-australia class="inline h-3 w-3 align-[-1px]" /></p>
                         </div>
                         <span class="ml-auto flex items-center gap-3" aria-hidden="true">
                             <x-heroicon-o-ellipsis-horizontal class="h-5 w-5" />
@@ -346,11 +346,11 @@
                     </div>
                 </div>
 
-                <button type="button" x-show="items.length > 1" @click="step(-1)" aria-label="Story sebelumnya"
+                <button type="button" x-show="items.length > 1" @click="step(-1)" aria-label="{{ __('Story sebelumnya') }}"
                     class="absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
                     <x-heroicon-o-chevron-left class="h-4 w-4" />
                 </button>
-                <button type="button" x-show="items.length > 1" @click="step(1)" aria-label="Story berikutnya"
+                <button type="button" x-show="items.length > 1" @click="step(1)" aria-label="{{ __('Story berikutnya') }}"
                     class="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
                     <x-heroicon-o-chevron-right class="h-4 w-4" />
                 </button>
@@ -361,7 +361,7 @@
                 {{-- Kolom balasan dan reaksi ala Story Facebook --}}
                 <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent px-3 pb-7 pt-10" aria-hidden="true">
                     <div class="flex items-center gap-2">
-                        <span class="flex-1 rounded-full bg-white/20 px-4 py-2 text-xs text-white/85">Balas…</span>
+                        <span class="flex-1 rounded-full bg-white/20 px-4 py-2 text-xs text-white/85">{{ __('Balas…') }}</span>
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-[#1877f2]"><x-heroicon-s-hand-thumb-up class="h-4 w-4" /></span>
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-rose-500"><x-heroicon-s-heart class="h-4 w-4" /></span>
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-amber-400 text-slate-900"><x-heroicon-s-face-smile class="h-4 w-4" /></span>
@@ -373,7 +373,7 @@
             <div x-show="isFacebook && active === 'reel'" x-cloak class="absolute inset-0 bg-black text-white">
                 {{-- Video: klik untuk putar atau jeda --}}
                 <div x-show="current" class="absolute inset-0 cursor-pointer" @click="togglePlay($event)"
-                    role="button" tabindex="0" aria-label="Putar atau jeda video"
+                    role="button" tabindex="0" aria-label="{{ __('Putar atau jeda video') }}"
                     @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
                     <template x-if="current">
                         <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
@@ -396,7 +396,7 @@
                         <x-heroicon-o-camera class="h-5 w-5" />
                     </span>
                 </div>
-                <button type="button" x-show="current" @click.stop="toggleMute()" :aria-label="muted ? 'Nyalakan suara' : 'Matikan suara'"
+                <button type="button" x-show="current" @click.stop="toggleMute()" :aria-label="muted ? @js(__('Nyalakan suara')) : @js(__('Matikan suara'))"
                     class="absolute right-3 top-[5.25rem] z-20 grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white/60">
                     <x-heroicon-o-speaker-wave x-show="! muted" class="h-4 w-4" />
                     <x-heroicon-o-speaker-x-mark x-show="muted" x-cloak class="h-4 w-4" />
@@ -420,11 +420,11 @@
                             <span class="grid h-8 w-8 place-items-center rounded-full border border-white/30 bg-slate-600 text-[11px] font-semibold" x-text="accountInitial"></span>
                         </template>
                         <p class="truncate text-[13px] font-semibold" x-text="accountName"></p>
-                        <span class="rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-semibold">Ikuti</span>
+                        <span class="rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-semibold">{{ __('Ikuti') }}</span>
                     </div>
                     <p class="mt-2 line-clamp-2 whitespace-pre-line text-[12px] leading-snug" x-text="caption" x-show="caption"></p>
-                    <p class="mt-2 text-[12px] text-white/50" x-show="! caption">Belum ada deskripsi…</p>
-                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">Audio asli · <span x-text="accountName"></span></span></p>
+                    <p class="mt-2 text-[12px] text-white/50" x-show="! caption">{{ __('Belum ada deskripsi…') }}</p>
+                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">{{ __('Audio asli') }} · <span x-text="accountName"></span></span></p>
                 </div>
 
                 {{-- Batang progres video --}}
@@ -438,14 +438,14 @@
     </div>
 
     {{-- Kontrol layar penuh: hanya tombol tutup, supaya tampil seperti aplikasi Instagram. Format yang tampil adalah yang aktif saat dibuka. --}}
-    <button type="button" x-show="fullPreview" x-cloak @click="closeFullPreview()" @keydown.escape.window="closeFullPreview()" aria-label="Tutup pratinjau layar penuh"
+    <button type="button" x-show="fullPreview" x-cloak @click="closeFullPreview()" @keydown.escape.window="closeFullPreview()" aria-label="{{ __('Tutup pratinjau layar penuh') }}"
         class="fixed right-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white shadow focus:outline-none focus:ring-2 focus:ring-white">
         <x-heroicon-o-x-mark class="h-5 w-5" />
     </button>
 
     {{-- Geser pratinjau antar format bila lebih dari satu format dipilih --}}
-    <div x-show="formats.length > 1" x-cloak class="mt-5 flex items-center justify-center gap-2" role="group" aria-label="Pratinjau per format">
-        <button type="button" @click="slide(-1)" aria-label="Pratinjau format sebelumnya"
+    <div x-show="formats.length > 1" x-cloak class="mt-5 flex items-center justify-center gap-2" role="group" aria-label="{{ __('Pratinjau per format') }}">
+        <button type="button" @click="slide(-1)" aria-label="{{ __('Pratinjau format sebelumnya') }}"
             class="grid h-8 w-8 place-items-center rounded-full border border-border bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30">
             <x-heroicon-o-chevron-left class="h-4 w-4" />
         </button>
@@ -457,7 +457,7 @@
                 x-text="labels[format]"></button>
         </template>
 
-        <button type="button" @click="slide(1)" aria-label="Pratinjau format berikutnya"
+        <button type="button" @click="slide(1)" aria-label="{{ __('Pratinjau format berikutnya') }}"
             class="grid h-8 w-8 place-items-center rounded-full border border-border bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30">
             <x-heroicon-o-chevron-right class="h-4 w-4" />
         </button>
@@ -467,7 +467,7 @@
 {{-- Ringkasan --}}
 <div class="bg-card rounded-xl shadow-card border border-border overflow-hidden">
     <div class="px-5 py-3.5 border-b border-border">
-        <h3 class="text-sm font-semibold text-slate-800">Ringkasan jadwal</h3>
+        <h3 class="text-sm font-semibold text-slate-800">{{ __('Ringkasan jadwal') }}</h3>
     </div>
     <dl class="p-5 space-y-3.5 text-sm">
         <template x-for="format in formats" :key="'sum-' + format">
@@ -477,15 +477,15 @@
             </div>
         </template>
         <div class="flex items-center justify-between gap-4" x-show="usesCaption">
-            <dt class="text-slate-400">Caption</dt>
-            <dd class="font-medium text-slate-700" x-text="caption.length + ' karakter'"></dd>
+            <dt class="text-slate-400">{{ __('Caption') }}</dt>
+            <dd class="font-medium text-slate-700" x-text="t('characters', { count: caption.length })"></dd>
         </div>
         <div class="flex items-center justify-between gap-4">
-            <dt class="text-slate-400">Terbit</dt>
+            <dt class="text-slate-400">{{ __('Terbit') }}</dt>
             <dd class="font-medium text-slate-700 text-right" x-text="schedulePreview"></dd>
         </div>
         <div class="flex items-center justify-between gap-4 pt-2 border-t border-border/70">
-            <dt class="text-slate-400">Tujuan</dt>
+            <dt class="text-slate-400">{{ __('Tujuan') }}</dt>
             <dd class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                 <svg x-show="! isFacebook" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 448 512" aria-hidden="true">
                     <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/>

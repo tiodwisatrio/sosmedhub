@@ -88,16 +88,16 @@ class InstagramPublisher
             $message = $response->json('error.message') ?? 'HTTP '.$response->status();
 
             if ((int) $response->json('error.code') === 190) {
-                throw new InstagramAuthException("Token Instagram ditolak: {$message}");
+                throw new InstagramAuthException(__('Token Instagram ditolak: :message', ['message' => $message]));
             }
 
-            throw new RuntimeException("Instagram menolak permintaan: {$message}");
+            throw new RuntimeException(__('Instagram menolak permintaan: :message', ['message' => $message]));
         }
 
         $value = $response->json($key);
 
         if ($value === null) {
-            throw new RuntimeException("Respons Instagram tidak berisi {$key}.");
+            throw new RuntimeException(__('Respons Instagram tidak berisi :key.', ['key' => $key]));
         }
 
         return $value;

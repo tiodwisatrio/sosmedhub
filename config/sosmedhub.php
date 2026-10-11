@@ -20,4 +20,16 @@ return [
     'registration' => [
         'auto_approve' => (bool) env('REGISTRATION_AUTO_APPROVE', false),
     ],
+
+    /*
+    | Bahasa antarmuka. Teks sumber ditulis dalam Bahasa Indonesia (lihat CLAUDE.md), sehingga bahasa
+    | "id" tidak butuh file terjemahan; bahasa lain memakai lang/{kode}.json dengan kunci teks Indonesia.
+    | Pilihan pengguna disimpan di cookie, jadi berlaku juga untuk tamu (misalnya reviewer Meta).
+    */
+    'default_locale' => env('SOSMEDHUB_DEFAULT_LOCALE', 'id'),
+
+    'locales' => [
+        'id' => 'Bahasa Indonesia',
+        'en' => 'English',
+    ],
 ];

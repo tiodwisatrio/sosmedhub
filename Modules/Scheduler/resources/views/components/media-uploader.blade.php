@@ -8,13 +8,13 @@
 
 @php
     $field = ['feed' => 'media', 'story' => 'media_story', 'reel' => 'media_reel'][$format];
-    $title = ['feed' => 'Media Feed', 'story' => 'Media Story', 'reel' => 'Video Reels'][$format];
-    $add = ['feed' => 'Tambah foto/video', 'story' => 'Tambah foto/video', 'reel' => 'Pilih video'][$format];
+    $title = ['feed' => __('Media Feed'), 'story' => __('Media Story'), 'reel' => __('Video Reels')][$format];
+    $add = ['feed' => __('Tambah foto/video'), 'story' => __('Tambah foto/video'), 'reel' => __('Pilih video')][$format];
     $reelMax = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'));
     $hint = [
-        'feed' => 'JPEG · maks 8 MB per foto · hingga 10 item (carousel).',
-        'story' => 'Foto JPEG/Video MP4/MOV. Maksimal durasi video 1 menit.',
-        'reel' => 'Video MP4/MOV. Durasi maksimal '.$reelMax.'. Ukuran maksimal 300 MB.',
+        'feed' => __('JPEG · maks 8 MB per foto · hingga 10 item (carousel).'),
+        'story' => __('Foto JPEG/Video MP4/MOV. Maksimal durasi video 1 menit.'),
+        'reel' => __('Video MP4/MOV. Durasi maksimal :duration. Ukuran maksimal 300 MB.', ['duration' => $reelMax]),
     ][$format];
 
     $serverErrors = collect($errors->get($field))
@@ -52,7 +52,7 @@
                         class="pointer-events-none absolute inset-0 h-full w-full object-cover"></video>
                 </template>
                 <template x-if="entry.type !== 'video'">
-                    <img :src="entry.url" :alt="entry.kind === 'new' ? 'Media baru' : 'Media yang sudah ada'" draggable="false"
+                    <img :src="entry.url" :alt="entry.kind === 'new' ? @js(__('Media baru')) : @js(__('Media yang sudah ada'))" draggable="false"
                         class="pointer-events-none absolute inset-0 h-full w-full object-cover">
                 </template>
                 <span x-show="entry.type === 'video'" class="pointer-events-none absolute inset-0 grid place-items-center text-white/90" aria-hidden="true">
@@ -61,22 +61,22 @@
 
                 <span class="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                     <span class="tabular-nums" x-text="entry.position + 1"></span>
-                    <span x-show="entry.kind === 'new'" class="text-[9px] leading-tight">Baru</span>
+                    <span x-show="entry.kind === 'new'" class="text-[9px] leading-tight">{{ __('Baru') }}</span>
                 </span>
 
                 <button type="button" x-show="! isLocked('{{ $format }}')"
                     @click="entry.kind === 'existing' ? removeExisting('{{ $format }}', entry.id) : removeNew('{{ $format }}', entry.key)"
-                    class="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1.5 text-white sm:p-1 transition-colors hover:bg-danger" title="Hapus media ini" aria-label="Hapus media ini">
+                    class="absolute right-1 top-1 rounded-full bg-slate-900/70 p-1.5 text-white sm:p-1 transition-colors hover:bg-danger" title="{{ __('Hapus media ini') }}" aria-label="{{ __('Hapus media ini') }}">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                 </button>
 
                 <div x-show="canReorder('{{ $format }}')" x-cloak
                     class="absolute inset-x-1 bottom-1 flex justify-between transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover/tile:opacity-100">
-                    <button type="button" @click="shift('{{ $format }}', entry.key, -1)" :disabled="entry.position === 0" aria-label="Geser ke kiri" title="Geser ke kiri"
+                    <button type="button" @click="shift('{{ $format }}', entry.key, -1)" :disabled="entry.position === 0" aria-label="{{ __('Geser ke kiri') }}" title="{{ __('Geser ke kiri') }}"
                         class="rounded-full bg-slate-900/70 p-1.5 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30 sm:p-1">
                         <x-heroicon-o-chevron-left class="h-3 w-3" />
                     </button>
-                    <button type="button" @click="shift('{{ $format }}', entry.key, 1)" :disabled="entry.position === order['{{ $format }}'].length - 1" aria-label="Geser ke kanan" title="Geser ke kanan"
+                    <button type="button" @click="shift('{{ $format }}', entry.key, 1)" :disabled="entry.position === order['{{ $format }}'].length - 1" aria-label="{{ __('Geser ke kanan') }}" title="{{ __('Geser ke kanan') }}"
                         class="rounded-full bg-slate-900/70 p-1.5 text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-30 sm:p-1">
                         <x-heroicon-o-chevron-right class="h-3 w-3" />
                     </button>
@@ -89,7 +89,7 @@
             class="relative flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border bg-slate-50/50 cursor-pointer transition-colors duration-150 hover:border-primary/40 hover:bg-primary-light/20 focus-within:ring-2 focus-within:ring-primary/30">
             <x-heroicon-o-arrow-up-tray class="h-6 w-6 text-slate-300" />
 @if ($format === 'feed')
-                <span class="mt-1 px-1 text-center text-xs text-slate-400" x-text="isFacebook ? 'Tambah foto' : '{{ $add }}'">{{ $add }}</span>
+                <span class="mt-1 px-1 text-center text-xs text-slate-400" x-text="isFacebook ? @js(__('Tambah foto')) : @js($add)">{{ $add }}</span>
             @else
                 <span class="mt-1 px-1 text-center text-xs text-slate-400">{{ $add }}</span>
             @endif
@@ -107,21 +107,21 @@
                 <input type="hidden" :name="`trim_story[${entry.index}][start]`" :value="entry.trim.start.toFixed(2)">
                 <input type="hidden" :name="`trim_story[${entry.index}][end]`" :value="entry.trim.end.toFixed(2)">
 
-                <p class="text-sm font-medium text-slate-700">Pilih bagian yang ditayangkan</p>
+                <p class="text-sm font-medium text-slate-700">{{ __('Pilih bagian yang ditayangkan') }}</p>
 
                 <video :id="'trim-video-' + entry.uid" :src="blobs[entry.uid]?.url" controls playsinline preload="metadata"
                     class="mt-3 mx-auto max-h-64 w-auto rounded-md bg-black"
                     @loadedmetadata="$el.currentTime = entry.trim.start"
                     @timeupdate="loopTrim(entry, $event)"></video>
 
-                <div class="relative mt-4 h-8" role="group" aria-label="Rentang potong">
+                <div class="relative mt-4 h-8" role="group" aria-label="{{ __('Rentang potong') }}">
                     <div class="absolute inset-x-0 top-3 h-2 rounded-full bg-slate-200"></div>
                     <div class="absolute top-3 h-2 rounded-full bg-primary"
                         :style="`left: ${entry.trim.start / entry.trim.duration * 100}%; width: ${(entry.trim.end - entry.trim.start) / entry.trim.duration * 100}%`"></div>
                     <input type="range" min="0" :max="entry.trim.duration" step="0.1" :value="entry.trim.start"
-                        @input="onTrimStart(entry, $event)" class="trim-range" aria-label="Mulai dari">
+                        @input="onTrimStart(entry, $event)" class="trim-range" aria-label="{{ __('Mulai dari') }}">
                     <input type="range" min="0" :max="entry.trim.duration" step="0.1" :value="entry.trim.end"
-                        @input="onTrimEnd(entry, $event)" class="trim-range" aria-label="Sampai">
+                        @input="onTrimEnd(entry, $event)" class="trim-range" aria-label="{{ __('Sampai') }}">
                 </div>
 
                 <div class="mt-1 flex items-center justify-between text-xs tabular-nums text-slate-500">
@@ -138,17 +138,17 @@
     </template>
 
     <p x-show="canReorder('{{ $format }}')" x-cloak class="mt-2 text-xs text-slate-500" data-reorder-hint>
-        Seret media untuk mengatur urutan, atau pakai tombol panah.
-        {{ ['feed' => 'Foto pertama menjadi sampul carousel.', 'story' => 'Urutan ini juga urutan tayang Story.', 'reel' => ''][$format] }}
+        {{ __('Seret media untuk mengatur urutan, atau pakai tombol panah.') }}
+        {{ ['feed' => __('Foto pertama menjadi sampul carousel.'), 'story' => __('Urutan ini juga urutan tayang Story.'), 'reel' => ''][$format] }}
     </p>
 
     <p x-show="isLocked('{{ $format }}')" x-cloak class="mt-2 text-xs text-success-text">
-        Format ini sudah terbit, jadi medianya tidak bisa diubah.
+        {{ __('Format ini sudah terbit, jadi medianya tidak bisa diubah.') }}
     </p>
 
-    <p class="mt-2 text-xs text-slate-400">@if ($format === 'reel')<span x-show="! isFacebook">{{ $hint }}</span><span x-show="isFacebook" x-cloak>Video MP4/MOV. Durasi 3 detik sampai {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}. Rasio 9:16, minimal 540x960. Ukuran maksimal 300 MB.</span>@else{{ $hint }}@endif @if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span> <span x-show="! isFacebook">Boleh campur foto dan video (video maks {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('feed')) }}, {{ (int) config('scheduler.video.feed_max_mb', 100) }} MB, MP4/MOV).</span>@endif</p>
+    <p class="mt-2 text-xs text-slate-400">@if ($format === 'reel')<span x-show="! isFacebook">{{ $hint }}</span><span x-show="isFacebook" x-cloak>{{ __('Video MP4/MOV. Durasi 3 detik sampai :duration. Rasio 9:16, minimal 540x960. Ukuran maksimal 300 MB.', ['duration' => \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook'))]) }}</span>@else{{ $hint }}@endif @if ($format === 'feed') <span x-show="! isFacebook"> {{ __('Rasio 4:5 sampai 1,91:1.') }}</span> <span x-show="! isFacebook">{{ __('Boleh campur foto dan video (video maks :duration, :mb MB, MP4/MOV).', ['duration' => \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('feed')), 'mb' => (int) config('scheduler.video.feed_max_mb', 100)]) }}</span>@endif</p>
 
-    <p x-show="checking['{{ $format }}']" x-cloak class="mt-1.5 text-xs text-slate-500" role="status">Memeriksa file…</p>
+    <p x-show="checking['{{ $format }}']" x-cloak class="mt-1.5 text-xs text-slate-500" role="status">{{ __('Memeriksa file…') }}</p>
 
     <p x-show="problems['{{ $format }}']" x-cloak x-text="problems['{{ $format }}']" role="alert" class="mt-1.5 text-xs text-danger"></p>
 

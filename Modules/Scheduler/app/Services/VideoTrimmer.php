@@ -58,9 +58,9 @@ class VideoTrimmer
 
         if ($result->failed() || ! is_file($output) || filesize($output) === 0) {
             @unlink($output);
-            logger()->warning('ffmpeg gagal memotong video.', ['error' => Str::limit(trim($result->errorOutput()), 500)]);
+            logger()->warning(__('ffmpeg gagal memotong video.'), ['error' => Str::limit(trim($result->errorOutput()), 500)]);
 
-            throw new RuntimeException('Video gagal dipotong di server. Coba lagi atau pilih rentang lain.');
+            throw new RuntimeException(__('Video gagal dipotong di server. Coba lagi atau pilih rentang lain.'));
         }
 
         return $output;

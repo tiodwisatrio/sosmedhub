@@ -2,6 +2,7 @@
 
 namespace Modules\Scheduler\Models;
 
+use App\Support\StoredMessage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -80,13 +81,21 @@ class ScheduledPostPublication extends Model
         return ScheduledPost::formatLabel($this->format);
     }
 
+    /**
+     * Pesan galat tersimpan, diterjemahkan ke bahasa aktif bila templatnya dikenal.
+     */
+    public function displayError(): ?string
+    {
+        return StoredMessage::translate($this->error_message);
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_PUBLISHED => 'Terbit',
-            self::STATUS_FAILED => 'Gagal',
-            self::STATUS_PUBLISHING => 'Menerbitkan',
-            default => 'Menunggu',
+            self::STATUS_PUBLISHED => __('Terbit'),
+            self::STATUS_FAILED => __('Gagal'),
+            self::STATUS_PUBLISHING => __('Menerbitkan'),
+            default => __('Menunggu'),
         };
     }
 }

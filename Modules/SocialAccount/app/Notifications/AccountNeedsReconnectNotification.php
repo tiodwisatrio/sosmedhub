@@ -29,27 +29,28 @@ class AccountNeedsReconnectNotification extends Notification implements ShouldQu
         $handle = $isFacebook ? ($this->account->display_name ?: $this->account->username) : '@'.$this->account->username;
 
         $message = (new MailMessage)
-            ->greeting('Halo '.$notifiable->name.',');
+            ->greeting(__('Halo :name,', ['name' => $notifiable->name]));
 
         if ($this->expired) {
             $message
-                ->subject("Akun {$platform} {$handle} terputus")
-                ->line("Koneksi akun {$platform} {$handle} sudah tidak berlaku, jadi postingan terjadwal untuk akun ini tidak bisa terbit.")
-                ->line('Hubungkan ulang akun supaya penjadwalan berjalan lagi.');
+                ->subject(__('Akun :platform :handle terputus', ['platform' => $platform, 'handle' => $handle]))
+                ->line(__('Koneksi akun :platform :handle sudah tidak berlaku, jadi postingan terjadwal untuk akun ini tidak bisa terbit.', ['platform' => $platform, 'handle' => $handle]))
+                ->line(__('Hubungkan ulang akun supaya penjadwalan berjalan lagi.'));
         } else {
             $message
-                ->subject("Koneksi akun {$platform} {$handle} akan berakhir")
-                ->line("Koneksi akun {$platform} {$handle} akan berakhir pada {$this->expiresAtWib()} dan belum berhasil diperpanjang otomatis.")
-                ->line('Hubungkan ulang akun sebelum tanggal itu supaya postingan terjadwal tetap terbit.');
+                ->subject(__('Koneksi akun :platform :handle akan berakhir', ['platform' => $platform, 'handle' => $handle]))
+                ->line(__('Koneksi akun :platform :handle akan berakhir pada :date dan belum berhasil diperpanjang otomatis.', ['platform' => $platform, 'handle' => $handle, 'date' => $this->expiresAtWib()]))
+                ->line(__('Hubungkan ulang akun sebelum tanggal itu supaya postingan terjadwal tetap terbit.'));
         }
 
-        return $message->action('Hubungkan ulang akun', route('admin.social-accounts.index'));
+        return $message->action(__('Hubungkan ulang akun'), route('admin.social-accounts.index'));
     }
 
     private function expiresAtWib(): string
     {
         return $this->account->token_expires_at
             ?->setTimezone('Asia/Jakarta')
-            ->format('d M Y H:i').' WIB';
+            ->locale(app()->getLocale())
+            ->translatedFormat('d M Y H:i').' WIB';
     }
 }

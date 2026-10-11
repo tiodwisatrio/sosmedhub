@@ -38,7 +38,7 @@ class FormatMedia implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! $value instanceof UploadedFile || ! $value->isValid()) {
-            $fail('File gagal diunggah. Coba lagi, dan periksa batas ukuran unggahan server.');
+            $fail(__('File gagal diunggah. Coba lagi, dan periksa batas ukuran unggahan server.'));
 
             return;
         }
@@ -51,21 +51,21 @@ class FormatMedia implements ValidationRule
             // Facebook baru mendukung foto untuk Feed; Instagram boleh mencampur foto dan video.
             if ($this->platform === 'facebook' || ! $isVideo) {
                 $fail($this->platform === 'facebook'
-                    ? 'Feed Facebook hanya menerima foto JPEG (.jpg atau .jpeg).'
-                    : 'Feed menerima foto JPEG atau video MP4/MOV.');
+                    ? __('Feed Facebook hanya menerima foto JPEG (.jpg atau .jpeg).')
+                    : __('Feed menerima foto JPEG atau video MP4/MOV.'));
 
                 return;
             }
         }
 
         if ($this->format === ScheduledPost::FORMAT_REEL && ! $isVideo) {
-            $fail('Reels hanya menerima video MP4 atau MOV.');
+            $fail(__('Reels hanya menerima video MP4 atau MOV.'));
 
             return;
         }
 
         if (! $isPhoto && ! $isVideo) {
-            $fail('Story menerima foto JPEG atau video MP4/MOV.');
+            $fail(__('Story menerima foto JPEG atau video MP4/MOV.'));
 
             return;
         }
@@ -78,7 +78,7 @@ class FormatMedia implements ValidationRule
         $maxMb = (int) config('scheduler.video.photo_max_mb', 8);
 
         if ($file->getSize() > $maxMb * 1048576) {
-            $fail("Ukuran foto maksimal {$maxMb} MB.");
+            $fail(__('Ukuran foto maksimal :mb MB.', ['mb' => $maxMb]));
 
             return;
         }
@@ -97,7 +97,7 @@ class FormatMedia implements ValidationRule
 
         if ($file->getSize() > $maxBytes) {
             $fail($trim
-                ? sprintf('Ukuran video %s MB melebihi batas %d MB untuk video yang dipotong.', number_format($file->getSize() / 1048576, 1, ',', '.'), $maxBytes / 1048576)
+                ? __('Ukuran video :size MB melebihi batas :max MB untuk video yang dipotong.', ['size' => VideoSpec::number($file->getSize() / 1048576), 'max' => (int) ($maxBytes / 1048576)])
                 : VideoSpec::problem(
                     ['duration' => (float) config('scheduler.video.min_seconds', 3), 'video_codec' => 'h264', 'audio_codec' => null, 'has_audio' => false, 'fps' => null],
                     (int) $file->getSize(),
@@ -111,7 +111,7 @@ class FormatMedia implements ValidationRule
         try {
             $info = app(Mp4Inspector::class)->inspect($file->getRealPath());
         } catch (Throwable $e) {
-            $fail($e->getMessage() ?: 'Video tidak bisa dibaca. Gunakan MP4 atau MOV (H.264 + AAC).');
+            $fail($e->getMessage() ?: __('Video tidak bisa dibaca. Gunakan MP4 atau MOV (H.264 + AAC).'));
 
             return;
         }
@@ -166,15 +166,15 @@ class FormatMedia implements ValidationRule
         $length = $trim['end'] - $trim['start'];
 
         if ($trim['start'] < 0 || $trim['end'] > $duration + 0.5) {
-            return 'Rentang potong di luar durasi video.';
+            return __('Rentang potong di luar durasi video.');
         }
 
         if ($length < $min - 0.05) {
-            return "Bagian yang dipilih terlalu pendek. Minimal {$min} detik.";
+            return __('Bagian yang dipilih terlalu pendek. Minimal :min detik.', ['min' => $min]);
         }
 
         if ($length > $max + 0.05) {
-            return 'Bagian yang dipilih lebih dari '.VideoSpec::duration($max).'. Persempit rentangnya.';
+            return __('Bagian yang dipilih lebih dari :duration. Persempit rentangnya.', ['duration' => VideoSpec::duration($max)]);
         }
 
         return null;

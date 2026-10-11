@@ -30,7 +30,7 @@ class RecoverStuckPublicationsCommand extends Command
             ->get();
 
         foreach ($stuck as $publication) {
-            $finalizer->abandon($publication, "Proses penerbitan tidak selesai dalam {$minutes} menit. Periksa akun tujuan lebih dulu: postingan mungkin sudah terbit. Bila belum, jadwalkan ulang.");
+            $finalizer->abandon($publication, __('Proses penerbitan tidak selesai dalam :minutes menit. Periksa akun tujuan lebih dulu: postingan mungkin sudah terbit. Bila belum, jadwalkan ulang.', ['minutes' => $minutes]));
         }
 
         $this->info("{$stuck->count()} format macet ditandai gagal.");

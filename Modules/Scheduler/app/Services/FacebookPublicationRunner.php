@@ -35,11 +35,11 @@ class FacebookPublicationRunner
 
         try {
             if (! $account?->isActive() || ! $account->access_token) {
-                throw new RuntimeException('Akun Facebook tidak aktif atau token tidak tersedia.');
+                throw new RuntimeException(__('Akun Facebook tidak aktif atau token tidak tersedia.'));
             }
 
             if (! in_array($publication->format, ScheduledPost::FORMATS, true)) {
-                throw new RuntimeException('Format postingan tidak dikenal.');
+                throw new RuntimeException(__('Format postingan tidak dikenal.'));
             }
 
             $media = $post->media()->where('format', $publication->format)->orderBy('position')->get();
@@ -202,7 +202,9 @@ class FacebookPublicationRunner
         $status = $this->publisher->videoStatus($account, $entry['container_id']);
 
         if ($status['failed']) {
-            throw new RuntimeException('Facebook gagal memproses Reels'.($status['error'] ? ": {$status['error']}" : '.'));
+            throw new RuntimeException($status['error']
+                ? __('Facebook gagal memproses Reels: :error', ['error' => $status['error']])
+                : __('Facebook gagal memproses Reels.'));
         }
 
         $confirmed = $status['published']
@@ -251,14 +253,16 @@ class FacebookPublicationRunner
         $status = $this->publisher->videoStatus($account, $entry['container_id']);
 
         if ($status['failed']) {
-            throw new RuntimeException("Facebook gagal memproses video {$label}".($status['error'] ? ": {$status['error']}" : '.'));
+            throw new RuntimeException($status['error']
+                ? __('Facebook gagal memproses video :label: :error', ['label' => $label, 'error' => $status['error']])
+                : __('Facebook gagal memproses video :label.', ['label' => $label]));
         }
 
         if (! $status['uploaded']) {
             $minutes = (int) config('scheduler.video.poll_max_minutes', 10);
 
             if (now()->greaterThan(Carbon::parse($state['started_at'])->addMinutes($minutes))) {
-                throw new RuntimeException("Facebook belum selesai menerima video dalam {$minutes} menit. Coba jadwalkan ulang.");
+                throw new RuntimeException(__('Facebook belum selesai menerima video dalam :minutes menit. Coba jadwalkan ulang.', ['minutes' => $minutes]));
             }
 
             return false;
@@ -300,19 +304,19 @@ class FacebookPublicationRunner
         $label = ScheduledPost::formatLabel($format);
 
         if ($media->isEmpty()) {
-            throw new RuntimeException("{$label} tidak memiliki media. Unggah ulang medianya.");
+            throw new RuntimeException(__(':label tidak memiliki media. Unggah ulang medianya.', ['label' => $label]));
         }
 
         if ($format === ScheduledPost::FORMAT_FEED && $media->contains(fn ($m) => $m->isVideo())) {
-            throw new RuntimeException("Facebook baru mendukung foto untuk {$label}.");
+            throw new RuntimeException(__('Facebook baru mendukung foto untuk :label.', ['label' => $label]));
         }
 
         if ($format === ScheduledPost::FORMAT_REEL && $media->contains(fn ($m) => ! $m->isVideo())) {
-            throw new RuntimeException('Reels hanya menerima video.');
+            throw new RuntimeException(__('Reels hanya menerima video.'));
         }
 
         if ($media->contains(fn ($m) => ! $m->media_path || ! MediaDisk::get()->exists($m->media_path))) {
-            throw new RuntimeException("Sebagian media {$label} sudah tidak tersedia di server. Unggah ulang medianya.");
+            throw new RuntimeException(__('Sebagian media :label sudah tidak tersedia di server. Unggah ulang medianya.', ['label' => $label]));
         }
     }
 
@@ -326,7 +330,7 @@ class FacebookPublicationRunner
         $stream = MediaDisk::get()->readStream($item->media_path);
 
         if (! is_resource($stream)) {
-            throw new RuntimeException('Media tidak bisa dibaca dari penyimpanan. Unggah ulang medianya.');
+            throw new RuntimeException(__('Media tidak bisa dibaca dari penyimpanan. Unggah ulang medianya.'));
         }
 
         return $stream;

@@ -161,7 +161,7 @@ class MediaProcessor
     private function ensureImagick(): void
     {
         if (! extension_loaded('imagick')) {
-            throw new RuntimeException('Ekstensi PHP Imagick tidak tersedia. Aktifkan di pengaturan PHP hosting.');
+            throw new RuntimeException(__('Ekstensi PHP Imagick tidak tersedia. Aktifkan di pengaturan PHP hosting.'));
         }
     }
 }

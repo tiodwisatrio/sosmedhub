@@ -187,11 +187,19 @@ trait ValidatesPostFormats
                 $label = ScheduledPost::formatLabel($format);
 
                 if ($count < $limit['min']) {
-                    $validator->errors()->add($limit['field'], "{$label} membutuhkan minimal {$limit['min']} {$limit['noun']}.");
+                    $validator->errors()->add($limit['field'], __(':label membutuhkan minimal :min :noun.', [
+                        'label' => $label,
+                        'min' => $limit['min'],
+                        'noun' => __($limit['noun']),
+                    ]));
                 } elseif ($count > $limit['max']) {
                     $validator->errors()->add($limit['field'], $format === ScheduledPost::FORMAT_REEL
-                        ? 'Reels hanya bisa berisi satu video.'
-                        : "{$label} maksimal {$limit['max']} {$limit['noun']}.");
+                        ? __('Reels hanya bisa berisi satu video.')
+                        : __(':label maksimal :max :noun.', [
+                            'label' => $label,
+                            'max' => $limit['max'],
+                            'noun' => __($limit['noun']),
+                        ]));
                 }
             }
         });

@@ -46,7 +46,7 @@ class FacebookGraphService
             'client_secret' => $this->config('client_secret'),
             'redirect_uri' => $this->config('redirect_uri'),
             'code' => $code,
-        ], 'Respons OAuth Facebook tidak berisi access_token.');
+        ], __('Respons OAuth Facebook tidak berisi access_token.'));
     }
 
     public function exchangeToLongLived(string $shortLivedToken): string
@@ -56,7 +56,7 @@ class FacebookGraphService
             'client_id' => $this->config('client_id'),
             'client_secret' => $this->config('client_secret'),
             'fb_exchange_token' => $shortLivedToken,
-        ], 'Gagal menukar token Facebook menjadi long-lived.');
+        ], __('Gagal menukar token Facebook menjadi long-lived.'));
     }
 
     /**

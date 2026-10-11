@@ -73,9 +73,9 @@ class PublishPublicationJob implements ShouldQueue
             return;
         }
 
-        app(PostFinalizer::class)->abandon($publication, 'Proses penerbitan berhenti sebelum selesai'
-            .($exception ? ' ('.class_basename($exception).')' : '')
-            .'. Periksa akun tujuan lebih dulu: postingan mungkin sudah terbit. Bila belum, jadwalkan ulang.');
+        app(PostFinalizer::class)->abandon($publication, $exception
+            ? __('Proses penerbitan berhenti sebelum selesai (:exception). Periksa akun tujuan lebih dulu: postingan mungkin sudah terbit. Bila belum, jadwalkan ulang.', ['exception' => class_basename($exception)])
+            : __('Proses penerbitan berhenti sebelum selesai. Periksa akun tujuan lebih dulu: postingan mungkin sudah terbit. Bila belum, jadwalkan ulang.'));
     }
 
     /**

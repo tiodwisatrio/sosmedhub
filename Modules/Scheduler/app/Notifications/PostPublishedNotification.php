@@ -23,13 +23,18 @@ class PostPublishedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $account = $this->post->socialAccount;
+        $isFacebook = $account?->platform === 'facebook';
+        $platform = $isFacebook ? 'Facebook' : 'Instagram';
+        $handle = $account ? ($isFacebook ? ($account->display_name ?: $account->username) : '@'.$account->username) : null;
 
         return (new MailMessage)
-            ->subject('Postingan Instagram berhasil terbit')
-            ->greeting('Halo '.$notifiable->name.',')
-            ->line('Postingan kamu sudah terbit'.($account ? ' di @'.$account->username : '').'.')
-            ->line('Format: '.implode(', ', array_map(fn (string $f) => ScheduledPost::formatLabel($f), $this->post->formats())).'.')
-            ->line('Caption: "'.Str::limit(strip_tags($this->post->caption), 100).'"')
-            ->action('Lihat penjadwalan', route('admin.scheduled-posts.index'));
+            ->subject(__('Postingan :platform berhasil terbit', ['platform' => $platform]))
+            ->greeting(__('Halo :name,', ['name' => $notifiable->name]))
+            ->line($handle
+                ? __('Postingan Anda sudah terbit di :account.', ['account' => $handle])
+                : __('Postingan Anda sudah terbit.'))
+            ->line(__('Format: :formats.', ['formats' => implode(', ', array_map(fn (string $f) => ScheduledPost::formatLabel($f), $this->post->formats()))]))
+            ->line(__('Caption: ":caption"', ['caption' => Str::limit(strip_tags($this->post->caption), 100)]))
+            ->action(__('Lihat penjadwalan'), route('admin.scheduled-posts.index'));
     }
 }
