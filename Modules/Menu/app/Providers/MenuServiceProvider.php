@@ -38,7 +38,7 @@ class MenuServiceProvider extends ModuleServiceProvider
 
                     return $menu;
                 })
-                ->filter(fn ($menu) => $menu->route_name || $menu->children->isNotEmpty())
+                ->filter(fn ($menu) => $menu->hasDestination() || $menu->children->isNotEmpty())
                 ->values();
 
             $view->with('sidebarMenus', $sidebarMenus);

@@ -5,6 +5,7 @@ namespace Modules\Menu\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Route;
 
 class Menu extends Model
 {
@@ -139,6 +140,17 @@ class Menu extends Model
     public function isParentActive(): bool
     {
         return $this->children->contains(fn ($child) => $child->isActive());
+    }
+
+    /**
+     * Menu punya halaman tujuan. Induk berupa grup memakai route_name kosong atau "#" sebagai penanda,
+     * dan hanya layak tampil di sidebar bila punya anak yang boleh dilihat.
+     */
+    public function hasDestination(): bool
+    {
+        $name = trim((string) $this->route_name);
+
+        return $name !== '' && $name !== '#' && Route::has($name);
     }
 
     public function canSee(): bool

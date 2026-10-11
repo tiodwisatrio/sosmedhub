@@ -31,6 +31,9 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SCHEDULER_SLOT_MINUTES" value="15"/>
         <env name="SCHEDULER_RUN_WORKER" value="true"/>
+        <env name="SCHEDULER_MEDIA_DISK" value="public"/>
+        <env name="SCHEDULER_STUCK_MINUTES" value="30"/>
+        <env name="REGISTRATION_AUTO_APPROVE" value="false"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

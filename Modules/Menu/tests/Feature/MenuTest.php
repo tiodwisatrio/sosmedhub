@@ -101,3 +101,40 @@ test('menu tanpa permission selalu terlihat, menu dengan permission mengikuti ak
 
     expect($menuDibatasi->canSee())->toBeTrue();
 });
+
+test('grup menu tanpa anak yang boleh dilihat tidak tampil di sidebar', function () {
+    $grup = Menu::create([
+        'label' => 'Grup Pengaturan Uji', 'route_name' => '#', 'urutan' => 90, 'is_active' => 1,
+    ]);
+    Menu::create([
+        'parent_id' => $grup->id, 'label' => 'Anak Terbatas Uji', 'route_name' => 'admin.users.index',
+        'permission' => 'user.view', 'urutan' => 0, 'is_active' => 1,
+    ]);
+
+    // User tanpa izin user.view: grup kosong tidak boleh muncul.
+    $client = User::factory()->create(['approval_status' => User::APPROVAL_APPROVED]);
+
+    $this->actingAs($client)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertDontSee('Grup Pengaturan Uji')
+        ->assertDontSee('Anak Terbatas Uji');
+
+    // User dengan izin: grup dan anaknya tampil.
+    $admin = User::factory()->create(['approval_status' => User::APPROVAL_APPROVED]);
+    $admin->givePermissionTo(Permission::firstOrCreate(['name' => 'user.view', 'guard_name' => 'web']));
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Grup Pengaturan Uji')
+        ->assertSee('Anak Terbatas Uji');
+});
+
+test('induk dengan route_name tidak valid dianggap tidak punya tujuan', function () {
+    expect((new Menu(['route_name' => '#']))->hasDestination())->toBeFalse()
+        ->and((new Menu(['route_name' => '']))->hasDestination())->toBeFalse()
+        ->and((new Menu(['route_name' => null]))->hasDestination())->toBeFalse()
+        ->and((new Menu(['route_name' => 'rute.yang.tidak.ada']))->hasDestination())->toBeFalse()
+        ->and((new Menu(['route_name' => 'admin.dashboard']))->hasDestination())->toBeTrue();
+});
