@@ -290,3 +290,29 @@ test('client tidak melihat label pemilik', function () {
         ->assertSee('@punya_sendiri')
         ->assertDontSee('Pemilik:');
 });
+
+test('izin OAuth dibaca dari .env, dipisah koma, dan kembali ke bawaan bila kosong', function () {
+    $load = function (array $env): array {
+        foreach ($env as $key => $value) {
+            $_SERVER[$key] = $value;
+        }
+
+        try {
+            return require base_path('Modules/SocialAccount/config/config.php');
+        } finally {
+            foreach (array_keys($env) as $key) {
+                unset($_SERVER[$key]);
+            }
+        }
+    };
+
+    $custom = $load(['INSTAGRAM_SCOPES' => ' instagram_business_basic , ,instagram_business_manage_insights', 'FACEBOOK_SCOPES' => 'pages_show_list,pages_manage_posts']);
+
+    expect($custom['instagram']['scopes'])->toBe(['instagram_business_basic', 'instagram_business_manage_insights'])
+        ->and($custom['facebook']['scopes'])->toBe(['pages_show_list', 'pages_manage_posts']);
+
+    $default = $load(['INSTAGRAM_SCOPES' => '', 'FACEBOOK_SCOPES' => '']);
+
+    expect($default['instagram']['scopes'])->toBe(['instagram_business_basic', 'instagram_business_content_publish'])
+        ->and($default['facebook']['scopes'])->toBe(['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management']);
+});

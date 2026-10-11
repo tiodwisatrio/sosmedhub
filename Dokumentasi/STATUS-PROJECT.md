@@ -207,6 +207,8 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | App ID dan App Secret dari **Settings > Basic** di Meta (bukan ID aplikasi Instagram). |
 | `FACEBOOK_REDIRECT_URI` | Harus persis sama dengan *Valid OAuth Redirect URIs* di Facebook Login. Formatnya `https://DOMAIN/admin/social-accounts/facebook/callback`. |
 | `FACEBOOK_GRAPH_VERSION` | Default `v26.0`. |
+| `INSTAGRAM_SCOPES` | Izin OAuth Instagram, dipisah koma. Kosong = `instagram_business_basic,instagram_business_content_publish`. |
+| `FACEBOOK_SCOPES` | Izin OAuth Facebook, dipisah koma. Kosong = `pages_show_list,pages_read_engagement,pages_manage_posts,business_management`. Aplikasi menolak koneksi bila ada izin di daftar ini yang tidak disetujui user. |
 | `INSTAGRAM_GRAPH_VERSION` | Versi Graph API, misalnya `v26.0`. |
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
