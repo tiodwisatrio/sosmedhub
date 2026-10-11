@@ -233,6 +233,10 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `INSTAGRAM_GRAPH_VERSION` | Versi Graph API, misalnya `v26.0`. |
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
+| `SCHEDULER_STUCK_MINUTES` | Batas (menit, bawaan 30) sebelum format yang macet di `publishing` ditandai gagal oleh `scheduler:recover-stuck`. |
+| `SCHEDULER_FEED_VIDEO_MAX_SECONDS` | Batas durasi video di carousel Feed Instagram (bawaan 60, konservatif). |
+| `DB_QUEUE_RETRY_AFTER` | `retry_after` antrean database (bawaan 180 detik). Harus lebih besar dari timeout job 150 detik. |
+| `LOG_STACK` / `LOG_DAILY_DAYS` | `daily` dan 14 hari di produksi supaya log berotasi. |
 | `SCHEDULER_MEDIA_DISK` | Nama disk (di `config/filesystems.php`) untuk foto, thumbnail, dan video jadwal. Bawaan `public` (lokal). Semua kode Scheduler membacanya lewat `MediaDisk`, jadi pindah ke object storage cukup mengganti nilai ini. Lihat "Pindah ke object storage" di bawah. |
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
 | `SCHEDULER_REEL_MAX_SECONDS` | Batas durasi Reels dalam detik (bawaan 180). Meta mengizinkan sampai 900. Story tetap 60 detik. |
