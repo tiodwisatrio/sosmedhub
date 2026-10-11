@@ -18,7 +18,7 @@
 
                 <h2>Akun Anda</h2>
                 <ul>
-                    <li>Pendaftaran akun baru perlu disetujui admin. Kami dapat menolak, menangguhkan, atau menutup akun yang melanggar ketentuan ini.</li>
+                    <li>@unless (config('sosmedhub.registration.auto_approve'))Pendaftaran akun baru perlu disetujui admin.@endunless Kami dapat menolak, menangguhkan, atau menutup akun yang melanggar ketentuan ini.</li>
                     <li>Anda bertanggung jawab menjaga kerahasiaan kata sandi dan atas semua aktivitas di akun Anda.</li>
                     <li>Akun Instagram yang dihubungkan harus bertipe Business atau Creator, dan harus milik Anda atau Anda berwenang mengelolanya.</li>
                     <li>Facebook yang didukung adalah Halaman (Page), bukan profil pribadi. Halaman yang dihubungkan harus Halaman yang Anda kelola atau berwenang Anda kelola.</li>

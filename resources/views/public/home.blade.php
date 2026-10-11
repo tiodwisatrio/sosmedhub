@@ -15,10 +15,23 @@
                     Unggah foto atau video, tulis caption, pilih jam terbit dalam WIB. Sosmedhub menerbitkannya ke akun Instagram dan Halaman Facebook usaha Anda secara otomatis, tanpa perlu membuka aplikasi saat waktunya tiba.
                 </p>
                 <div class="mt-9 flex flex-wrap items-center gap-3">
-                    <a href="{{ route('login') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Masuk</a>
-                    <a href="{{ route('register') }}" class="rounded-full px-5 py-3 text-sm text-white/60 transition hover:text-white">Daftar akun baru</a>
+                    @auth
+                        {{-- Developer dan user yang sudah disetujui masuk ke dashboard; sisanya melihat status persetujuan. --}}
+                        @if (auth()->user()->isDeveloper() || auth()->user()->isApproved())
+                            <a href="{{ route('admin.dashboard') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Buka dashboard</a>
+                        @else
+                            <a href="{{ route('approval.pending') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Lihat status persetujuan</a>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Masuk</a>
+                        <a href="{{ route('register') }}" class="rounded-full px-5 py-3 text-sm text-white/60 transition hover:text-white">Daftar akun baru</a>
+                    @endauth
                 </div>
-                <p class="mt-4 text-xs text-white/35">Akun baru disetujui admin terlebih dahulu.</p>
+                @guest
+                    @unless (config('sosmedhub.registration.auto_approve'))
+                        <p class="mt-4 text-xs text-white/35">Akun baru disetujui admin terlebih dahulu.</p>
+                    @endunless
+                @endguest
             </div>
 
             <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-5" aria-label="Contoh tampilan jadwal">

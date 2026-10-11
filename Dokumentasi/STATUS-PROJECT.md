@@ -216,6 +216,7 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 - **developer**: semua izin, melihat semua data.
 - **client**: izin `scheduler.*` dan `social-account.*`. Hanya melihat data miliknya.
 - User baru berstatus `pending` sampai disetujui admin (middleware `approved`).
+- Mode reviewer: `REGISTRATION_AUTO_APPROVE=true` membuat pendaftar langsung `approved` (tetap berperan `client`). Aktifkan hanya selama App Review.
 
 ## 6. Konfigurasi `.env`
 
@@ -237,6 +238,7 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `SCHEDULER_FEED_VIDEO_MAX_SECONDS` | Batas durasi video di carousel Feed Instagram (bawaan 60, konservatif). |
 | `DB_QUEUE_RETRY_AFTER` | `retry_after` antrean database (bawaan 180 detik). Harus lebih besar dari timeout job 150 detik. |
 | `LOG_STACK` / `LOG_DAILY_DAYS` | `daily` dan 14 hari di produksi supaya log berotasi. |
+| `REGISTRATION_AUTO_APPROVE` | `false` (bawaan): pendaftar menunggu persetujuan admin. `true`: pendaftar langsung disetujui dan masuk ke dashboard. Hanya sementara (misalnya reviewer Meta mendaftar sendiri); matikan lagi setelahnya karena siapa pun yang menemukan situs bisa mendaftar dan memakai layanan. Teks beranda, ketentuan, dan privasi ikut menyesuaikan. |
 | `SCHEDULER_MEDIA_DISK` | Nama disk (di `config/filesystems.php`) untuk foto, thumbnail, dan video jadwal. Bawaan `public` (lokal). Semua kode Scheduler membacanya lewat `MediaDisk`, jadi pindah ke object storage cukup mengganti nilai ini. Lihat "Pindah ke object storage" di bawah. |
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
 | `SCHEDULER_REEL_MAX_SECONDS` | Batas durasi Reels dalam detik (bawaan 180). Meta mengizinkan sampai 900. Story tetap 60 detik. |
@@ -299,7 +301,7 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 
 **Pembaruan 11 Oktober 2026:** keempat halaman publik sekarang mencakup Facebook Page (data Page dan token Page, keempat izin Facebook beserta alasannya, cara mencabut akses di Facebook, dan batas durasi per platform diambil dari config). Sebelumnya hanya Instagram, sehingga tidak cocok dengan izin yang diajukan ke App Review. Tanggal "Terakhir diperbarui" ikut diubah. Perlu ditinjau ulang oleh pemilik: pernyataan seperti "30 hari" adalah komitmen resmi.
 
-Halaman publik (isi hardcode di `resources/views/public/`): `/` (beranda untuk tamu; user yang sudah masuk diarahkan ke dashboard), `/kebijakan-privasi`, `/ketentuan-layanan`, `/hapus-data`. Tautan ke tiga halaman hukum ada di footer. URL yang diisi di dashboard Meta: Privacy Policy `https://DOMAIN/kebijakan-privasi`, Terms `https://DOMAIN/ketentuan-layanan`, Data Deletion `https://DOMAIN/hapus-data` (tipe instruksi, bukan callback). Baca ulang isinya sebelum review; komitmen seperti "paling lama 30 hari" bisa diubah sesuai kemampuan Anda.
+Halaman publik (isi hardcode di `resources/views/public/`): `/` (beranda untuk semua; user yang sudah masuk melihat tombol "Buka dashboard", atau "Lihat status persetujuan" bila belum disetujui), `/kebijakan-privasi`, `/ketentuan-layanan`, `/hapus-data`. Tautan ke tiga halaman hukum ada di footer. URL yang diisi di dashboard Meta: Privacy Policy `https://DOMAIN/kebijakan-privasi`, Terms `https://DOMAIN/ketentuan-layanan`, Data Deletion `https://DOMAIN/hapus-data` (tipe instruksi, bukan callback). Baca ulang isinya sebelum review; komitmen seperti "paling lama 30 hari" bisa diubah sesuai kemampuan Anda.
 
 ### Deploy awal di shared hosting
 Rencana: shared hosting dulu sampai sekitar 10 client.

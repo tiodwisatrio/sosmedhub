@@ -52,7 +52,7 @@
                 <p>Selain itu, data hanya dibuka bila diwajibkan oleh hukum yang berlaku.</p>
 
                 <h2>Keamanan</h2>
-                <p>Token akses Instagram dan token Halaman Facebook disimpan dalam bentuk terenkripsi dan tidak ditampilkan di antarmuka maupun catatan kesalahan. Akses ke aplikasi memerlukan login, dan akun baru harus disetujui admin sebelum dapat dipakai. Tidak ada sistem yang sepenuhnya bebas risiko, tetapi kami berupaya menjaga data Anda dengan wajar.</p>
+                <p>Token akses Instagram dan token Halaman Facebook disimpan dalam bentuk terenkripsi dan tidak ditampilkan di antarmuka maupun catatan kesalahan. Akses ke aplikasi memerlukan login.@unless (config('sosmedhub.registration.auto_approve')) Akun baru harus disetujui admin sebelum dapat dipakai.@endunless Tidak ada sistem yang sepenuhnya bebas risiko, tetapi kami berupaya menjaga data Anda dengan wajar.</p>
 
                 <h2>Berapa lama data disimpan</h2>
                 <p>Data disimpan selama akun Anda aktif. Foto dan video yang diunggah untuk diterbitkan dihapus {{ config('scheduler.media.publish_retention_days', 30) }} hari setelah postingan terbit; yang tetap disimpan hanya versi kecil foto untuk riwayat. Saat Anda memutus akun Instagram atau Halaman Facebook, token akses langsung dihapus dan postingan terjadwal untuk akun itu tidak akan terbit. Anda dapat meminta penghapusan seluruh data kapan saja, dengan cara yang dijelaskan di <a href="{{ route('data-deletion') }}">halaman penghapusan data</a>.</p>

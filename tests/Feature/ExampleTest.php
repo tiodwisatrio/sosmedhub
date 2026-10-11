@@ -10,8 +10,26 @@ it('menampilkan beranda publik untuk tamu', function () {
         ->assertSee(route('privacy'), false);
 });
 
-it('mengarahkan user yang sudah masuk dari beranda ke dashboard', function () {
-    $this->actingAs(User::factory()->create())
+it('menampilkan beranda untuk user yang sudah disetujui dengan tombol ke dashboard', function () {
+    $user = User::factory()->create(['approval_status' => User::APPROVAL_APPROVED]);
+
+    $this->actingAs($user)
         ->get('/')
-        ->assertRedirect(route('admin.dashboard'));
+        ->assertOk()
+        ->assertSee('Terbit sesuai jadwal.')
+        ->assertSee('Buka dashboard')
+        ->assertSee(route('admin.dashboard'), false)
+        ->assertDontSee('Daftar akun baru')
+        ->assertDontSee('Akun baru disetujui admin terlebih dahulu.');
+});
+
+it('menampilkan tautan status persetujuan, bukan dashboard, untuk user yang belum disetujui', function () {
+    $user = User::factory()->create(['approval_status' => User::APPROVAL_PENDING]);
+
+    $this->actingAs($user)
+        ->get('/')
+        ->assertOk()
+        ->assertSee('Lihat status persetujuan')
+        ->assertSee(route('approval.pending'), false)
+        ->assertDontSee('Buka dashboard');
 });

@@ -27,12 +27,14 @@ new #[Layout('layouts.guest')] class extends Component
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $autoApprove = (bool) config('sosmedhub.registration.auto_approve', false);
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'status' => true,
-            'approval_status' => User::APPROVAL_PENDING,
+            'approval_status' => $autoApprove ? User::APPROVAL_APPROVED : User::APPROVAL_PENDING,
         ]);
 
         $clientRole = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
@@ -42,7 +44,10 @@ new #[Layout('layouts.guest')] class extends Component
 
         Auth::login($user);
 
-        $this->redirect(route('approval.pending', absolute: false), navigate: true);
+        $this->redirect(
+            route($autoApprove ? 'admin.dashboard' : 'approval.pending', absolute: false),
+            navigate: true
+        );
     }
 }; ?>
 

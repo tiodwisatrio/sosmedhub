@@ -4,11 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('admin.dashboard')
-        : view('public.home');
-})->name('home');
+// Beranda tampil untuk semua. User yang sudah masuk melihat tombol ke dashboard sebagai ganti Masuk/Daftar.
+Route::view('/', 'public.home')->name('home');
 
 Route::view('kebijakan-privasi', 'public.privacy')->name('privacy');
 Route::view('ketentuan-layanan', 'public.terms')->name('terms');
