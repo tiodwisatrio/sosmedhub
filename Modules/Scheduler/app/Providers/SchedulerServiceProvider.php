@@ -7,6 +7,7 @@ use Modules\Scheduler\Console\DispatchDuePostsCommand;
 use Modules\Scheduler\Console\ProcessExistingMediaCommand;
 use Modules\Scheduler\Console\PruneMediaCommand;
 use Modules\Scheduler\Console\PruneOrphanMediaCommand;
+use Modules\Scheduler\Console\RecoverStuckPublicationsCommand;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class SchedulerServiceProvider extends ModuleServiceProvider
@@ -25,6 +26,7 @@ class SchedulerServiceProvider extends ModuleServiceProvider
         PruneMediaCommand::class,
         PruneOrphanMediaCommand::class,
         ProcessExistingMediaCommand::class,
+        RecoverStuckPublicationsCommand::class,
     ];
 
     /**
@@ -51,6 +53,11 @@ class SchedulerServiceProvider extends ModuleServiceProvider
                 ->everyMinute()
                 ->withoutOverlapping((int) ceil($maxSeconds / 60) + 5);
         }
+
+        // Jaring pengaman untuk format yang macet di publishing (worker mati, job hilang).
+        $schedule->command('scheduler:recover-stuck')
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10);
 
         // File tanpa baris media (unggahan yang gagal di tengah jalan); hanya yang berumur lebih dari 24 jam.
         $schedule->command('scheduler:prune-orphans')

@@ -21,6 +21,10 @@ return [
     | Jalankan worker antrean dari dalam scheduler (shared hosting, tanpa proses permanen).
     | Set false di VPS yang memakai Supervisor untuk queue:work.
     */
+    // Format yang berstatus pending/publishing tanpa kemajuan selama ini dianggap macet dan ditandai gagal.
+    // Harus jauh di atas video.poll_max_minutes (10) ditambah waktu unggah.
+    'stuck_minutes' => (int) env('SCHEDULER_STUCK_MINUTES', 30),
+
     'run_worker' => (bool) env('SCHEDULER_RUN_WORKER', true),
 
     // Batas waktu worker per putaran. Harus jauh di bawah interval cron dan batas proses host.

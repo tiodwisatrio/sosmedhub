@@ -153,6 +153,15 @@ Setelah deploy pertama fitur ini, jalankan sekali `php artisan scheduler:process
 
 PHP harus mengizinkan upload sebesar validasi: `upload_max_filesize` minimal 8M dan `post_max_size` minimal 100M (carousel 10 foto x 8MB). Atur di MultiPHP INI Editor (cPanel) dan di Herd untuk lokal.
 
+### Pemulihan format yang macet
+Dua lapis pengaman supaya jadwal tidak menggantung di `publishing`:
+1. **`PublishPublicationJob::failed()`**: dipanggil Laravel saat job kehabisan percobaan, kena batas waktu, atau melempar pengecualian yang tidak tertangani. Format ditandai gagal dan email dikirim.
+2. **`scheduler:recover-stuck`** (tiap 5 menit): format `pending`/`publishing` yang `updated_at`-nya lebih tua dari `SCHEDULER_STUCK_MINUTES` (bawaan 30) pada jadwal berstatus `publishing` ditandai gagal. Ini menangkap kasus yang tidak sempat memanggil `failed()` (proses dibunuh, job hilang).
+
+Keduanya lewat `PostFinalizer`, yang juga dipakai jalur normal, jadi status dan email konsisten. Pesan galatnya meminta pengguna **memeriksa akun tujuan lebih dulu**: format yang macet setelah `finish` Facebook atau `media_publish` Instagram mungkin sebenarnya sudah terbit, dan menjadwalkan ulang bisa menggandakan postingan.
+
+`retry_after` antrean database dinaikkan ke 180 detik (`DB_QUEUE_RETRY_AFTER`), harus lebih besar dari timeout job 150 detik; sebelumnya 90 detik.
+
 ### Status postingan
 `draft` (hasil duplikasi), `scheduled`, `publishing`, `published`, `partial` (sebagian format terbit), `failed`, `cancelled`.
 Yang boleh diubah: `scheduled`, `failed`, `partial`, `draft`. Menyimpan postingan `failed`, `partial`, atau `draft` mengembalikannya ke `scheduled`; hanya format yang gagal yang diulang.
