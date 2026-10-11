@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\View;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\SiteSetting\Models\SiteSetting;
 use Modules\SocialAccount\Models\SocialAccount;
 use Spatie\Permission\Models\Permission;
 
@@ -136,4 +138,60 @@ test('pratinjau menyediakan tampilan Facebook dan data akun yang berubah mengiku
         ->assertSee('Halaman Preview')
         ->assertSee('example.test', false)
         ->assertSee('avatar.jpg', false);
+});
+
+/**
+ * Mengubah Pengaturan Situs lalu membagikan ulang ke view: variabel $siteSetting dibagikan sekali saat boot,
+ * jadi perubahan di tengah tes tidak terlihat tanpa ini.
+ */
+function previewSiteSetting(array $values): void
+{
+    $setting = SiteSetting::current();
+    $setting->update($values);
+
+    View::share('siteSetting', $setting->fresh());
+}
+
+test('pratinjau tanpa akun tertaut memakai nama dan gambar dari Pengaturan Situs', function () {
+    previewSiteSetting([
+        'app_name' => 'Merek Uji',
+        'instagram_nama' => 'Nama Instagram Contoh',
+        'icon' => 'site-settings/ikon-uji.jpg',
+        'logo_atas' => 'site-settings/logo-uji.jpg',
+    ]);
+
+    $this->actingAs(previewUser())
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('<span x-text="accountName">Merek Uji</span>', false)
+        ->assertDontSee('<span x-text="accountName">Nama Instagram Contoh</span>', false)
+        ->assertSee('ikon-uji.jpg', false)
+        ->assertDontSee('logo-uji.jpg', false);
+});
+
+test('pratinjau tanpa ikon memakai logo atas, dan tanpa gambar situs tidak memuat gambar', function () {
+    previewSiteSetting(['app_name' => 'Merek Uji', 'icon' => null, 'logo_atas' => 'site-settings/logo-uji.jpg']);
+
+    $this->actingAs(previewUser())
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertSee('logo-uji.jpg', false);
+
+    previewSiteSetting(['icon' => null, 'logo_atas' => null]);
+
+    $this->actingAs(previewUser())
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertDontSee('site-settings', false);
+});
+
+test('pratinjau dengan akun tertaut memakai username akun, bukan nama situs', function () {
+    previewSiteSetting(['app_name' => 'Merek Uji']);
+    $user = previewUser();
+    previewAccount($user);
+
+    $this->actingAs($user)
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('<span x-text="accountName">toko_preview</span>', false)
+        ->assertDontSee('<span x-text="accountName">Merek Uji</span>', false);
 });

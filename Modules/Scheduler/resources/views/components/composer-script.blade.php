@@ -31,6 +31,7 @@
             fullPreview: false,
             accounts: cfg.accounts,
             fallbackName: cfg.fallbackName,
+            fallbackAvatar: cfg.fallbackAvatar,
             keys: ['feed', 'story', 'reel'],
             labels: { feed: 'Feed', story: 'Story', reel: 'Reels' },
             limits: cfg.limits,
@@ -111,8 +112,9 @@
             get accountName() {
                 return this.account?.name || this.fallbackName;
             },
+            // Tanpa akun: gambar situs. Dengan akun: fotonya sendiri, atau inisial bila belum punya foto.
             get accountAvatar() {
-                return this.account?.avatar || null;
+                return this.account ? (this.account.avatar || null) : (this.fallbackAvatar || null);
             },
             get accountInitial() {
                 return (this.accountName || '?').trim().charAt(0).toUpperCase();

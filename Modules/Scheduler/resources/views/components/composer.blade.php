@@ -42,10 +42,15 @@
     [$initDate, $initTime] = explode('T', $initialAt);
     [$initHour, $initMinute] = explode(':', $initTime);
 
-    $instaName = $siteSetting->instagram_nama ?? 'Instagram';
+    // Tanpa akun tertaut, pratinjau memakai identitas situs (nama dan gambar dari Pengaturan Situs),
+    // bukan nama contoh. Gambar: ikon situs, lalu logo atas.
+    $siteName = trim((string) ($siteSetting->app_name ?? '')) ?: config('app.name');
+    $siteImage = $siteSetting->icon ?? null ?: ($siteSetting->logo_atas ?? null);
+    // Alamat relatif (/storage/...) seperti halaman lain, supaya tidak bergantung pada APP_URL.
+    $siteAvatarUrl = $siteImage ? Storage::url($siteImage) : null;
     $selectedSocialAccountId = old('social_account_id', $post?->social_account_id ?? $socialAccounts->first()?->id);
     $selectedSocialAccount = $socialAccounts->firstWhere('id', (int) $selectedSocialAccountId) ?: $post?->socialAccount;
-    $previewAccountUsername = $selectedSocialAccount?->username ?: $instaName;
+    $previewAccountUsername = $selectedSocialAccount?->username ?: $siteName;
 
     // Format: nilai lama (setelah validasi gagal) diutamakan; format yang sudah terbit terkunci.
     $locked = $isEdit ? $post->publications->where('status', 'published')->pluck('format')->values()->all() : [];
@@ -79,6 +84,8 @@
             'avatar' => $account->avatar_url,
         ]])->all(),
         'fallbackName' => $previewAccountUsername,
+        // Dipakai hanya bila belum ada akun yang dipilih; akun tanpa foto tetap menampilkan inisialnya.
+        'fallbackAvatar' => $siteAvatarUrl,
         'formats' => $formats,
         'locked' => $locked,
         'shareToFeed' => $shareToFeed,
