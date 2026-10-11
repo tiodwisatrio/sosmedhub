@@ -1,18 +1,18 @@
 @extends('layouts.public')
 
-@section('title', 'Penjadwalan Konten Instagram')
-@section('description', 'Sosmedhub membantu pemilik usaha menjadwalkan foto dan caption Instagram, lalu menerbitkannya otomatis pada jam yang dipilih.')
+@section('title', 'Penjadwalan Konten Instagram dan Facebook')
+@section('description', 'Sosmedhub membantu pemilik usaha menjadwalkan foto, video, dan caption untuk Instagram dan Halaman Facebook, lalu menerbitkannya otomatis pada jam yang dipilih.')
 
 @section('content')
     <section class="px-6 pb-24 pt-36 md:pt-44">
         <div class="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-[1.15fr_1fr]">
             <div>
-                <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Penjadwalan konten Instagram</p>
+                <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Penjadwalan konten Instagram dan Facebook</p>
                 <h1 class="mt-5 text-5xl leading-[1.05] md:text-7xl" style="font-family: 'Instrument Serif', serif;">
                     Susun hari ini.<br>Terbit sesuai jadwal.
                 </h1>
                 <p class="mt-6 max-w-md leading-relaxed text-white/60">
-                    Unggah foto, tulis caption, pilih jam terbit dalam WIB. Sosmedhub menerbitkannya ke akun Instagram usaha Anda secara otomatis, tanpa perlu membuka aplikasi saat waktunya tiba.
+                    Unggah foto atau video, tulis caption, pilih jam terbit dalam WIB. Sosmedhub menerbitkannya ke akun Instagram dan Halaman Facebook usaha Anda secara otomatis, tanpa perlu membuka aplikasi saat waktunya tiba.
                 </p>
                 <div class="mt-9 flex flex-wrap items-center gap-3">
                     <a href="{{ route('login') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Masuk</a>
@@ -60,14 +60,14 @@
                     <p class="text-sm text-white/35" style="font-family: 'Instrument Serif', serif;">Langkah 1</p>
                     <h3 class="mt-2 text-lg font-medium">Hubungkan akun</h3>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">
-                        Masuk dengan akun Instagram Business atau Creator lewat halaman resmi Instagram. Kami tidak pernah melihat kata sandi Anda.
+                        Masuk dengan akun Instagram Business atau Creator, atau pilih Halaman Facebook yang Anda kelola, lewat halaman resmi masing-masing. Kami tidak pernah melihat kata sandi Anda.
                     </p>
                 </li>
                 <li>
                     <p class="text-sm text-white/35" style="font-family: 'Instrument Serif', serif;">Langkah 2</p>
                     <h3 class="mt-2 text-lg font-medium">Susun jadwal</h3>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">
-                        Pilih format Feed, Story, atau Reels, unggah foto atau video, tulis caption, lalu pilih tanggal dan jam dalam WIB. Satu jadwal bisa terbit ke beberapa format sekaligus.
+                        Pilih akun tujuan dan format Feed, Story, atau Reels, unggah foto atau video, tulis caption, lalu pilih tanggal dan jam dalam WIB. Satu jadwal bisa terbit ke beberapa format sekaligus.
                     </p>
                 </li>
                 <li>
@@ -84,11 +84,12 @@
     <section class="border-t border-white/10 px-6 py-24">
         <div class="mx-auto grid max-w-5xl gap-12 md:grid-cols-[1fr_1.2fr]">
             <div>
-                <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Izin Instagram</p>
+                <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Izin Instagram dan Facebook</p>
                 <h2 class="mt-4 text-4xl md:text-5xl" style="font-family: 'Instrument Serif', serif;">Hanya yang dibutuhkan untuk menerbitkan.</h2>
             </div>
 
             <div class="space-y-8">
+                <p class="text-[10px] uppercase tracking-[0.28em] text-white/35">Instagram</p>
                 <div>
                     <p class="font-mono text-sm text-white">instagram_business_basic</p>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">Membaca username, tipe akun, dan foto profil, supaya akun yang benar tampil di daftar Anda.</p>
@@ -97,8 +98,26 @@
                     <p class="font-mono text-sm text-white">instagram_business_content_publish</p>
                     <p class="mt-2 text-sm leading-relaxed text-white/55">Menerbitkan foto, video, dan caption yang Anda jadwalkan ke akun Anda (Feed, Story, dan Reels). Hanya untuk postingan yang Anda buat sendiri di Sosmedhub.</p>
                 </div>
+
+                <p class="border-t border-white/10 pt-6 text-[10px] uppercase tracking-[0.28em] text-white/35">Facebook (Halaman)</p>
+                <div>
+                    <p class="font-mono text-sm text-white">pages_show_list</p>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Menampilkan daftar Halaman yang Anda kelola, supaya Anda bisa memilih satu untuk dihubungkan.</p>
+                </div>
+                <div>
+                    <p class="font-mono text-sm text-white">pages_read_engagement</p>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Membaca data dasar Halaman (nama dan foto) serta token Halaman yang diperlukan untuk menerbitkan, dan status pemrosesan video.</p>
+                </div>
+                <div>
+                    <p class="font-mono text-sm text-white">pages_manage_posts</p>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Menerbitkan foto, video, dan caption yang Anda jadwalkan ke Halaman Anda (Feed, Story, dan Reels). Hanya untuk postingan yang Anda buat sendiri di Sosmedhub.</p>
+                </div>
+                <div>
+                    <p class="font-mono text-sm text-white">business_management</p>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Menampilkan Halaman yang dimiliki Business Portfolio Anda, yang tidak muncul tanpa izin ini.</p>
+                </div>
                 <p class="border-t border-white/10 pt-6 text-sm leading-relaxed text-white/55">
-                    Anda bisa memutus akun kapan saja dari menu Akun Sosial atau dari pengaturan Instagram.
+                    Anda bisa memutus akun kapan saja dari menu Akun Sosial atau dari pengaturan Instagram dan Facebook.
                     Selengkapnya ada di <a href="{{ route('data-deletion') }}" class="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">halaman penghapusan data</a>
                     dan <a href="{{ route('privacy') }}" class="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">kebijakan privasi</a>.
                 </p>

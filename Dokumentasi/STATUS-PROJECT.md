@@ -297,6 +297,8 @@ Kendala tes: `herd share` memakai Expose Free yang membatasi sesi (tunggu sekita
 5. ~~Halaman publik~~ (selesai, lihat di bawah). **Isi email kontak di Pengaturan Situs** sebelum App Review; halaman hukum membacanya, dan menampilkan penanda kuning jika kosong.
 6. Commit semua perubahan dan push.
 
+**Pembaruan 11 Oktober 2026:** keempat halaman publik sekarang mencakup Facebook Page (data Page dan token Page, keempat izin Facebook beserta alasannya, cara mencabut akses di Facebook, dan batas durasi per platform diambil dari config). Sebelumnya hanya Instagram, sehingga tidak cocok dengan izin yang diajukan ke App Review. Tanggal "Terakhir diperbarui" ikut diubah. Perlu ditinjau ulang oleh pemilik: pernyataan seperti "30 hari" adalah komitmen resmi.
+
 Halaman publik (isi hardcode di `resources/views/public/`): `/` (beranda untuk tamu; user yang sudah masuk diarahkan ke dashboard), `/kebijakan-privasi`, `/ketentuan-layanan`, `/hapus-data`. Tautan ke tiga halaman hukum ada di footer. URL yang diisi di dashboard Meta: Privacy Policy `https://DOMAIN/kebijakan-privasi`, Terms `https://DOMAIN/ketentuan-layanan`, Data Deletion `https://DOMAIN/hapus-data` (tipe instruksi, bukan callback). Baca ulang isinya sebelum review; komitmen seperti "paling lama 30 hari" bisa diubah sesuai kemampuan Anda.
 
 ### Deploy awal di shared hosting
