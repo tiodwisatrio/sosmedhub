@@ -155,7 +155,7 @@ it('menolak format yang dipilih tetapi tidak ada medianya', function (array $pay
     fmtPost(fmtUser(), $payload)->assertSessionHasErrors([$field => $message]);
     expect(ScheduledPost::count())->toBe(0);
 })->with([
-    'Feed tanpa foto' => [['formats' => ['feed']], 'media', 'Feed membutuhkan minimal 1 foto.'],
+    'Feed tanpa foto' => [['formats' => ['feed']], 'media', 'Feed membutuhkan minimal 1 foto atau video.'],
     'Story tanpa media' => [['formats' => ['story']], 'media_story', 'Story membutuhkan minimal 1 foto atau video.'],
     'Reels tanpa video' => [['formats' => ['reel']], 'media_reel', 'Reels membutuhkan minimal 1 video.'],
 ]);
@@ -166,9 +166,30 @@ it('memeriksa jenis file tiap format', function (string $field, string $format, 
     fmtPost(fmtUser(), ['formats' => [$format], $field => [$file]])
         ->assertSessionHasErrors(["{$field}.0" => $message]);
 })->with([
-    'Feed menolak video' => ['media', 'feed', 'video', 'Feed hanya menerima foto JPEG (.jpg atau .jpeg).'],
     'Reels menolak foto' => ['media_reel', 'reel', 'photo', 'Reels hanya menerima video MP4 atau MOV.'],
 ]);
+
+it('menerima carousel Feed campuran foto dan video untuk Instagram', function () {
+    fmtPost(fmtUser(), ['formats' => ['feed'], 'media' => [fmtPhoto(), fmtVideo(20), fmtPhoto()]])
+        ->assertSessionHasNoErrors();
+
+    $post = ScheduledPost::query()->latest('id')->first();
+
+    expect($post->media()->where('format', 'feed')->orderBy('position')->pluck('type')->all())
+        ->toBe(['image', 'video', 'image']);
+});
+
+it('menolak video Feed yang melebihi batas durasi dengan pesan yang jelas', function () {
+    fmtPost(fmtUser(), ['formats' => ['feed'], 'media' => [fmtPhoto(), fmtVideo(61)]])
+        ->assertSessionHasErrors(['media.1' => 'Durasi video 1 menit 1 detik melebihi batas 1 menit untuk Feed.']);
+
+    expect(ScheduledPost::count())->toBe(0);
+});
+
+it('menolak file Feed yang bukan foto atau video', function () {
+    fmtPost(fmtUser(), ['formats' => ['feed'], 'media' => [UploadedFile::fake()->create('dokumen.pdf', 10, 'application/pdf')]])
+        ->assertSessionHasErrors('media.0');
+});
 
 it('menolak video yang melanggar syarat Story dan Reels dengan pesan yang jelas', function (string $field, string $format, float $seconds, array $options, string $message) {
     fmtPost(fmtUser(), ['formats' => [$format], $field => [fmtVideo($seconds, $options)]])
@@ -353,7 +374,7 @@ it('mewajibkan media format yang dipilih tersisa setelah penghapusan', function 
     $media = $post->mediaFor('feed')->first();
 
     fmtUpdate($user, $post, ['formats' => ['feed'], 'remove_media' => [$media->id]])
-        ->assertSessionHasErrors(['media' => 'Feed membutuhkan minimal 1 foto.']);
+        ->assertSessionHasErrors(['media' => 'Feed membutuhkan minimal 1 foto atau video.']);
 
     fmtUpdate($user, $post, ['formats' => ['feed'], 'remove_media' => [$media->id], 'media' => [fmtPhoto()]])
         ->assertSessionHasNoErrors();

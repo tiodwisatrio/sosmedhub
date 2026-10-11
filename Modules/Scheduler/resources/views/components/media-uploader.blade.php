@@ -9,10 +9,10 @@
 @php
     $field = ['feed' => 'media', 'story' => 'media_story', 'reel' => 'media_reel'][$format];
     $title = ['feed' => 'Media Feed', 'story' => 'Media Story', 'reel' => 'Video Reels'][$format];
-    $add = ['feed' => 'Tambah foto', 'story' => 'Tambah foto/video', 'reel' => 'Pilih video'][$format];
+    $add = ['feed' => 'Tambah foto/video', 'story' => 'Tambah foto/video', 'reel' => 'Pilih video'][$format];
     $reelMax = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'));
     $hint = [
-        'feed' => 'JPEG · maks 8 MB per foto · hingga 10 foto (carousel).',
+        'feed' => 'JPEG · maks 8 MB per foto · hingga 10 item (carousel).',
         'story' => 'Foto JPEG/Video MP4/MOV. Maksimal durasi video 1 menit.',
         'reel' => 'Video MP4/MOV. Durasi maksimal '.$reelMax.'. Ukuran maksimal 300 MB.',
     ][$format];
@@ -88,7 +88,11 @@
             @change="addFiles('{{ $format }}', $event)"
             class="relative flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-border bg-slate-50/50 cursor-pointer transition-colors duration-150 hover:border-primary/40 hover:bg-primary-light/20 focus-within:ring-2 focus-within:ring-primary/30">
             <x-heroicon-o-arrow-up-tray class="h-6 w-6 text-slate-300" />
-            <span class="mt-1 px-1 text-center text-xs text-slate-400">{{ $add }}</span>
+@if ($format === 'feed')
+                <span class="mt-1 px-1 text-center text-xs text-slate-400" x-text="isFacebook ? 'Tambah foto' : '{{ $add }}'">{{ $add }}</span>
+            @else
+                <span class="mt-1 px-1 text-center text-xs text-slate-400">{{ $add }}</span>
+            @endif
             <input type="file" name="{{ $field }}[]" data-media-input="{{ $format }}"
                 :accept="accepts('{{ $format }}')" {{ $format === 'reel' ? '' : 'multiple' }}
                 :disabled="! has('{{ $format }}')" class="sr-only">
@@ -142,7 +146,7 @@
         Format ini sudah terbit, jadi medianya tidak bisa diubah.
     </p>
 
-    <p class="mt-2 text-xs text-slate-400">@if ($format === 'reel')<span x-show="! isFacebook">{{ $hint }}</span><span x-show="isFacebook" x-cloak>Video MP4/MOV. Durasi 3 detik sampai {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}. Rasio 9:16, minimal 540x960. Ukuran maksimal 300 MB.</span>@else{{ $hint }}@endif @if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span>@endif</p>
+    <p class="mt-2 text-xs text-slate-400">@if ($format === 'reel')<span x-show="! isFacebook">{{ $hint }}</span><span x-show="isFacebook" x-cloak>Video MP4/MOV. Durasi 3 detik sampai {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}. Rasio 9:16, minimal 540x960. Ukuran maksimal 300 MB.</span>@else{{ $hint }}@endif @if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span> <span x-show="! isFacebook">Boleh campur foto dan video (video maks {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('feed')) }}, {{ (int) config('scheduler.video.feed_max_mb', 100) }} MB, MP4/MOV).</span>@endif</p>
 
     <p x-show="checking['{{ $format }}']" x-cloak class="mt-1.5 text-xs text-slate-500" role="status">Memeriksa file…</p>
 

@@ -51,8 +51,20 @@
             </div>
 
             <div class="relative aspect-square bg-slate-100">
-                <img x-show="items.length > 0" :src="current?.url" alt="Foto postingan"
+                <img x-show="current && current.type !== 'video'" :src="current?.url" alt="Foto postingan"
                     class="absolute inset-0 w-full h-full object-cover">
+                {{-- Video dalam carousel: klik untuk putar atau jeda --}}
+                <template x-if="current && current.type === 'video'">
+                    <div class="absolute inset-0 cursor-pointer bg-black" @click="togglePlay($event)" role="button" tabindex="0"
+                        aria-label="Putar atau jeda video" @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
+                        <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video class="h-full w-full object-cover"
+                            x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
+                            x-on:loadedmetadata="$el.currentTime = 0.1"></video>
+                    </div>
+                </template>
+                <span x-show="current && current.type === 'video' && ! playing" class="pointer-events-none absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white" aria-hidden="true">
+                    <x-heroicon-s-play class="h-6 w-6" />
+                </span>
                 <div class="absolute inset-0 grid place-items-center text-slate-300" x-show="items.length === 0">
                     <svg class="w-12 h-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>

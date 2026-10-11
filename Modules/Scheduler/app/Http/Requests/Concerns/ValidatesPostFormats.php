@@ -18,7 +18,7 @@ use Modules\SocialAccount\Models\SocialAccount;
 trait ValidatesPostFormats
 {
     private const LIMITS = [
-        ScheduledPost::FORMAT_FEED => ['min' => 1, 'max' => 10, 'field' => 'media', 'noun' => 'foto'],
+        ScheduledPost::FORMAT_FEED => ['min' => 1, 'max' => 10, 'field' => 'media', 'noun' => 'foto atau video'],
         ScheduledPost::FORMAT_STORY => ['min' => 1, 'max' => 10, 'field' => 'media_story', 'noun' => 'foto atau video'],
         ScheduledPost::FORMAT_REEL => ['min' => 1, 'max' => 1, 'field' => 'media_reel', 'noun' => 'video'],
     ];

@@ -217,6 +217,56 @@ it('membuat induk carousel Feed hanya setelah semua anaknya selesai diproses', f
         ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
 });
 
+it('membuat carousel Feed campuran: anak video memakai media_type VIDEO dan menunggu sampai selesai', function () {
+    $calls = [];
+    flowInstagram($calls, statuses: ['c2' => ['IN_PROGRESS', 'IN_PROGRESS', 'FINISHED']]);
+    $post = flowPost([ScheduledPost::FORMAT_FEED => ['image', 'video']]);
+
+    flowRun($post);
+
+    $creates = flowCreates($calls);
+    expect($creates[0][1])->toMatchArray(['image_url' => Storage::disk('public')->url('scheduled-posts/feed-0.jpg'), 'is_carousel_item' => 'true'])
+        ->and($creates[0][1])->not->toHaveKey('media_type')
+        ->and($creates[1][1])->toMatchArray(['media_type' => 'VIDEO', 'is_carousel_item' => 'true'])
+        ->and($creates[1][1])->toHaveKey('video_url')
+        ->and($creates[1][1])->not->toHaveKey('image_url');
+
+    $publication = $post->publications()->first()->fresh();
+
+    // Video belum FINISHED: job menunggu, induk carousel belum dibuat dan belum ada yang terbit.
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHING)
+        ->and(array_filter($creates, fn ($c) => ($c[1]['media_type'] ?? null) === 'CAROUSEL'))->toBeEmpty()
+        ->and(flowPublishes($calls))->toBeEmpty();
+});
+
+it('menerbitkan carousel campuran setelah video selesai diproses', function () {
+    $calls = [];
+    flowInstagram($calls, statuses: ['c2' => ['FINISHED']]);
+    $post = flowPost([ScheduledPost::FORMAT_FEED => ['video', 'image']], caption: 'Campuran');
+
+    flowRun($post);
+
+    $creates = flowCreates($calls);
+    expect($creates)->toHaveCount(3)
+        ->and($creates[0][1]['media_type'])->toBe('VIDEO')
+        ->and($creates[2][1])->toMatchArray(['media_type' => 'CAROUSEL', 'children' => 'c1,c2', 'caption' => 'Campuran'])
+        ->and(flowPublishes($calls))->toHaveCount(1)
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
+it('menerbitkan satu video Feed sebagai Reels yang tetap tampil di Feed', function () {
+    $calls = [];
+    flowInstagram($calls);
+    $post = flowPost([ScheduledPost::FORMAT_FEED => ['video']], caption: 'Satu video');
+
+    flowRun($post);
+
+    $create = flowCreates($calls)[0][1];
+    expect($create)->toMatchArray(['media_type' => 'REELS', 'caption' => 'Satu video', 'share_to_feed' => 'true'])
+        ->and($create)->toHaveKey('video_url')
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
 it('menerbitkan semua format yang dipilih dan mengirim satu email berhasil', function () {
     Notification::fake();
     $calls = [];

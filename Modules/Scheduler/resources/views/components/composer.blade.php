@@ -93,7 +93,7 @@
             'trimEnabled' => app(VideoTrimmer::class)->isAvailable(),
             'trimSourceMb' => (int) config('scheduler.video.story_trim_source_max_mb', 500),
             'videoMinSeconds' => (int) config('scheduler.video.min_seconds', 3),
-            'feed' => ['max' => 10],
+            'feed' => ['max' => 10, 'videoSeconds' => VideoSpec::maxSeconds('feed'), 'videoMb' => (int) config('scheduler.video.feed_max_mb', 100)],
             'story' => ['max' => 10, 'videoSeconds' => VideoSpec::maxSeconds('story'), 'videoMb' => (int) config('scheduler.video.story_max_mb', 100)],
             'reel' => ['max' => 1, 'videoSeconds' => VideoSpec::maxSeconds('reel'), 'facebookVideoSeconds' => VideoSpec::maxSeconds('reel', 'facebook'), 'videoMb' => (int) config('scheduler.video.reel_max_mb', 300)],
         ],

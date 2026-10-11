@@ -43,6 +43,9 @@ return [
         // Reels Facebook: Meta membatasi 3-90 detik; batas Instagram di atas tidak boleh melampauinya di sini.
         'facebook_reel_max_seconds' => 90,
         'reel_max_mb' => 300,
+        // Video di Feed (item carousel atau satu video): batas konservatif sampai dites di Instagram asli.
+        'feed_max_seconds' => (int) env('SCHEDULER_FEED_VIDEO_MAX_SECONDS', 60),
+        'feed_max_mb' => 100,
         'photo_max_mb' => 8,
         // Video diproses Instagram dalam menit; cek berkala tanpa menahan worker.
         'poll_delay_seconds' => (int) env('SCHEDULER_VIDEO_POLL_SECONDS', 30),

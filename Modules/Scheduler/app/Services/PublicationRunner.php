@@ -156,10 +156,12 @@ class PublicationRunner
                 }
 
                 if ($media->count() === 1) {
-                    $state['items'][0]['container_id'] = $this->publisher->createContainer($account, [
-                        'image_url' => $this->url($media->first()),
-                        'caption' => $caption,
-                    ]);
+                    // Instagram menerbitkan video tunggal sebagai Reels; share_to_feed menjaganya tampil di Feed.
+                    $item = $media->first();
+
+                    $state['items'][0]['container_id'] = $this->publisher->createContainer($account, $item->isVideo()
+                        ? ['media_type' => 'REELS', 'video_url' => $this->url($item), 'caption' => $caption, 'share_to_feed' => 'true']
+                        : ['image_url' => $this->url($item), 'caption' => $caption]);
                     $this->save($publication, $state);
 
                     return;
@@ -171,7 +173,9 @@ class PublicationRunner
                     }
 
                     $state['children'][$index]['container_id'] = $this->publisher->createContainer($account, [
-                        'image_url' => $this->url($item),
+                        ...($item->isVideo()
+                            ? ['media_type' => 'VIDEO', 'video_url' => $this->url($item)]
+                            : ['image_url' => $this->url($item)]),
                         'is_carousel_item' => 'true',
                     ]);
                     $this->save($publication, $state);

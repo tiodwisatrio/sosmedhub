@@ -272,7 +272,7 @@
             },
 
             accepts(format) {
-                if (format === 'feed') return 'image/jpeg';
+                if (format === 'feed') return this.isFacebook ? 'image/jpeg' : 'image/jpeg,video/mp4,video/quicktime';
                 if (format === 'story') return 'image/jpeg,video/mp4,video/quicktime';
                 return 'video/mp4,video/quicktime';
             },
@@ -281,7 +281,7 @@
                 const isVideo = ['video/mp4', 'video/quicktime'].includes(file.type);
                 const mb = file.size / 1048576;
 
-                if (format === 'feed' && ! isPhoto) return 'Feed hanya menerima foto JPEG.';
+                if (format === 'feed' && this.isFacebook && ! isPhoto) return 'Feed Facebook hanya menerima foto JPEG.';
                 if (format === 'reel' && ! isVideo) return 'Reels hanya menerima video MP4 atau MOV.';
                 if (! isPhoto && ! isVideo) return 'Format file tidak didukung. Gunakan JPEG, MP4, atau MOV.';
                 if (isPhoto && mb > this.limits.photoMb) return `Ukuran foto maksimal ${this.limits.photoMb} MB.`;

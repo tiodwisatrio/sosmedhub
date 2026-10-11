@@ -7,7 +7,7 @@ use Modules\Scheduler\Models\ScheduledPost;
 /**
  * Syarat video per format, diperiksa terhadap hasil Mp4Inspector.
  * Story: 3-60 detik, maks 100MB. Reels: 3 detik sampai batas konfigurasi (bawaan 3 menit), maks 300MB;
- * untuk Facebook, Reels dibatasi 90 detik.
+ * untuk Facebook, Reels dibatasi 90 detik. Feed (video dalam carousel Instagram): 3-60 detik, maks 100MB.
  */
 class VideoSpec
 {
@@ -28,14 +28,20 @@ class VideoSpec
                 : $max;
         }
 
-        return (int) config('scheduler.video.story_max_seconds');
+        return (int) config($format === ScheduledPost::FORMAT_FEED
+            ? 'scheduler.video.feed_max_seconds'
+            : 'scheduler.video.story_max_seconds');
     }
 
     public static function maxBytes(string $format): int
     {
-        return (int) config($format === ScheduledPost::FORMAT_REEL
-            ? 'scheduler.video.reel_max_mb'
-            : 'scheduler.video.story_max_mb') * 1024 * 1024;
+        $key = match ($format) {
+            ScheduledPost::FORMAT_REEL => 'scheduler.video.reel_max_mb',
+            ScheduledPost::FORMAT_FEED => 'scheduler.video.feed_max_mb',
+            default => 'scheduler.video.story_max_mb',
+        };
+
+        return (int) config($key) * 1024 * 1024;
     }
 
     /**

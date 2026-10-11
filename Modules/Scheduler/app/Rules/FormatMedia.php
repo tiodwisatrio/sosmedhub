@@ -14,7 +14,8 @@ use Throwable;
 
 /**
  * Memeriksa satu file unggahan terhadap syarat formatnya.
- * Feed: foto JPEG. Story: foto JPEG atau video MP4/MOV. Reels: video MP4/MOV.
+ * Feed: foto JPEG (Instagram juga menerima video MP4/MOV dalam carousel). Story: foto JPEG atau video MP4/MOV.
+ * Reels: video MP4/MOV.
  */
 class FormatMedia implements ValidationRule
 {
@@ -47,9 +48,14 @@ class FormatMedia implements ValidationRule
         $isVideo = in_array($mime, self::VIDEO_MIMES, true);
 
         if ($this->format === ScheduledPost::FORMAT_FEED && ! $isPhoto) {
-            $fail('Feed hanya menerima foto JPEG (.jpg atau .jpeg).');
+            // Facebook baru mendukung foto untuk Feed; Instagram boleh mencampur foto dan video.
+            if ($this->platform === 'facebook' || ! $isVideo) {
+                $fail($this->platform === 'facebook'
+                    ? 'Feed Facebook hanya menerima foto JPEG (.jpg atau .jpeg).'
+                    : 'Feed menerima foto JPEG atau video MP4/MOV.');
 
-            return;
+                return;
+            }
         }
 
         if ($this->format === ScheduledPost::FORMAT_REEL && ! $isVideo) {
