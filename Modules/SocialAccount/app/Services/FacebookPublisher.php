@@ -20,11 +20,11 @@ class FacebookPublisher
     public function __construct(private readonly HttpClient $http) {}
 
     /**
-     * Mengunggah satu foto. Bila $published true, foto langsung menjadi postingan Page.
+     * Mengunggah satu foto dari stream (disk media mana pun). Bila $published true, foto langsung menjadi postingan Page.
      *
      * @return array{id: string, post_id: ?string} ID foto, dan ID postingan bila langsung terbit
      */
-    public function uploadPhoto(SocialAccount $account, string $path, ?string $message, bool $published): array
+    public function uploadPhoto(SocialAccount $account, mixed $stream, string $filename, ?string $message, bool $published): array
     {
         $payload = ['published' => $published ? 'true' : 'false'];
 
@@ -33,7 +33,7 @@ class FacebookPublisher
         }
 
         $response = $this->request($account)
-            ->attach('source', fopen($path, 'r'), basename($path))
+            ->attach('source', $stream, $filename)
             ->post("/{$account->provider_account_id}/photos", $payload);
 
         return [
@@ -103,23 +103,17 @@ class FacebookPublisher
     /**
      * Mengunggah file video langsung dari server ke rupload.facebook.com (tanpa URL publik).
      */
-    public function uploadVideo(SocialAccount $account, string $uploadUrl, string $path): void
+    public function uploadVideo(SocialAccount $account, string $uploadUrl, mixed $stream, int $size): void
     {
         if (parse_url($uploadUrl, PHP_URL_HOST) !== 'rupload.facebook.com') {
             throw new RuntimeException('Alamat unggah video Facebook tidak valid.');
-        }
-
-        $stream = fopen($path, 'r');
-
-        if ($stream === false) {
-            throw new RuntimeException('Video tidak bisa dibaca dari server.');
         }
 
         $response = $this->http
             ->withHeaders([
                 'Authorization' => 'OAuth '.$account->access_token,
                 'offset' => '0',
-                'file_size' => (string) filesize($path),
+                'file_size' => (string) $size,
             ])
             ->timeout(120)
             ->connectTimeout(10)

@@ -61,10 +61,10 @@
 
     $existing = ['feed' => [], 'story' => [], 'reel' => []];
     foreach ($isEdit ? $post->media : [] as $item) {
-        if ($item->media_path && Storage::disk('public')->exists($item->media_path)) {
+        if ($item->media_path && \Modules\Scheduler\Services\MediaDisk::get()->exists($item->media_path)) {
             $existing[in_array($item->format, ScheduledPost::FORMATS, true) ? $item->format : 'feed'][] = [
                 'id' => $item->id,
-                'url' => Storage::url($item->media_path),
+                'url' => \Modules\Scheduler\Services\MediaDisk::url($item->media_path),
                 'type' => $item->isVideo() ? 'video' : 'image',
             ];
         }

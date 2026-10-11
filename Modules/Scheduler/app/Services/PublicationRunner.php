@@ -3,7 +3,6 @@
 namespace Modules\Scheduler\Services;
 
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostMedia;
 use Modules\Scheduler\Models\ScheduledPostPublication;
@@ -286,14 +285,14 @@ class PublicationRunner
             throw new RuntimeException("{$label} tidak memiliki media. Unggah ulang medianya.");
         }
 
-        if ($media->contains(fn (ScheduledPostMedia $m) => ! $m->media_path || ! Storage::disk('public')->exists($m->media_path))) {
+        if ($media->contains(fn (ScheduledPostMedia $m) => ! $m->media_path || ! MediaDisk::get()->exists($m->media_path))) {
             throw new RuntimeException("Sebagian media {$label} sudah tidak tersedia di server. Unggah ulang medianya.");
         }
     }
 
     private function url(ScheduledPostMedia $media): string
     {
-        return Storage::disk('public')->url($media->media_path);
+        return MediaDisk::url($media->media_path);
     }
 
     private function statusProblem(array $status): string

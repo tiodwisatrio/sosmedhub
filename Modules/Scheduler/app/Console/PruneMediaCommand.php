@@ -3,10 +3,10 @@
 namespace Modules\Scheduler\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostMedia;
 use Modules\Scheduler\Models\ScheduledPostPublication;
+use Modules\Scheduler\Services\MediaDisk;
 
 class PruneMediaCommand extends Command
 {
@@ -42,7 +42,7 @@ class PruneMediaCommand extends Command
             })
             ->chunkById(200, function ($items) use (&$pruned) {
                 foreach ($items as $item) {
-                    Storage::disk('public')->delete($item->media_path);
+                    MediaDisk::get()->delete($item->media_path);
                     $item->update(['media_path' => null, 'media_pruned_at' => now()]);
                     $pruned++;
                 }

@@ -3,8 +3,8 @@
 namespace Modules\Scheduler\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPostMedia;
+use Modules\Scheduler\Services\MediaDisk;
 
 class PruneOrphanMediaCommand extends Command
 {
@@ -16,7 +16,7 @@ class PruneOrphanMediaCommand extends Command
 
     public function handle(): int
     {
-        $disk = Storage::disk('public');
+        $disk = MediaDisk::get();
         $cutoff = now()->subHours(max(1, (int) $this->option('hours')))->getTimestamp();
 
         $referenced = ScheduledPostMedia::query()

@@ -195,6 +195,29 @@ function fbRun(ScheduledPost $post): void
     (new PublishScheduledPostJob($post->id))->handle();
 }
 
+it('mengunggah foto dan video Facebook dari disk media yang diatur, bukan path lokal', function () {
+    Storage::fake('media_alt');
+    config(['scheduler.media.disk' => 'media_alt']);
+
+    $calls = [];
+    fbFake($calls);
+    $post = fbStoryPost(['image', 'video']);
+
+    // fbStoryPost menulis ke disk public; salin ke disk media yang diatur lalu hapus dari public.
+    foreach ($post->media as $item) {
+        Storage::disk('media_alt')->put($item->media_path, 'isi');
+        Storage::disk('public')->delete($item->media_path);
+    }
+
+    fbRun($post);
+
+    expect($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED)
+        ->and(fbCalls($calls, 'photo'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_upload'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_upload')[0][1]['file_size'])->toBe('3')
+        ->and(fbCalls($calls, 'video_upload')[0][1]['body'])->toBe('isi');
+});
+
 it('menerbitkan satu foto langsung ke Page lewat /photos dengan caption', function () {
     $calls = [];
     fbFake($calls);

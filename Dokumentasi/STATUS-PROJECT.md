@@ -133,6 +133,15 @@ Setelah menyimpan: `supervisorctl reread && supervisorctl update`. Setiap deploy
 
 Bila `SCHEDULER_SLOT_MINUTES` tidak diisi, bawaannya 15 (paling aman: jadwal tidak pernah lebih rapat daripada cron). Untuk shared hosting tetap memakai 15, `SCHEDULER_RUN_WORKER=true`, dan cron tiap 15 menit.
 
+### Pindah ke object storage (S3, Cloudflare R2)
+Disk media dipilih lewat `SCHEDULER_MEDIA_DISK` dan `Modules/Scheduler/app/Services/MediaDisk.php`. Path di database (`media_path`, `thumbnail_path`) relatif terhadap disk itu, jadi berpindah disk **tidak butuh migrasi database**. Langkah saat siap:
+1. `composer require league/flysystem-aws-s3-v3 "^3.0"` (belum terpasang).
+2. Isi `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET`, `AWS_ENDPOINT` (R2: `https://<account>.r2.cloudflarestorage.com`), `AWS_URL` (domain publik bucket/CDN, **harus bisa dijangkau Meta**), `AWS_DEFAULT_REGION=auto`, `AWS_USE_PATH_STYLE_ENDPOINT=true` untuk R2.
+3. Salin file lama ke bucket dengan path yang sama (belum ada perintahnya; rencana `scheduler:copy-media-to-disk`).
+4. `SCHEDULER_MEDIA_DISK=s3`, lalu `config:clear` dan `queue:restart`.
+
+Efek samping yang menguntungkan: Instagram mengambil media langsung dari `AWS_URL`, jadi `APP_URL` tidak lagi harus publik untuk publikasi. Facebook mengunggah dari stream disk, bukan path lokal. Halaman daftar dan riwayat tidak lagi memanggil `exists()` per thumbnail (di S3 itu satu request per item). **Belum dites di bucket asli**; yang teruji hanya disk lokal dan disk palsu terpisah. Avatar user dan logo situs masih memakai disk `public`.
+
 ### Pengolahan foto
 Foto diolah saat diunggah oleh `MediaProcessor` (Imagick, wajib ada di server): dibaca dalam skala kecil bila lebih besar dari target (hemat memori untuk foto hingga 50MP), diputar sesuai EXIF, metadata dihapus (termasuk GPS), lalu disimpan dua versi: **versi terbit** (lebar maks 1440px, JPEG 85, biasanya 400-900KB; yang diambil Instagram) dan **thumbnail** (400px, JPEG 75, sekitar 20-40KB; untuk kalender dan riwayat). File asli tidak disimpan. Instagram memperkecil semua foto ke 1080-1440px, jadi kualitas di Instagram tidak berbeda.
 
@@ -215,6 +224,7 @@ scheduled_posts 1──N scheduled_post_media          (kolom format dan type: i
 | `INSTAGRAM_GRAPH_VERSION` | Versi Graph API, misalnya `v26.0`. |
 | `QUEUE_CONNECTION` | `database`. |
 | `MAIL_*` | Resend lewat SMTP. API key di `MAIL_PASSWORD`; domain pengirim harus terverifikasi di Resend. |
+| `SCHEDULER_MEDIA_DISK` | Nama disk (di `config/filesystems.php`) untuk foto, thumbnail, dan video jadwal. Bawaan `public` (lokal). Semua kode Scheduler membacanya lewat `MediaDisk`, jadi pindah ke object storage cukup mengganti nilai ini. Lihat "Pindah ke object storage" di bawah. |
 | `SCHEDULER_NOTIFY_PUBLISHED` | `true` atau `false`. |
 | `SCHEDULER_REEL_MAX_SECONDS` | Batas durasi Reels dalam detik (bawaan 180). Meta mengizinkan sampai 900. Story tetap 60 detik. |
 | `SCHEDULER_VIDEO_POLL_SECONDS` | Jeda cek status video yang masih diproses Instagram (bawaan 30). |

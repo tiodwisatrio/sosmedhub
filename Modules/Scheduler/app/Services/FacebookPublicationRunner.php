@@ -3,7 +3,6 @@
 namespace Modules\Scheduler\Services;
 
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostPublication;
 use Modules\SocialAccount\Exceptions\FacebookAuthException;
@@ -96,7 +95,7 @@ class FacebookPublicationRunner
 
     private function publishSingle($account, ScheduledPost $post, $item): string
     {
-        $photo = $this->publisher->uploadPhoto($account, $this->path($item), $post->caption, published: true);
+        $photo = $this->publisher->uploadPhoto($account, $this->stream($item), basename($item->media_path), $post->caption, published: true);
 
         return $photo['post_id'] ?: $photo['id'];
     }
@@ -109,7 +108,7 @@ class FacebookPublicationRunner
             }
 
             $state['children'][$index]['container_id'] = $this->publisher
-                ->uploadPhoto($account, $this->path($item), null, published: false)['id'];
+                ->uploadPhoto($account, $this->stream($item), basename($item->media_path), null, published: false)['id'];
             $this->save($publication, $state);
         }
 
@@ -150,7 +149,7 @@ class FacebookPublicationRunner
     {
         if (! $state['items'][$index]['container_id']) {
             $state['items'][$index]['container_id'] = $this->publisher
-                ->uploadPhoto($account, $this->path($item), null, published: false)['id'];
+                ->uploadPhoto($account, $this->stream($item), basename($item->media_path), null, published: false)['id'];
             $this->save($publication, $state);
         }
 
@@ -239,7 +238,7 @@ class FacebookPublicationRunner
         }
 
         if (empty($entry['uploaded'])) {
-            $this->publisher->uploadVideo($account, $entry['upload_url'], $this->path($item));
+            $this->publisher->uploadVideo($account, $entry['upload_url'], $this->stream($item), $this->size($item));
             $entry['uploaded'] = true;
             $this->save($publication, $state);
         }
@@ -312,14 +311,30 @@ class FacebookPublicationRunner
             throw new RuntimeException('Reels hanya menerima video.');
         }
 
-        if ($media->contains(fn ($m) => ! $m->media_path || ! Storage::disk('public')->exists($m->media_path))) {
+        if ($media->contains(fn ($m) => ! $m->media_path || ! MediaDisk::get()->exists($m->media_path))) {
             throw new RuntimeException("Sebagian media {$label} sudah tidak tersedia di server. Unggah ulang medianya.");
         }
     }
 
-    private function path($item): string
+    /**
+     * Membaca media sebagai stream dari disk media, jadi jalan di disk lokal maupun object storage.
+     *
+     * @return resource
+     */
+    private function stream($item)
     {
-        return Storage::disk('public')->path($item->media_path);
+        $stream = MediaDisk::get()->readStream($item->media_path);
+
+        if (! is_resource($stream)) {
+            throw new RuntimeException('Media tidak bisa dibaca dari penyimpanan. Unggah ulang medianya.');
+        }
+
+        return $stream;
+    }
+
+    private function size($item): int
+    {
+        return (int) MediaDisk::get()->size($item->media_path);
     }
 
     private function save(ScheduledPostPublication $publication, array $state): void

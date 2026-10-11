@@ -53,6 +53,9 @@ return [
     ],
 
     'media' => [
+        // Nama disk di config/filesystems.php untuk foto, thumbnail, dan video jadwal.
+        // "public" = lokal; ganti ke disk S3/R2 saat memakai object storage.
+        'disk' => env('SCHEDULER_MEDIA_DISK', 'public'),
         // Lebar versi terbit. Instagram menerima paling lebar 1440px dan menampilkan 1080px.
         'publish_max_width' => 1440,
         'publish_quality' => 85,

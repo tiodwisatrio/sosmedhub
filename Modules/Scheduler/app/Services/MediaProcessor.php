@@ -3,7 +3,6 @@
 namespace Modules\Scheduler\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Imagick;
 use RuntimeException;
@@ -102,7 +101,7 @@ class MediaProcessor
         $mediaPath = "scheduled-posts/{$name}.jpg";
         $thumbnailPath = "scheduled-posts/thumbs/{$name}.jpg";
 
-        $disk = Storage::disk('public');
+        $disk = MediaDisk::get();
         $disk->put($mediaPath, $publishBlob);
         $disk->put($thumbnailPath, $thumbnailBlob);
 
@@ -129,7 +128,7 @@ class MediaProcessor
 
         // Salin lewat stream: video bisa ratusan MB.
         $stream = fopen($file->getRealPath(), 'rb');
-        Storage::disk('public')->put($path, $stream);
+        MediaDisk::get()->put($path, $stream);
 
         if (is_resource($stream)) {
             fclose($stream);

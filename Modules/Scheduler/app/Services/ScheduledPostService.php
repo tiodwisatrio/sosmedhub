@@ -5,7 +5,6 @@ namespace Modules\Scheduler\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Scheduler\Models\ScheduledPost;
 use Modules\Scheduler\Models\ScheduledPostMedia;
@@ -140,7 +139,7 @@ class ScheduledPostService
             return $copy;
         });
 
-        $disk = Storage::disk('public');
+        $disk = MediaDisk::get();
 
         foreach ($post->media as $item) {
             if (! $item->media_path || ! $disk->exists($item->media_path)) {
@@ -193,7 +192,7 @@ class ScheduledPostService
             ->get();
 
         foreach ($media as $item) {
-            Storage::disk('public')->delete(array_filter([$item->media_path, $item->thumbnail_path]));
+            MediaDisk::get()->delete(array_filter([$item->media_path, $item->thumbnail_path]));
             $item->delete();
         }
 
@@ -234,7 +233,7 @@ class ScheduledPostService
     private function deleteFormatMedia(ScheduledPost $post, string $format): void
     {
         $post->media()->where('format', $format)->get()->each(function (ScheduledPostMedia $item) {
-            Storage::disk('public')->delete(array_filter([$item->media_path, $item->thumbnail_path]));
+            MediaDisk::get()->delete(array_filter([$item->media_path, $item->thumbnail_path]));
             $item->delete();
         });
     }
@@ -289,7 +288,7 @@ class ScheduledPostService
 
             // Hasil potongan harus memenuhi syarat Story; Instagram menolak yang lebih besar dari batas.
             if ($stored['size'] > VideoSpec::maxBytes(ScheduledPost::FORMAT_STORY)) {
-                Storage::disk('public')->delete($stored['media_path']);
+                MediaDisk::get()->delete($stored['media_path']);
 
                 throw new RuntimeException('Hasil potongan lebih besar dari batas '.(VideoSpec::maxBytes(ScheduledPost::FORMAT_STORY) / 1048576).' MB untuk Story. Pilih rentang yang lebih pendek.');
             }

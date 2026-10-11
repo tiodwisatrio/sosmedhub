@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Modules\Scheduler\Http\Requests\StoreScheduledPostRequest;
 use Modules\Scheduler\Http\Requests\UpdateScheduledPostRequest;
 use Modules\Scheduler\Models\CalendarEvent;
 use Modules\Scheduler\Models\ScheduledPost;
+use Modules\Scheduler\Services\MediaDisk;
 use Modules\Scheduler\Services\ScheduledPostService;
 use Modules\SocialAccount\Models\SocialAccount;
 use RuntimeException;
@@ -57,7 +57,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
 
         $postsForModal = $posts->map(function (ScheduledPost $post) {
             $media = $post->media
-                ->filter(fn ($item) => $item->media_path && Storage::disk('public')->exists($item->media_path))
+                ->filter(fn ($item) => $item->media_path && MediaDisk::get()->exists($item->media_path))
                 ->values();
 
             return [
@@ -66,7 +66,7 @@ class ScheduledPostController extends Controller implements HasMiddleware
                 // Semua media dari semua format, masing-masing dengan format dan jenisnya.
                 'media' => $media->sortBy(fn ($item) => array_search($item->format, ScheduledPost::FORMATS))
                     ->map(fn ($item) => [
-                        'url' => Storage::url($item->media_path),
+                        'url' => MediaDisk::url($item->media_path),
                         'type' => $item->isVideo() ? 'video' : 'image',
                         'format' => ScheduledPost::formatLabel($item->format),
                     ])->values(),
@@ -162,7 +162,6 @@ class ScheduledPostController extends Controller implements HasMiddleware
             $event->setAttribute('end_date', $event->date);
             $yearEvents->push($event);
         }
-
 
         return view('scheduler::admin.index', [
             'eventsByDay' => $eventsByDay,
