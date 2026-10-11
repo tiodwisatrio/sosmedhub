@@ -1,19 +1,20 @@
 <?php
 
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\PublicPageController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
 // Beranda tampil untuk semua. User yang sudah masuk melihat tombol ke dashboard sebagai ganti Masuk/Daftar.
-Route::view('/', 'public.home')->name('home');
+Route::get('/', PublicPageController::class)->defaults('page', 'home')->name('home');
 
 // Pilihan bahasa antarmuka; tersedia untuk tamu dan user yang sudah masuk.
 Route::post('bahasa', LocaleController::class)->name('locale.update');
 
-Route::view('kebijakan-privasi', 'public.privacy')->name('privacy');
-Route::view('ketentuan-layanan', 'public.terms')->name('terms');
-Route::view('hapus-data', 'public.data-deletion')->name('data-deletion');
+Route::get('kebijakan-privasi', PublicPageController::class)->defaults('page', 'privacy')->name('privacy');
+Route::get('ketentuan-layanan', PublicPageController::class)->defaults('page', 'terms')->name('terms');
+Route::get('hapus-data', PublicPageController::class)->defaults('page', 'data-deletion')->name('data-deletion');
 
 Route::redirect('dashboard', '/admin/dashboard')
     ->middleware(['auth', 'verified', 'approved'])

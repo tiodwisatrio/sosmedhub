@@ -4,14 +4,16 @@
             {{ $siteSetting->app_name ?? config('app.name') }}
         </a>
 
-        <div class="flex items-center gap-4 text-sm">
+        <div class="flex items-center gap-3 text-sm sm:gap-4">
+            <x-language-switcher tone="dark" />
+
             @auth
                 <a href="{{ route('admin.dashboard') }}" class="text-white/70 transition hover:text-white">
-                    Dashboard
+                    {{ __('Dashboard') }}
                 </a>
             @else
                 <a href="{{ route('login') }}" class="text-white/70 transition hover:text-white">
-                    Masuk
+                    {{ __('Masuk') }}
                 </a>
             @endauth
         </div>

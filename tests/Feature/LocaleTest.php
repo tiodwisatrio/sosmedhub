@@ -294,3 +294,30 @@ it('memformat jam jadwal sesuai bahasa: 24 jam dengan WIB atau 12 jam dengan UTC
     expect($post->formattedScheduledAt())->toContain('3:30 PM')
         ->and(ScheduledPost::timezoneLabel())->toBe('UTC+7');
 });
+
+it('membuat pemilih bahasa berjalan tanpa Alpine, karena layout publik tidak memuatnya', function () {
+    foreach (['/', '/kebijakan-privasi', '/ketentuan-layanan', '/hapus-data', '/login'] as $path) {
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-language-switcher', $html, "Pemilih bahasa tidak ada di {$path}");
+        $this->assertStringContainsString('<details', $html, "Pemilih bahasa di {$path} harus memakai <details>");
+        // tidak boleh bergantung pada atribut Alpine yang tidak dijalankan di layout publik
+        $this->assertSame(0, preg_match('/<details[^>]*(x-data|x-show|x-cloak)/', $html), "Pemilih bahasa di {$path} memakai atribut Alpine");
+    }
+});
+
+it('kembali ke Bahasa Indonesia dari halaman publik setelah memilih English', function () {
+    // Mulai dari English (cookie), pilih Indonesia lewat formulir yang sama dengan yang ditampilkan.
+    $this->withCookie('locale', 'en')->get('/')->assertSee('<html lang="en"', false);
+
+    $response = $this->withCookie('locale', 'en')
+        ->from('/')
+        ->post(route('locale.update'), ['locale' => 'id']);
+
+    $response->assertRedirect('/')->assertCookie('locale', 'id');
+
+    // Permintaan berikutnya membawa cookie baru.
+    $this->withCookie('locale', 'id')->get('/')
+        ->assertSee('<html lang="id"', false)
+        ->assertSee('Susun hari ini.');
+});

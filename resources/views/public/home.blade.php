@@ -94,6 +94,81 @@
         </div>
     </section>
 
+    @php
+        $reelIg = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel'));
+        $reelFb = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook'));
+        $feedVideo = \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('feed'));
+    @endphp
+
+    <section class="border-t border-white/10 px-6 py-24">
+        <div class="mx-auto max-w-5xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Format yang didukung</p>
+            <h2 class="mt-4 max-w-xl text-4xl md:text-5xl" style="font-family: 'Instrument Serif', serif;">Satu jadwal, ke platform yang Anda pilih.</h2>
+
+            <div class="mt-12 grid gap-6 md:grid-cols-2">
+                <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                    <p class="text-lg font-medium">Instagram</p>
+                    <p class="mt-1 text-xs text-white/40">Akun Business atau Creator</p>
+                    <dl class="mt-6 space-y-4 text-sm">
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Feed</dt>
+                            <dd class="text-right text-white/55">Foto atau video; carousel campuran hingga 10 item (video maks {{ $feedVideo }})</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Story</dt>
+                            <dd class="text-right text-white/55">Foto atau video hingga 60 detik</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Reels</dt>
+                            <dd class="text-right text-white/55">Video hingga {{ $reelIg }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                    <p class="text-lg font-medium">Facebook</p>
+                    <p class="mt-1 text-xs text-white/40">Halaman (Page) yang Anda kelola</p>
+                    <dl class="mt-6 space-y-4 text-sm">
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Feed</dt>
+                            <dd class="text-right text-white/55">Satu foto atau album hingga 10 foto</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Story</dt>
+                            <dd class="text-right text-white/55">Foto atau video hingga 60 detik</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-6">
+                            <dt class="text-white/80">Reels</dt>
+                            <dd class="text-right text-white/55">Video hingga {{ $reelFb }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="border-t border-white/10 px-6 py-24">
+        <div class="mx-auto max-w-5xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Data Anda</p>
+            <h2 class="mt-4 max-w-xl text-4xl md:text-5xl" style="font-family: 'Instrument Serif', serif;">Anda yang memegang kendali.</h2>
+
+            <ul class="mt-12 grid gap-8 md:grid-cols-3">
+                <li>
+                    <h3 class="text-lg font-medium">Tanpa kata sandi</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Anda masuk lewat halaman resmi Instagram dan Facebook. Kami tidak pernah menerima kata sandi akun media sosial Anda.</p>
+                </li>
+                <li>
+                    <h3 class="text-lg font-medium">Hanya yang Anda buat</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Sosmedhub hanya menerbitkan postingan yang Anda jadwalkan sendiri. Kami tidak membaca pesan, komentar, atau daftar pengikut Anda.</p>
+                </li>
+                <li>
+                    <h3 class="text-lg font-medium">Putus dan hapus kapan saja</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-white/55">Token akses disimpan terenkripsi dan dihapus saat Anda memutus akun. Penghapusan seluruh data bisa diminta kapan saja.</p>
+                </li>
+            </ul>
+        </div>
+    </section>
+
     <section class="border-t border-white/10 px-6 py-24">
         <div class="mx-auto grid max-w-5xl gap-12 md:grid-cols-[1fr_1.2fr]">
             <div>
@@ -135,6 +210,25 @@
                     dan <a href="{{ route('privacy') }}" class="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">kebijakan privasi</a>.
                 </p>
             </div>
+        </div>
+    </section>
+
+    <section class="border-t border-white/10 px-6 py-24">
+        <div class="mx-auto max-w-3xl text-center">
+            <h2 class="text-4xl md:text-5xl" style="font-family: 'Instrument Serif', serif;">Siap menjadwalkan postingan pertama?</h2>
+            <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+                @auth
+                    @if (auth()->user()->isDeveloper() || auth()->user()->isApproved())
+                        <a href="{{ route('admin.dashboard') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Buka dashboard</a>
+                    @else
+                        <a href="{{ route('approval.pending') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Lihat status persetujuan</a>
+                    @endif
+                @else
+                    <a href="{{ route('login') }}" class="liquid-glass rounded-full px-7 py-3 text-sm font-medium text-white">Masuk</a>
+                    <a href="{{ route('register') }}" class="rounded-full px-5 py-3 text-sm text-white/60 transition hover:text-white">Daftar akun baru</a>
+                @endauth
+            </div>
+            <p class="mt-8 text-sm text-white/45">Pertanyaan? Hubungi @include('public._contact').</p>
         </div>
     </section>
 @endsection

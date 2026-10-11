@@ -1,6 +1,9 @@
 {{--
     Pilihan bahasa antarmuka (Indonesia/English). Menyimpan pilihan lewat POST ke route locale.update,
     jadi berlaku untuk seluruh halaman dan juga untuk tamu.
+
+    Memakai <details> bawaan HTML, bukan Alpine: layout publik tidak memuat Alpine (hanya layout admin
+    yang mendapatkannya lewat Livewire), jadi komponen ini harus berjalan tanpa JavaScript framework.
 --}}
 @props(['tone' => 'light'])
 
@@ -9,17 +12,14 @@
     $current = app()->getLocale();
 @endphp
 
-<div x-data="{ open: false }" class="relative" @keydown.escape.window="open = false">
-    <button type="button" @click="open = ! open" :aria-expanded="open.toString()" aria-haspopup="true"
-        aria-label="{{ __('Pilih bahasa') }}" title="{{ __('Pilih bahasa') }}"
-        class="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 {{ $tone === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' }}">
+<details class="relative" data-language-switcher>
+    <summary aria-label="{{ __('Pilih bahasa') }}" title="{{ __('Pilih bahasa') }}"
+        class="flex cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 [&::-webkit-details-marker]:hidden {{ $tone === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700' }}">
         <x-flag :locale="$current" class="h-5 w-5 shrink-0" />
         <span class="uppercase">{{ $current }}</span>
-    </button>
+    </summary>
 
-    <div x-show="open" x-cloak @click.outside="open = false"
-        x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-        class="absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-lg border border-border bg-card shadow-dropdown">
+    <div class="absolute right-0 z-30 mt-2 w-44 overflow-hidden rounded-lg border border-border bg-card shadow-dropdown">
         @foreach ($locales as $code => $label)
             <form method="POST" action="{{ route('locale.update') }}">
                 @csrf
@@ -37,4 +37,23 @@
             </form>
         @endforeach
     </div>
-</div>
+</details>
+
+{{-- Menutup dropdown saat klik di luar atau menekan Escape. Satu kali per halaman, tanpa framework. --}}
+@once
+    <script>
+        (function () {
+            const open = () => document.querySelectorAll('details[data-language-switcher][open]');
+
+            document.addEventListener('click', function (event) {
+                open().forEach(function (el) {
+                    if (! el.contains(event.target)) el.removeAttribute('open');
+                });
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') open().forEach(function (el) { el.removeAttribute('open'); });
+            });
+        })();
+    </script>
+@endonce
