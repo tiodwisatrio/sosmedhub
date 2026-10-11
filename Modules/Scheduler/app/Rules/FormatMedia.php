@@ -25,11 +25,13 @@ class FormatMedia implements ValidationRule
      */
     /**
      * @param  array<int|string, mixed>  $trims  rentang potong Story per urutan file unggahan: [index => ['start' => detik, 'end' => detik]]
+     * @param  string|null  $platform  Platform akun tujuan; memengaruhi batas durasi Reels (Facebook 90 detik).
      */
     public function __construct(
         private readonly string $format,
         private readonly bool $enforceFeedRatio = true,
         private readonly array $trims = [],
+        private readonly ?string $platform = null,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -93,7 +95,8 @@ class FormatMedia implements ValidationRule
                 : VideoSpec::problem(
                     ['duration' => (float) config('scheduler.video.min_seconds', 3), 'video_codec' => 'h264', 'audio_codec' => null, 'has_audio' => false, 'fps' => null],
                     (int) $file->getSize(),
-                    $this->format
+                    $this->format,
+                    $this->platform
                 ));
 
             return;
@@ -121,7 +124,7 @@ class FormatMedia implements ValidationRule
             $bytes = 0;
         }
 
-        if ($problem = VideoSpec::problem($info, $bytes, $this->format)) {
+        if ($problem = VideoSpec::problem($info, $bytes, $this->format, $this->platform)) {
             $fail($problem);
         }
     }

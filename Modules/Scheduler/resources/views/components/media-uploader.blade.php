@@ -142,7 +142,7 @@
         Format ini sudah terbit, jadi medianya tidak bisa diubah.
     </p>
 
-    <p class="mt-2 text-xs text-slate-400">{{ $hint }}@if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span>@endif</p>
+    <p class="mt-2 text-xs text-slate-400">@if ($format === 'reel')<span x-show="! isFacebook">{{ $hint }}</span><span x-show="isFacebook" x-cloak>Video MP4/MOV. Durasi 3 detik sampai {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}. Rasio 9:16, minimal 540x960. Ukuran maksimal 300 MB.</span>@else{{ $hint }}@endif @if ($format === 'feed') <span x-show="! isFacebook"> Rasio 4:5 sampai 1,91:1.</span>@endif</p>
 
     <p x-show="checking['{{ $format }}']" x-cloak class="mt-1.5 text-xs text-slate-500" role="status">Memeriksa file…</p>
 

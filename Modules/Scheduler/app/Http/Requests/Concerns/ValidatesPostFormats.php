@@ -170,7 +170,7 @@ trait ValidatesPostFormats
             $field = $limit['field'];
             $rules[$field] = ['nullable', 'array', 'max:'.$limit['max']];
             $rules["{$field}.*"] = in_array($format, $editable, true)
-                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: ! $isFacebook, trims: $this->trimInput($format))]
+                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: ! $isFacebook, trims: $this->trimInput($format), platform: $this->selectedPlatform())]
                 : ['prohibited'];
         }
 
@@ -180,13 +180,6 @@ trait ValidatesPostFormats
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            // Facebook baru mendukung Feed (foto) dan Story (foto atau video). Reels hanya untuk Instagram.
-            $platform = $this->selectedPlatform();
-
-            if ($platform === SocialAccount::PLATFORM_FACEBOOK
-                && array_diff($this->selectedFormats(), [ScheduledPost::FORMAT_FEED, ScheduledPost::FORMAT_STORY]) !== []) {
-                $validator->errors()->add('formats', 'Akun Facebook baru mendukung format Feed dan Story. Hapus Reels, atau pilih akun Instagram.');
-            }
 
             foreach ($this->editableFormats() as $format) {
                 $limit = self::LIMITS[$format];

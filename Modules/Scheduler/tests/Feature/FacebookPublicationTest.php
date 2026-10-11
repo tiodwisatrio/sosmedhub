@@ -71,6 +71,25 @@ function fbStoryPost(int|array $items = 1): ScheduledPost
 }
 
 /**
+ * Jadwal Reels (satu video) jatuh tempo untuk Page Facebook.
+ */
+function fbReelPost(string $caption = 'Caption Reels'): ScheduledPost
+{
+    $post = fbPost(['image'], $caption);
+    $post->media()->delete();
+    $post->publications()->delete();
+    $post->publications()->create(['format' => ScheduledPost::FORMAT_REEL]);
+
+    Storage::disk('public')->put('scheduled-posts/fb-reel.mp4', 'isi');
+    $post->media()->create([
+        'format' => ScheduledPost::FORMAT_REEL, 'type' => 'video', 'media_path' => 'scheduled-posts/fb-reel.mp4',
+        'mime' => 'video/mp4', 'position' => 0,
+    ]);
+
+    return $post->fresh(['publications', 'media']);
+}
+
+/**
  * Facebook palsu yang mencatat setiap panggilan ke /photos dan /feed.
  */
 function fbFake(array &$calls, array $failPhotoAt = [], array $videoStatuses = ['upload_complete']): void
@@ -90,6 +109,21 @@ function fbFake(array &$calls, array $failPhotoAt = [], array $videoStatuses = [
                 'file_size' => $request->header('file_size')[0] ?? null,
                 'body' => $request->body(),
             ]];
+
+            return Http::response(['success' => true]);
+        }
+
+        if (str_ends_with($path, '/1010/video_reels')) {
+            $data = $request->data();
+
+            if (($data['upload_phase'] ?? null) === 'start') {
+                $videos++;
+                $calls[] = ['reel_start', $data];
+
+                return Http::response(['video_id' => "v{$videos}", 'upload_url' => "https://rupload.facebook.com/video-upload/v26.0/v{$videos}"]);
+            }
+
+            $calls[] = ['reel_finish', $data];
 
             return Http::response(['success' => true]);
         }
@@ -116,8 +150,9 @@ function fbFake(array &$calls, array $failPhotoAt = [], array $videoStatuses = [
 
             // Seperti Facebook asli: setelah unggahan lengkap, pemrosesan belum dimulai sampai finish.
             return Http::response(['status' => [
-                'video_status' => $code,
+                'video_status' => $code === 'published' ? 'ready' : $code,
                 'uploading_phase' => ['status' => $code === 'uploading' ? 'in_progress' : 'complete'],
+                'publishing_phase' => ['status' => $code === 'published' ? 'complete' : 'not_started', 'publish_status' => $code === 'published' ? 'published' : 'not_published'],
                 'processing_phase' => ['status' => $code === 'error' ? 'error' : 'not_started', 'error' => $code === 'error' ? ['message' => 'Resolusi terlalu rendah'] : null],
             ]]);
         }
@@ -373,6 +408,59 @@ it('menerbitkan Story campuran foto dan video sesuai urutan', function () {
         ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
 });
 
+it('menerbitkan Reels: start, unggah, finish dengan description, lalu konfirmasi terbit', function () {
+    $calls = [];
+    fbFake($calls, videoStatuses: ['upload_complete', 'published']);
+    $post = fbReelPost('Halo Reels');
+
+    fbRun($post);
+
+    expect(array_column($calls, 0))->toBe(['reel_start', 'video_upload', 'video_status', 'reel_finish', 'video_status'])
+        ->and(fbCalls($calls, 'video_upload')[0][1]['authorization'])->toBe('OAuth token-page')
+        ->and(fbCalls($calls, 'reel_finish')[0][1])->toMatchArray([
+            'video_id' => 'v1', 'upload_phase' => 'finish', 'video_state' => 'PUBLISHED', 'description' => 'Halo Reels',
+        ]);
+
+    $publication = $post->publications()->first()->fresh();
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHED)
+        ->and($publication->ig_media_id)->toBe('v1')
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
+it('menunggu konfirmasi Reels tanpa finish ganda, lalu menganggap terbit setelah batas', function () {
+    $calls = [];
+    fbFake($calls, videoStatuses: ['upload_complete']);
+    $post = fbReelPost();
+    $publication = $post->publications()->first();
+    $runner = app(FacebookPublicationRunner::class);
+
+    expect($runner->advance($publication)->isWaiting())->toBeTrue()
+        ->and($publication->fresh()->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHING)
+        ->and(fbCalls($calls, 'reel_finish'))->toHaveCount(1);
+
+    $this->travel(3)->minutes();
+
+    expect($runner->advance($publication->fresh())->isWaiting())->toBeFalse()
+        ->and(fbCalls($calls, 'reel_start'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'video_upload'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'reel_finish'))->toHaveCount(1)
+        ->and($publication->fresh()->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHED)
+        ->and($publication->fresh()->ig_media_id)->toBe('v1');
+});
+
+it('menandai Reels gagal dengan pesan Facebook bila pemrosesan error setelah finish', function () {
+    $calls = [];
+    fbFake($calls, videoStatuses: ['upload_complete', 'error']);
+    $post = fbReelPost();
+
+    fbRun($post);
+
+    $publication = $post->publications()->first()->fresh();
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_FAILED)
+        ->and($publication->error_message)->toContain('Resolusi terlalu rendah')
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_FAILED);
+});
+
 it('menolak video karena Facebook baru mendukung foto', function () {
     $calls = [];
     fbFake($calls);
@@ -450,18 +538,43 @@ it('menerima jadwal Feed ke akun Facebook', function () {
     expect(ScheduledPost::query()->where('social_account_id', $account->id)->count())->toBe(1);
 })->skip(! function_exists('fmtPhoto'), 'membutuhkan helper PostFormatsTest');
 
-it('menolak Reels untuk akun Facebook', function () {
+it('menerima Reels untuk akun Facebook', function () {
     $user = fbFormUser();
     $account = fbFormAccount($user);
 
     $this->actingAs($user)->post(route('admin.scheduled-posts.store'), [
         'social_account_id' => $account->id,
-        'caption' => 'Halo',
-        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
-        'formats' => ['feed', 'reel'],
-    ])->assertSessionHasErrors('formats');
+        'caption' => 'Halo Reels',
+        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\\TH:i'),
+        'formats' => ['reel'],
+        'media_reel' => [fmtVideo(20)],
+    ])->assertSessionHasNoErrors();
 
-    expect(ScheduledPost::query()->count())->toBe(0);
+    $post = ScheduledPost::query()->where('social_account_id', $account->id)->first();
+    expect($post)->not->toBeNull()
+        ->and($post->publications()->pluck('format')->all())->toBe(['reel']);
+});
+
+it('membatasi Reels Facebook 90 detik, lebih pendek dari Instagram', function () {
+    $user = fbFormUser();
+    $facebook = fbFormAccount($user);
+    $instagram = SocialAccount::create([
+        'user_id' => $user->id, 'platform' => 'instagram', 'provider_account_id' => 'ig-r-'.$user->id,
+        'username' => 'ig_reel', 'access_token' => 'x', 'status' => SocialAccount::STATUS_ACTIVE,
+    ]);
+    $payload = fn (SocialAccount $account) => [
+        'social_account_id' => $account->id,
+        'caption' => 'Panjang',
+        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\\TH:i'),
+        'formats' => ['reel'],
+        'media_reel' => [fmtVideo(120)],
+    ];
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), $payload($facebook))
+        ->assertSessionHasErrors('media_reel.0');
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), $payload($instagram))
+        ->assertSessionHasNoErrors();
 });
 
 it('menerima Story foto untuk akun Facebook', function () {

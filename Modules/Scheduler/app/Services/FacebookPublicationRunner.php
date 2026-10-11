@@ -12,7 +12,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Menerbitkan Feed (foto) dan Story (foto atau video) ke Page Facebook. Feed: satu foto langsung terbit
+ * Menerbitkan Feed (foto), Story (foto atau video), dan Reels ke Page Facebook. Feed: satu foto langsung terbit
  * lewat /photos; beberapa foto diunggah dulu tanpa terbit, lalu digabung dalam satu postingan lewat /feed.
  * Story: foto lewat /photo_stories, video lewat /video_stories (start, unggah ke rupload, cek
  * unggahan lengkap, finish); tanpa caption.
@@ -24,6 +24,9 @@ use Throwable;
  */
 class FacebookPublicationRunner
 {
+    // Lama menunggu konfirmasi "terbit" dari Facebook setelah finish Reels sebelum dianggap terbit.
+    private const REEL_CONFIRM_SECONDS = 120;
+
     public function __construct(private readonly FacebookPublisher $publisher) {}
 
     public function advance(ScheduledPostPublication $publication): PublicationResult
@@ -36,8 +39,8 @@ class FacebookPublicationRunner
                 throw new RuntimeException('Akun Facebook tidak aktif atau token tidak tersedia.');
             }
 
-            if (! in_array($publication->format, [ScheduledPost::FORMAT_FEED, ScheduledPost::FORMAT_STORY], true)) {
-                throw new RuntimeException('Facebook baru mendukung format Feed dan Story (foto).');
+            if (! in_array($publication->format, ScheduledPost::FORMATS, true)) {
+                throw new RuntimeException('Format postingan tidak dikenal.');
             }
 
             $media = $post->media()->where('format', $publication->format)->orderBy('position')->get();
@@ -52,6 +55,13 @@ class FacebookPublicationRunner
             if ($publication->format === ScheduledPost::FORMAT_STORY) {
                 if (! $this->publishStories($publication, $account, $media, $state)) {
                     // Video masih diproses Facebook: simpan kemajuan, job melepas diri lalu dicoba lagi.
+                    $this->save($publication, $state);
+
+                    return PublicationResult::waiting();
+                }
+            } elseif ($publication->format === ScheduledPost::FORMAT_REEL) {
+                if (! $state['items'][0]['published_id']
+                    && ! $this->publishReel($publication, $account, $post, $media->first(), $state)) {
                     $this->save($publication, $state);
 
                     return PublicationResult::waiting();
@@ -152,19 +162,79 @@ class FacebookPublicationRunner
     }
 
     /**
-     * Video: buka sesi unggah (start), kirim file ke rupload, pastikan unggahan lengkap, lalu
-     * terbitkan (finish); pemrosesan di Facebook baru berjalan setelah finish. Tiap tahap
-     * dicatat di state supaya tidak diulang.
+     * Video Story: unggah sampai lengkap, lalu terbitkan (finish). Pemrosesan di Facebook baru
+     * berjalan setelah finish, jadi tidak ada yang ditunggu selain unggahan. Tiap tahap dicatat
+     * di state supaya tidak diulang.
      */
     private function publishVideoStory($publication, $account, $item, array &$state, int $index): bool
+    {
+        if (! $this->uploadVideo($publication, $account, $item, $state, $index, 'video_stories', 'Story')) {
+            return false;
+        }
+
+        $state['items'][$index]['published_id'] = $this->publisher
+            ->finishVideoStory($account, $state['items'][$index]['container_id']);
+        $this->save($publication, $state);
+
+        return true;
+    }
+
+    /**
+     * Reels: unggah sampai lengkap, terbitkan (finish dengan caption sebagai description), lalu
+     * tunggu konfirmasi sebentar. finish hanya membalas success tanpa ID, jadi ID Reels adalah
+     * video_id. Bila Facebook belum mengonfirmasi dalam REEL_CONFIRM_SECONDS, finish yang sudah
+     * diterima dianggap terbit (mengulang berisiko menerbitkan dua kali); galat pemrosesan yang
+     * muncul sebelum itu tetap menggagalkan.
+     */
+    private function publishReel($publication, $account, ScheduledPost $post, $item, array &$state): bool
+    {
+        if (! $this->uploadVideo($publication, $account, $item, $state, 0, 'video_reels', 'Reels')) {
+            return false;
+        }
+
+        $entry = &$state['items'][0];
+
+        if (empty($entry['finished_at'])) {
+            $this->publisher->finishReel($account, $entry['container_id'], $post->caption);
+            $entry['finished_at'] = now()->toIso8601String();
+            $this->save($publication, $state);
+        }
+
+        $status = $this->publisher->videoStatus($account, $entry['container_id']);
+
+        if ($status['failed']) {
+            throw new RuntimeException('Facebook gagal memproses Reels'.($status['error'] ? ": {$status['error']}" : '.'));
+        }
+
+        $confirmed = $status['published']
+            || now()->greaterThan(Carbon::parse($entry['finished_at'])->addSeconds(self::REEL_CONFIRM_SECONDS));
+
+        if (! $confirmed) {
+            return false;
+        }
+
+        $entry['published_id'] = $entry['container_id'];
+        $this->save($publication, $state);
+
+        return true;
+    }
+
+    /**
+     * Membuka sesi unggah (start), mengirim file ke rupload, dan memastikan unggahan tercatat
+     * lengkap di Facebook. Tahapnya dicatat di state (container_id, upload_url, uploaded).
+     *
+     * @return bool false bila unggahan belum tercatat lengkap (tunggu, lalu panggil lagi)
+     */
+    private function uploadVideo($publication, $account, $item, array &$state, int $index, string $edge, string $label): bool
     {
         $entry = &$state['items'][$index];
 
         if (! $entry['container_id']) {
-            $session = $this->publisher->startVideoStory($account);
+            $session = $this->publisher->startVideoUpload($account, $edge);
             $entry['container_id'] = $session['video_id'];
             $entry['upload_url'] = $session['upload_url'];
             $entry['uploaded'] = false;
+            $entry['finished_at'] = null;
             $this->save($publication, $state);
         }
 
@@ -174,13 +244,17 @@ class FacebookPublicationRunner
             $this->save($publication, $state);
         }
 
+        // Setelah finish, status sudah tidak perlu dicek ulang untuk unggahan.
+        if (! empty($entry['finished_at'])) {
+            return true;
+        }
+
         $status = $this->publisher->videoStatus($account, $entry['container_id']);
 
         if ($status['failed']) {
-            throw new RuntimeException('Facebook gagal memproses video Story'.($status['error'] ? ": {$status['error']}" : '.'));
+            throw new RuntimeException("Facebook gagal memproses video {$label}".($status['error'] ? ": {$status['error']}" : '.'));
         }
 
-        // Facebook baru memproses video setelah finish; yang ditunggu di sini hanya unggahan selesai.
         if (! $status['uploaded']) {
             $minutes = (int) config('scheduler.video.poll_max_minutes', 10);
 
@@ -190,9 +264,6 @@ class FacebookPublicationRunner
 
             return false;
         }
-
-        $entry['published_id'] = $this->publisher->finishVideoStory($account, $entry['container_id']);
-        $this->save($publication, $state);
 
         return true;
     }
@@ -235,6 +306,10 @@ class FacebookPublicationRunner
 
         if ($format === ScheduledPost::FORMAT_FEED && $media->contains(fn ($m) => $m->isVideo())) {
             throw new RuntimeException("Facebook baru mendukung foto untuk {$label}.");
+        }
+
+        if ($format === ScheduledPost::FORMAT_REEL && $media->contains(fn ($m) => ! $m->isVideo())) {
+            throw new RuntimeException('Reels hanya menerima video.');
         }
 
         if ($media->contains(fn ($m) => ! $m->media_path || ! Storage::disk('public')->exists($m->media_path))) {

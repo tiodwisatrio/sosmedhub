@@ -21,7 +21,7 @@
         @foreach ($options as $key => $option)
             <button type="button" @click="toggle('{{ $key }}')"
                 :aria-pressed="has('{{ $key }}') ? 'true' : 'false'"
-                :disabled="isLocked('{{ $key }}') || unsupported('{{ $key }}')"
+                :disabled="isLocked('{{ $key }}')"
                 data-format-chip="{{ $key }}"
                 class="relative flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center transition-colors sm:flex-row sm:items-start sm:gap-3 sm:px-3.5 sm:text-left duration-150 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed"
                 :class="has('{{ $key }}')
@@ -34,8 +34,12 @@
 
                 <span class="min-w-0">
                     <span class="block text-sm font-semibold text-slate-800">{{ $option['label'] }}</span>
-                    <span class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
-                    <span x-show="unsupported('{{ $key }}')" x-cloak class="mt-1 block text-[11px] font-medium text-slate-400">Belum untuk Facebook</span>
+                    @if ($key === 'reel')
+                        <span x-show="! isFacebook" class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
+                        <span x-show="isFacebook" x-cloak class="hidden text-xs leading-snug text-slate-500 sm:block">Video pendek, maks {{ \Modules\Scheduler\Services\VideoSpec::duration(\Modules\Scheduler\Services\VideoSpec::maxSeconds('reel', 'facebook')) }}</span>
+                    @else
+                        <span class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
+                    @endif
                     <span x-show="isLocked('{{ $key }}')" x-cloak class="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-success-text">
                         <x-heroicon-o-check-circle class="h-3.5 w-3.5" /> Sudah terbit
                     </span>
@@ -48,7 +52,7 @@
         <input type="hidden" name="formats[]" :value="format">
     </template>
 
-    <label x-show="has('reel') && ! isLocked('reel')" x-cloak class="mt-3 flex items-start gap-2.5 text-sm text-slate-600">
+    <label x-show="has('reel') && ! isLocked('reel') && ! isFacebook" x-cloak class="mt-3 flex items-start gap-2.5 text-sm text-slate-600">
         <input type="checkbox" x-model="shareToFeed" class="mt-0.5 rounded border-border text-primary focus:ring-primary/30">
         <span>Tampilkan Reels juga di Feed</span>
     </label>

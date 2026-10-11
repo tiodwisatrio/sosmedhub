@@ -40,6 +40,8 @@ return [
         'ffmpeg' => env('SCHEDULER_FFMPEG', 'ffmpeg'),
         'trim_timeout_seconds' => (int) env('SCHEDULER_TRIM_TIMEOUT_SECONDS', 600),
         'reel_max_seconds' => (int) env('SCHEDULER_REEL_MAX_SECONDS', 180),
+        // Reels Facebook: Meta membatasi 3-90 detik; batas Instagram di atas tidak boleh melampauinya di sini.
+        'facebook_reel_max_seconds' => 90,
         'reel_max_mb' => 300,
         'photo_max_mb' => 8,
         // Video diproses Instagram dalam menit; cek berkala tanpa menahan worker.

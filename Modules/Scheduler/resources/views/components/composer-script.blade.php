@@ -101,16 +101,7 @@
             },
 
             // ---- Format ----------------------------------------------------------------
-            // Facebook mendukung Feed dan Story; memilih akun Facebook membuang Reels.
-            init() {
-                this.$watch('accountId', () => {
-                    if (this.isFacebook) {
-                        const kept = this.formats.filter((f) => f !== 'reel');
-                        this.formats = kept.length ? kept : ['feed'];
-                        if (! this.has(this.active)) this.setActive(this.formats[0]);
-                    }
-                });
-            },
+            // Facebook mendukung Feed, Story, dan Reels, tetapi batas durasi Reels lebih pendek.
             get account() {
                 return this.accounts[this.accountId] || null;
             },
@@ -126,8 +117,11 @@
             get accountInitial() {
                 return (this.accountName || '?').trim().charAt(0).toUpperCase();
             },
-            unsupported(format) {
-                return this.isFacebook && format === 'reel';
+            // Batas durasi video per format; Reels Facebook 90 detik.
+            maxSecondsFor(format) {
+                return format === 'reel' && this.isFacebook
+                    ? this.limits.reel.facebookVideoSeconds
+                    : this.limits[format].videoSeconds;
             },
             has(format) {
                 return this.formats.includes(format);
@@ -136,7 +130,7 @@
                 return this.locked.includes(format);
             },
             toggle(format) {
-                if (this.isLocked(format) || this.unsupported(format)) return;
+                if (this.isLocked(format)) return;
 
                 if (this.has(format)) {
                     // Minimal satu format tetap terpilih.
@@ -340,7 +334,7 @@
 
                     const isVideo = file.type.startsWith('video/');
                     const duration = isVideo ? await this.probeDuration(file) : null;
-                    const max = this.limits[format].videoSeconds;
+                    const max = this.maxSecondsFor(format);
                     // Story yang kepanjangan tidak ditolak: penggunanya memilih bagian yang ditayangkan.
                     const trimmable = format === 'story' && this.limits.trimEnabled && duration !== null && duration > max;
 

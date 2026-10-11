@@ -82,14 +82,15 @@ class FacebookPublisher
     }
 
     /**
-     * Membuka sesi unggah video Story. Video baru ada di Facebook setelah uploadVideo().
+     * Membuka sesi unggah video ke edge video_stories atau video_reels. Video baru ada di
+     * Facebook setelah uploadVideo().
      *
      * @return array{video_id: string, upload_url: string}
      */
-    public function startVideoStory(SocialAccount $account): array
+    public function startVideoUpload(SocialAccount $account, string $edge = 'video_stories'): array
     {
         $response = $this->request($account)
-            ->post("/{$account->provider_account_id}/video_stories", ['upload_phase' => 'start']);
+            ->post("/{$account->provider_account_id}/{$edge}", ['upload_phase' => 'start']);
 
         $videoId = (string) $this->data($response, 'video_id');
 
@@ -140,7 +141,7 @@ class FacebookPublisher
      * Status unggahan video Story. Facebook baru memproses video setelah finish, jadi yang
      * ditunggu sebelum finish hanyalah unggahan selesai (video_status upload_complete).
      *
-     * @return array{uploaded: bool, failed: bool, error: ?string}
+     * @return array{uploaded: bool, failed: bool, published: bool, error: ?string}
      */
     public function videoStatus(SocialAccount $account, string $videoId): array
     {
@@ -150,13 +151,15 @@ class FacebookPublisher
 
         $code = (string) $response->json('status.video_status');
         $uploading = (string) $response->json('status.uploading_phase.status');
+        $publishStatus = (string) $response->json('status.publishing_phase.publish_status');
         $processing = (string) $response->json('status.processing_phase.status');
         $error = $response->json('status.processing_phase.error.message')
             ?? $response->json('status.uploading_phase.error.message');
 
         return [
-            'uploaded' => $uploading === 'complete' || in_array($code, ['upload_complete', 'processing', 'ready'], true),
-            'failed' => in_array($code, ['error', 'expired'], true) || $uploading === 'error' || $processing === 'error',
+            'uploaded' => in_array($uploading, ['complete', 'completed'], true) || in_array($code, ['upload_complete', 'processing', 'ready'], true),
+            'failed' => in_array($code, ['error', 'expired', 'upload_failed'], true) || $uploading === 'error' || $processing === 'error',
+            'published' => $publishStatus === 'published' || $code === 'ready',
             'error' => is_string($error) ? $error : null,
         ];
     }
@@ -172,6 +175,25 @@ class FacebookPublisher
             ->post("/{$account->provider_account_id}/video_stories", ['video_id' => $videoId, 'upload_phase' => 'finish']);
 
         return (string) $this->data($response, 'post_id');
+    }
+
+    /**
+     * Menerbitkan Reels yang sudah diunggah. Facebook hanya membalas success; ID Reels adalah video_id.
+     */
+    public function finishReel(SocialAccount $account, string $videoId, ?string $description): void
+    {
+        $payload = ['video_id' => $videoId, 'upload_phase' => 'finish', 'video_state' => 'PUBLISHED'];
+
+        if ($description !== null && $description !== '') {
+            $payload['description'] = $description;
+        }
+
+        $response = $this->request($account)
+            ->post("/{$account->provider_account_id}/video_reels", $payload);
+
+        if ($this->data($response, 'success') !== true) {
+            throw new RuntimeException('Facebook tidak mengonfirmasi penerbitan Reels.');
+        }
     }
 
     private function uploadUrl(string $videoId): string

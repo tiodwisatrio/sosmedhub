@@ -5,8 +5,9 @@ namespace Modules\Scheduler\Services;
 use Modules\Scheduler\Models\ScheduledPost;
 
 /**
- * Syarat video Instagram per format, diperiksa terhadap hasil Mp4Inspector.
- * Story: 3-60 detik, maks 100MB. Reels: 3 detik sampai batas konfigurasi (bawaan 3 menit), maks 300MB.
+ * Syarat video per format, diperiksa terhadap hasil Mp4Inspector.
+ * Story: 3-60 detik, maks 100MB. Reels: 3 detik sampai batas konfigurasi (bawaan 3 menit), maks 300MB;
+ * untuk Facebook, Reels dibatasi 90 detik.
  */
 class VideoSpec
 {
@@ -17,11 +18,17 @@ class VideoSpec
     // Pembulatan frame rate rata-rata pada video bitrate variabel.
     private const FPS_TOLERANCE = 0.5;
 
-    public static function maxSeconds(string $format): int
+    public static function maxSeconds(string $format, ?string $platform = null): int
     {
-        return (int) config($format === ScheduledPost::FORMAT_REEL
-            ? 'scheduler.video.reel_max_seconds'
-            : 'scheduler.video.story_max_seconds');
+        if ($format === ScheduledPost::FORMAT_REEL) {
+            $max = (int) config('scheduler.video.reel_max_seconds');
+
+            return $platform === 'facebook'
+                ? min($max, (int) config('scheduler.video.facebook_reel_max_seconds', 90))
+                : $max;
+        }
+
+        return (int) config('scheduler.video.story_max_seconds');
     }
 
     public static function maxBytes(string $format): int
@@ -43,11 +50,12 @@ class VideoSpec
      * @param  array{duration: float, video_codec: ?string, audio_codec: ?string, has_audio: bool, fps: ?float}  $info
      * @return string|null Pesan galat bila tidak memenuhi syarat
      */
-    public static function problem(array $info, int $bytes, string $format): ?string
+    public static function problem(array $info, int $bytes, string $format, ?string $platform = null): ?string
     {
         $label = ScheduledPost::formatLabel($format);
+        $network = $platform === 'facebook' ? 'Facebook' : 'Instagram';
         $min = (int) config('scheduler.video.min_seconds', 3);
-        $maxSeconds = self::maxSeconds($format);
+        $maxSeconds = self::maxSeconds($format, $platform);
         $maxBytes = self::maxBytes($format);
 
         if ($info['duration'] < $min) {
@@ -63,15 +71,15 @@ class VideoSpec
         }
 
         if (! in_array($info['video_codec'], ['h264', 'hevc'], true)) {
-            return sprintf('Codec video "%s" tidak didukung Instagram. Ekspor ulang sebagai MP4 dengan H.264 (atau HEVC) dan audio AAC.', $info['video_codec'] ?? 'tidak dikenal');
+            return sprintf('Codec video "%s" tidak didukung %s. Ekspor ulang sebagai MP4 dengan H.264 (atau HEVC) dan audio AAC.', $info['video_codec'] ?? 'tidak dikenal', $network);
         }
 
         if ($info['has_audio'] && $info['audio_codec'] !== 'aac') {
-            return sprintf('Codec audio "%s" tidak didukung Instagram. Gunakan audio AAC.', $info['audio_codec'] ?? 'tidak dikenal');
+            return sprintf('Codec audio "%s" tidak didukung %s. Gunakan audio AAC.', $info['audio_codec'] ?? 'tidak dikenal', $network);
         }
 
         if ($info['fps'] !== null && ($info['fps'] < self::FPS_MIN - self::FPS_TOLERANCE || $info['fps'] > self::FPS_MAX + self::FPS_TOLERANCE)) {
-            return sprintf('Frame rate %s fps di luar batas %d-%d fps yang diterima Instagram.', rtrim(rtrim(number_format($info['fps'], 2, ',', ''), '0'), ','), self::FPS_MIN, self::FPS_MAX);
+            return sprintf('Frame rate %s fps di luar batas %d-%d fps yang diterima %s.', rtrim(rtrim(number_format($info['fps'], 2, ',', ''), '0'), ','), self::FPS_MIN, self::FPS_MAX, $network);
         }
 
         return null;

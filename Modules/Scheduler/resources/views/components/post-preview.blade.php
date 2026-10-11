@@ -36,8 +36,8 @@
             <span>11:18</span>
             <div class="flex items-center gap-1.5"><svg class="h-3.5 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M1 16h2V9H1v7Zm4 0h2V6H5v10Zm4 0h2V3H9v13Zm4 0h2V1h-2v15Zm4 0h2V0h-2v16Z"/></svg><svg class="h-3.5 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 9.5a13.5 13.5 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.5 3.5 0 0 1 4 0"/></svg><span class="h-2.5 w-5 rounded-sm border border-slate-700 p-px"><span class="block h-full w-3 rounded-[1px] bg-slate-800"></span></span></div>
         </div>
-            {{-- ===== Instagram (Feed, Story, Reels); layar Story dipakai juga oleh Facebook ===== --}}
-            <div x-show="! isFacebook || active === 'story'">
+            {{-- ===== Instagram (Feed, Story, Reels) ===== --}}
+            <div x-show="! isFacebook">
             {{-- ===== Feed ===== --}}
             <div x-show="active === 'feed'">
             <div class="flex h-10 items-center justify-between border-b border-border/70 px-4 text-slate-900 sm:h-12"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
@@ -225,7 +225,7 @@
             </div>
 
             {{-- ===== Facebook (Feed) ===== --}}
-            <div x-show="isFacebook && active !== 'story'" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100"
+            <div x-show="isFacebook && active === 'feed'" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100"
                 :class="fullPreview ? '!top-[env(safe-area-inset-top)] !overflow-y-auto' : ''">
                 <div class="flex h-11 items-center justify-between bg-white px-4">
                     <p class="text-[22px] font-bold leading-none tracking-tight text-[#1877f2]">facebook</p>
@@ -284,6 +284,140 @@
                         <span class="flex items-center justify-center gap-1.5"><x-heroicon-o-arrow-uturn-right class="h-4 w-4" /> Bagikan</span>
                     </div>
                     <p class="px-3 pb-2 pt-1.5 text-[11px] text-slate-400" x-text="schedulePreview"></p>
+                </div>
+            </div>
+
+            {{-- ===== Facebook (Story) ===== --}}
+            <div x-show="isFacebook && active === 'story'" x-cloak class="absolute inset-0 bg-black text-white">
+                <template x-if="current">
+                    <div class="absolute inset-0" @click="togglePlay($event)" :class="current.type === 'video' ? 'cursor-pointer' : ''"
+                        :role="current.type === 'video' ? 'button' : null" :tabindex="current.type === 'video' ? 0 : null"
+                        :aria-label="current.type === 'video' ? 'Putar atau jeda video' : null"
+                        @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
+                        <template x-if="current.type === 'video'">
+                            <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
+                                x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
+                                @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
+                        </template>
+                        <template x-if="current.type !== 'video'">
+                            <img :src="current.url" alt="Pratinjau Story Facebook" class="h-full w-full object-cover">
+                        </template>
+                    </div>
+                </template>
+                <div x-show="! current" class="absolute inset-0 grid place-items-center bg-gradient-to-b from-slate-800 to-slate-900 text-white/30">
+                    <x-heroicon-o-photo class="h-12 w-12" />
+                </div>
+
+                {{-- Bilah segmen, Page, dan tombol tutup --}}
+                <div class="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/60 to-transparent px-3 pb-8 pt-10">
+                    <div class="flex gap-1" aria-hidden="true">
+                        <template x-for="(item, position) in items" :key="'fb-seg-' + position">
+                            <span class="h-[3px] flex-1 rounded-full" :class="position <= currentIndex ? 'bg-white' : 'bg-white/35'"></span>
+                        </template>
+                        <span x-show="items.length === 0" class="h-[3px] flex-1 rounded-full bg-white/35"></span>
+                    </div>
+                    <div class="mt-2.5 flex items-center gap-2">
+                        <template x-if="accountAvatar">
+                            <img :src="accountAvatar" alt="" referrerpolicy="no-referrer" class="h-9 w-9 rounded-full border-2 border-[#1877f2] bg-slate-700 object-cover">
+                        </template>
+                        <template x-if="! accountAvatar">
+                            <span class="grid h-9 w-9 place-items-center rounded-full border-2 border-[#1877f2] bg-slate-600 text-[11px] font-semibold" x-text="accountInitial"></span>
+                        </template>
+                        <div class="min-w-0">
+                            <p class="truncate text-[13px] font-semibold leading-tight" x-text="accountName"></p>
+                            <p class="text-[11px] leading-tight text-white/70">Sekarang · <x-heroicon-o-globe-asia-australia class="inline h-3 w-3 align-[-1px]" /></p>
+                        </div>
+                        <span class="ml-auto flex items-center gap-3" aria-hidden="true">
+                            <x-heroicon-o-ellipsis-horizontal class="h-5 w-5" />
+                            <x-heroicon-o-x-mark class="h-5 w-5" />
+                        </span>
+                    </div>
+                </div>
+
+                <button type="button" x-show="items.length > 1" @click="step(-1)" aria-label="Story sebelumnya"
+                    class="absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
+                    <x-heroicon-o-chevron-left class="h-4 w-4" />
+                </button>
+                <button type="button" x-show="items.length > 1" @click="step(1)" aria-label="Story berikutnya"
+                    class="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60">
+                    <x-heroicon-o-chevron-right class="h-4 w-4" />
+                </button>
+                <span x-show="current && current.type === 'video' && ! playing" class="pointer-events-none absolute left-1/2 top-1/2 z-0 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45" aria-hidden="true">
+                    <x-heroicon-s-play class="h-6 w-6" />
+                </span>
+
+                {{-- Kolom balasan dan reaksi ala Story Facebook --}}
+                <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent px-3 pb-7 pt-10" aria-hidden="true">
+                    <div class="flex items-center gap-2">
+                        <span class="flex-1 rounded-full bg-white/20 px-4 py-2 text-xs text-white/85">Balas…</span>
+                        <span class="grid h-8 w-8 place-items-center rounded-full bg-[#1877f2]"><x-heroicon-s-hand-thumb-up class="h-4 w-4" /></span>
+                        <span class="grid h-8 w-8 place-items-center rounded-full bg-rose-500"><x-heroicon-s-heart class="h-4 w-4" /></span>
+                        <span class="grid h-8 w-8 place-items-center rounded-full bg-amber-400 text-slate-900"><x-heroicon-s-face-smile class="h-4 w-4" /></span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== Facebook (Reels) ===== --}}
+            <div x-show="isFacebook && active === 'reel'" x-cloak class="absolute inset-0 bg-black text-white">
+                {{-- Video: klik untuk putar atau jeda --}}
+                <div x-show="current" class="absolute inset-0 cursor-pointer" @click="togglePlay($event)"
+                    role="button" tabindex="0" aria-label="Putar atau jeda video"
+                    @keydown.enter.prevent="togglePlay($event)" @keydown.space.prevent="togglePlay($event)">
+                    <template x-if="current">
+                        <video :src="current.url + '#t=0.1'" playsinline loop preload="metadata" data-preview-video :data-start="previewStart" class="h-full w-full object-cover"
+                            x-effect="$el.muted = muted" @play="playing = true" @pause="playing = false"
+                            @timeupdate="trackProgress($event)" x-on:loadedmetadata="$el.currentTime = previewStart"></video>
+                    </template>
+                </div>
+                <div x-show="! current" class="absolute inset-0 grid place-items-center bg-gradient-to-b from-slate-800 to-slate-900 text-white/30">
+                    <x-heroicon-o-film class="h-12 w-12" />
+                </div>
+                <span x-show="current && ! playing" class="pointer-events-none absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/45" aria-hidden="true">
+                    <x-heroicon-s-play class="h-7 w-7" />
+                </span>
+
+                {{-- Judul Reels dan tombol suara --}}
+                <div class="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/55 to-transparent px-4 pb-8 pt-10">
+                    <p class="text-lg font-bold tracking-tight">Reels</p>
+                    <span class="flex items-center gap-3" aria-hidden="true">
+                        <x-heroicon-o-magnifying-glass class="h-5 w-5" />
+                        <x-heroicon-o-camera class="h-5 w-5" />
+                    </span>
+                </div>
+                <button type="button" x-show="current" @click.stop="toggleMute()" :aria-label="muted ? 'Nyalakan suara' : 'Matikan suara'"
+                    class="absolute right-3 top-[5.25rem] z-20 grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white hover:bg-black/65 focus:outline-none focus:ring-2 focus:ring-white/60">
+                    <x-heroicon-o-speaker-wave x-show="! muted" class="h-4 w-4" />
+                    <x-heroicon-o-speaker-x-mark x-show="muted" x-cloak class="h-4 w-4" />
+                </button>
+
+                {{-- Kolom aksi kanan ala Facebook: Suka, Komentar, Bagikan --}}
+                <div class="pointer-events-none absolute bottom-24 right-2.5 z-10 flex flex-col items-center gap-[1.125rem] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" aria-hidden="true">
+                    <div class="flex flex-col items-center gap-1"><x-heroicon-o-hand-thumb-up class="h-7 w-7" stroke-width="1.75" /><span class="h-3 text-[11px] font-semibold leading-3">21</span></div>
+                    <div class="flex flex-col items-center gap-1"><x-heroicon-o-chat-bubble-oval-left class="h-7 w-7" stroke-width="1.75" /><span class="h-3 text-[11px] font-semibold leading-3">3</span></div>
+                    <div class="flex flex-col items-center gap-1"><x-heroicon-o-arrow-uturn-right class="h-7 w-7" stroke-width="1.75" /><span class="h-3 text-[11px] font-semibold leading-3">1</span></div>
+                    <div class="flex flex-col items-center gap-1"><x-heroicon-o-ellipsis-horizontal class="h-7 w-7" stroke-width="1.75" /></div>
+                </div>
+
+                {{-- Page, deskripsi, dan audio --}}
+                <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/30 to-transparent pb-8 pl-4 pr-16 pt-14">
+                    <div class="flex items-center gap-2">
+                        <template x-if="accountAvatar">
+                            <img :src="accountAvatar" alt="" referrerpolicy="no-referrer" class="h-8 w-8 rounded-full border border-white/30 bg-slate-700 object-cover">
+                        </template>
+                        <template x-if="! accountAvatar">
+                            <span class="grid h-8 w-8 place-items-center rounded-full border border-white/30 bg-slate-600 text-[11px] font-semibold" x-text="accountInitial"></span>
+                        </template>
+                        <p class="truncate text-[13px] font-semibold" x-text="accountName"></p>
+                        <span class="rounded-md bg-white/20 px-2 py-0.5 text-[11px] font-semibold">Ikuti</span>
+                    </div>
+                    <p class="mt-2 line-clamp-2 whitespace-pre-line text-[12px] leading-snug" x-text="caption" x-show="caption"></p>
+                    <p class="mt-2 text-[12px] text-white/50" x-show="! caption">Belum ada deskripsi…</p>
+                    <p class="mt-2 flex items-center gap-1.5 text-[11px] text-white/80"><x-heroicon-o-musical-note class="h-3.5 w-3.5 shrink-0" /> <span class="truncate">Audio asli · <span x-text="accountName"></span></span></p>
+                </div>
+
+                {{-- Batang progres video --}}
+                <div x-show="current" class="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-0.5 bg-white/25" aria-hidden="true">
+                    <div class="h-full bg-white" :style="`width: ${progress}%`"></div>
                 </div>
             </div>
             </div>

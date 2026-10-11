@@ -95,7 +95,7 @@
             'videoMinSeconds' => (int) config('scheduler.video.min_seconds', 3),
             'feed' => ['max' => 10],
             'story' => ['max' => 10, 'videoSeconds' => VideoSpec::maxSeconds('story'), 'videoMb' => (int) config('scheduler.video.story_max_mb', 100)],
-            'reel' => ['max' => 1, 'videoSeconds' => VideoSpec::maxSeconds('reel'), 'videoMb' => (int) config('scheduler.video.reel_max_mb', 300)],
+            'reel' => ['max' => 1, 'videoSeconds' => VideoSpec::maxSeconds('reel'), 'facebookVideoSeconds' => VideoSpec::maxSeconds('reel', 'facebook'), 'videoMb' => (int) config('scheduler.video.reel_max_mb', 300)],
         ],
     ];
 
