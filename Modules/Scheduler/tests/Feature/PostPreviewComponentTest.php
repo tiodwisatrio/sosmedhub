@@ -195,3 +195,39 @@ test('pratinjau dengan akun tertaut memakai username akun, bukan nama situs', fu
         ->assertSee('<span x-text="accountName">toko_preview</span>', false)
         ->assertDontSee('<span x-text="accountName">Merek Uji</span>', false);
 });
+
+test('form jadwal tanpa akun tertaut menawarkan tombol Hubungkan Akun ke halaman Akun Sosial', function () {
+    $user = previewUser();
+    $user->givePermissionTo(Permission::firstOrCreate(['name' => 'social-account.view', 'guard_name' => 'web']));
+
+    $this->actingAs($user)
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('data-connect-account', false)
+        ->assertSee('href="'.route('admin.social-accounts.index').'"', false)
+        ->assertSee('Hubungkan Akun');
+
+    $this->actingAs($user)->withCookie('locale', 'en')
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertSee('Connect Account');
+});
+
+test('tombol Hubungkan Akun tidak tampil bila akun sudah ada atau pengguna tidak boleh membuka Akun Sosial', function () {
+    // Tanpa izin social-account.view: pesan tetap ada, tombol tidak.
+    $this->actingAs(previewUser())
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertSee('Belum ada akun sosial aktif')
+        ->assertDontSee('data-connect-account', false);
+
+    // Sudah punya akun: tidak ada pesan kosong maupun tombolnya.
+    $user = previewUser();
+    $user->givePermissionTo(Permission::firstOrCreate(['name' => 'social-account.view', 'guard_name' => 'web']));
+    previewAccount($user);
+
+    $this->actingAs($user)
+        ->get(route('admin.scheduled-posts.create'))
+        ->assertOk()
+        ->assertDontSee('Belum ada akun sosial aktif')
+        ->assertDontSee('data-connect-account', false);
+});

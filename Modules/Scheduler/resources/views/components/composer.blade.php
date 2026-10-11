@@ -169,7 +169,18 @@
                             </label>
                             @if ($socialAccounts->isEmpty())
                                 <div class="rounded-lg border border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning-text">
-                                    {{ __('Belum ada akun sosial aktif. Tambahkan akun dulu sebelum menjadwalkan postingan.') }}
+                                    <p>{{ __('Belum ada akun sosial aktif. Tambahkan akun dulu sebelum menjadwalkan postingan.') }}</p>
+
+                                    {{-- Hanya untuk yang boleh membuka halaman Akun Sosial. Blok sendiri: selalu di bawah teks. --}}
+                                    @can('social-account.view')
+                                        <div class="mt-2">
+                                            <a href="{{ route('admin.social-accounts.index') }}" data-connect-account
+                                                class="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
+                                                <x-heroicon-o-link class="h-4 w-4" />
+                                                {{ __('Hubungkan Akun') }}
+                                            </a>
+                                        </div>
+                                    @endcan
                                 </div>
                             @else
                                 <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="{{ __('Akun tujuan') }}">
