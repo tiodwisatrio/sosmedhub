@@ -11,8 +11,9 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Menerbitkan Feed ke Page Facebook. Satu foto langsung terbit lewat /photos; beberapa foto
- * diunggah dulu tanpa terbit, lalu digabung dalam satu postingan lewat /feed.
+ * Menerbitkan Feed dan Story foto ke Page Facebook. Feed: satu foto langsung terbit lewat /photos;
+ * beberapa foto diunggah dulu tanpa terbit, lalu digabung dalam satu postingan lewat /feed.
+ * Story: tiap foto diunggah tanpa terbit lalu diterbitkan lewat /photo_stories (tanpa caption).
  *
  * Facebook memproses foto saat itu juga, jadi tidak pernah mengembalikan WAITING. Kemajuan
  * disimpan di state (bentuknya sama dengan Instagram) supaya pemanggilan ulang tidak
@@ -32,12 +33,12 @@ class FacebookPublicationRunner
                 throw new RuntimeException('Akun Facebook tidak aktif atau token tidak tersedia.');
             }
 
-            if ($publication->format !== ScheduledPost::FORMAT_FEED) {
-                throw new RuntimeException('Facebook baru mendukung format Feed.');
+            if (! in_array($publication->format, [ScheduledPost::FORMAT_FEED, ScheduledPost::FORMAT_STORY], true)) {
+                throw new RuntimeException('Facebook baru mendukung format Feed dan Story (foto).');
             }
 
             $media = $post->media()->where('format', $publication->format)->orderBy('position')->get();
-            $this->assertMedia($media);
+            $this->assertMedia($media, $publication->format);
 
             if ($publication->status !== ScheduledPostPublication::STATUS_PUBLISHING) {
                 $publication->update(['status' => ScheduledPostPublication::STATUS_PUBLISHING]);
@@ -45,7 +46,9 @@ class FacebookPublicationRunner
 
             $state = $this->state($publication, $media);
 
-            if (! $state['items'][0]['published_id']) {
+            if ($publication->format === ScheduledPost::FORMAT_STORY) {
+                $this->publishStories($publication, $account, $media, $state);
+            } elseif (! $state['items'][0]['published_id']) {
                 $state['items'][0]['published_id'] = $media->count() === 1
                     ? $this->publishSingle($account, $post, $media->first())
                     : $this->publishAlbum($publication, $account, $post, $media, $state);
@@ -96,6 +99,30 @@ class FacebookPublicationRunner
     }
 
     /**
+     * Story: satu foto satu Story. Foto diunggah tanpa terbit, lalu diterbitkan lewat /photo_stories.
+     * ID foto (container_id) dan ID Story (published_id) disimpan per item segera setelah didapat,
+     * jadi pemanggilan ulang tidak mengunggah ulang atau menerbitkan Story yang sudah terbit.
+     */
+    private function publishStories($publication, $account, $media, array &$state): void
+    {
+        foreach ($media as $index => $item) {
+            if ($state['items'][$index]['published_id']) {
+                continue;
+            }
+
+            if (! $state['items'][$index]['container_id']) {
+                $state['items'][$index]['container_id'] = $this->publisher
+                    ->uploadPhoto($account, $this->path($item), null, published: false)['id'];
+                $this->save($publication, $state);
+            }
+
+            $state['items'][$index]['published_id'] = $this->publisher
+                ->publishPhotoStory($account, $state['items'][$index]['container_id']);
+            $this->save($publication, $state);
+        }
+    }
+
+    /**
      * Kerangka state sesuai media saat ini; ID foto yang sudah terunggah dipertahankan
      * (dicocokkan lewat ID media) dan ID postingan yang sudah terbit tidak hilang.
      */
@@ -103,6 +130,16 @@ class FacebookPublicationRunner
     {
         $old = $publication->state ?? [];
         $oldChildren = collect($old['children'] ?? [])->keyBy('media_id');
+
+        if ($publication->format === ScheduledPost::FORMAT_STORY) {
+            $oldItems = collect($old['items'] ?? [])->keyBy('media_id');
+
+            return [
+                'started_at' => $old['started_at'] ?? now()->toIso8601String(),
+                'items' => $media->map(fn ($m) => $oldItems->get($m->id) ?? ['media_id' => $m->id, 'container_id' => null, 'published_id' => null])->values()->all(),
+                'children' => [],
+            ];
+        }
 
         return [
             'started_at' => $old['started_at'] ?? now()->toIso8601String(),
@@ -113,18 +150,20 @@ class FacebookPublicationRunner
         ];
     }
 
-    private function assertMedia($media): void
+    private function assertMedia($media, string $format): void
     {
+        $label = ScheduledPost::formatLabel($format);
+
         if ($media->isEmpty()) {
-            throw new RuntimeException('Feed tidak memiliki media. Unggah ulang medianya.');
+            throw new RuntimeException("{$label} tidak memiliki media. Unggah ulang medianya.");
         }
 
         if ($media->contains(fn ($m) => $m->isVideo())) {
-            throw new RuntimeException('Facebook baru mendukung foto untuk Feed.');
+            throw new RuntimeException("Facebook baru mendukung foto untuk {$label}.");
         }
 
         if ($media->contains(fn ($m) => ! $m->media_path || ! Storage::disk('public')->exists($m->media_path))) {
-            throw new RuntimeException('Sebagian media Feed sudah tidak tersedia di server. Unggah ulang medianya.');
+            throw new RuntimeException("Sebagian media {$label} sudah tidak tersedia di server. Unggah ulang medianya.");
         }
     }
 

@@ -48,6 +48,28 @@ function fbPost(array $types = ['image'], string $caption = 'Caption Facebook'):
 }
 
 /**
+ * Jadwal Story (foto) jatuh tempo untuk Page Facebook.
+ */
+function fbStoryPost(int $photos = 1): ScheduledPost
+{
+    $post = fbPost(['image']);
+    $post->media()->delete();
+    $post->publications()->delete();
+    $post->publications()->create(['format' => ScheduledPost::FORMAT_STORY]);
+
+    foreach (range(0, $photos - 1) as $position) {
+        $path = "scheduled-posts/fb-story-{$position}.jpg";
+        Storage::disk('public')->put($path, 'isi');
+        $post->media()->create([
+            'format' => ScheduledPost::FORMAT_STORY, 'type' => 'image', 'media_path' => $path,
+            'mime' => 'image/jpeg', 'position' => $position,
+        ]);
+    }
+
+    return $post->fresh(['publications', 'media']);
+}
+
+/**
  * Facebook palsu yang mencatat setiap panggilan ke /photos dan /feed.
  */
 function fbFake(array &$calls, array $failPhotoAt = []): void
@@ -67,6 +89,12 @@ function fbFake(array &$calls, array $failPhotoAt = []): void
             $calls[] = ['photo', $request->body()];
 
             return Http::response(['id' => "p{$photos}", 'post_id' => "1010_post{$photos}"]);
+        }
+
+        if (str_ends_with($path, '/1010/photo_stories')) {
+            $calls[] = ['story', $request->data()];
+
+            return Http::response(['success' => true, 'post_id' => '1010_story'.count(array_filter($calls, fn ($c) => $c[0] === 'story'))]);
         }
 
         if (str_ends_with($path, '/1010/feed')) {
@@ -181,6 +209,53 @@ it('menandai gagal tanpa menerbitkan bila Facebook menolak foto', function () {
         ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_FAILED);
 });
 
+it('menerbitkan tiap foto Story lewat /photo_stories tanpa caption', function () {
+    $calls = [];
+    fbFake($calls);
+    $post = fbStoryPost(2);
+
+    fbRun($post);
+
+    $photos = fbCalls($calls, 'photo');
+    $stories = fbCalls($calls, 'story');
+
+    expect($photos)->toHaveCount(2)
+        ->and($photos[0][1])->toContain('false')
+        ->and($stories)->toHaveCount(2)
+        ->and($stories[0][1]['photo_id'])->toBe('p1')
+        ->and($stories[1][1]['photo_id'])->toBe('p2')
+        ->and(fbCalls($calls, 'feed'))->toBeEmpty();
+
+    $publication = $post->publications()->first()->fresh();
+    expect($publication->status)->toBe(ScheduledPostPublication::STATUS_PUBLISHED)
+        ->and($publication->ig_media_id)->toBe('1010_story1')
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
+it('tidak menerbitkan ulang Story yang sudah terbit saat dijalankan lagi setelah gagal', function () {
+    $calls = [];
+    fbFake($calls, failPhotoAt: [2]);
+    $post = fbStoryPost(2);
+
+    fbRun($post);
+
+    expect($post->fresh()->status)->toBe(ScheduledPost::STATUS_FAILED)
+        ->and(fbCalls($calls, 'story'))->toHaveCount(1);
+
+    $post->publications()->first()->update(['status' => ScheduledPostPublication::STATUS_PENDING]);
+    ScheduledPost::query()->whereKey($post->id)->update(['status' => ScheduledPost::STATUS_SCHEDULED]);
+    $before = count($calls);
+
+    fbRun($post);
+
+    $calls = array_slice($calls, $before);
+
+    // Hanya foto kedua yang diunggah dan diterbitkan; Story pertama tidak diulang.
+    expect(fbCalls($calls, 'photo'))->toHaveCount(1)
+        ->and(fbCalls($calls, 'story'))->toHaveCount(1)
+        ->and($post->fresh()->status)->toBe(ScheduledPost::STATUS_PUBLISHED);
+});
+
 it('menolak video karena Facebook baru mendukung foto', function () {
     $calls = [];
     fbFake($calls);
@@ -258,7 +333,7 @@ it('menerima jadwal Feed ke akun Facebook', function () {
     expect(ScheduledPost::query()->where('social_account_id', $account->id)->count())->toBe(1);
 })->skip(! function_exists('fmtPhoto'), 'membutuhkan helper PostFormatsTest');
 
-it('menolak Story dan Reels untuk akun Facebook', function () {
+it('menolak Reels untuk akun Facebook', function () {
     $user = fbFormUser();
     $account = fbFormAccount($user);
 
@@ -266,8 +341,38 @@ it('menolak Story dan Reels untuk akun Facebook', function () {
         'social_account_id' => $account->id,
         'caption' => 'Halo',
         'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
-        'formats' => ['feed', 'story'],
+        'formats' => ['feed', 'reel'],
     ])->assertSessionHasErrors('formats');
+
+    expect(ScheduledPost::query()->count())->toBe(0);
+});
+
+it('menerima Story foto untuk akun Facebook', function () {
+    $user = fbFormUser();
+    $account = fbFormAccount($user);
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), [
+        'social_account_id' => $account->id,
+        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
+        'formats' => ['story'],
+        'media_story' => [fmtPhoto(1080, 1920)],
+    ])->assertSessionHasNoErrors();
+
+    $post = ScheduledPost::query()->where('social_account_id', $account->id)->first();
+    expect($post)->not->toBeNull()
+        ->and($post->publications()->pluck('format')->all())->toBe(['story']);
+});
+
+it('menolak video Story untuk akun Facebook', function () {
+    $user = fbFormUser();
+    $account = fbFormAccount($user);
+
+    $this->actingAs($user)->post(route('admin.scheduled-posts.store'), [
+        'social_account_id' => $account->id,
+        'scheduled_at' => ScheduledPost::nextSlot(now()->addHour())->setTimezone(ScheduledPost::WIB)->format('Y-m-d\TH:i'),
+        'formats' => ['story'],
+        'media_story' => [fmtVideo(20)],
+    ])->assertSessionHasErrors('media_story.0');
 
     expect(ScheduledPost::query()->count())->toBe(0);
 });

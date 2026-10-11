@@ -25,11 +25,13 @@ class FormatMedia implements ValidationRule
      */
     /**
      * @param  array<int|string, mixed>  $trims  rentang potong Story per urutan file unggahan: [index => ['start' => detik, 'end' => detik]]
+     * @param  bool  $photosOnly  Story Facebook hanya menerima foto; video ditolak.
      */
     public function __construct(
         private readonly string $format,
         private readonly bool $enforceFeedRatio = true,
         private readonly array $trims = [],
+        private readonly bool $photosOnly = false,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -52,6 +54,12 @@ class FormatMedia implements ValidationRule
 
         if ($this->format === ScheduledPost::FORMAT_REEL && ! $isVideo) {
             $fail('Reels hanya menerima video MP4 atau MOV.');
+
+            return;
+        }
+
+        if ($this->photosOnly && ! $isPhoto) {
+            $fail('Story Facebook hanya menerima foto JPEG (.jpg atau .jpeg).');
 
             return;
         }

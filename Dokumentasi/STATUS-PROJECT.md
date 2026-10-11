@@ -29,7 +29,8 @@ Alur utama sudah berjalan end-to-end di lokal untuk Instagram: hubungkan akun, b
 | Halaman publik: beranda, kebijakan privasi, ketentuan layanan, penghapusan data | Jalan (isi hardcode, lihat bagian 10) |
 | Batas akun atau jumlah post per user | Belum ada (sengaja, menunggu model bisnis) |
 | Connect Facebook Page | Jalan: Facebook Login, pilih Halaman, token Halaman terenkripsi |
-| Publikasi Feed (foto) ke Facebook Page | Jalan: sudah dites ke Page asli oleh pengembang (foto), dan teruji dengan HTTP palsu (satu foto, beberapa foto, token ditolak). Album (beberapa foto) dan token ditolak belum dites di Page asli. Story, Reels, dan video untuk Facebook belum ada |
+| Publikasi Feed (foto) ke Facebook Page | Jalan: sudah dites ke Page asli oleh pengembang (foto), dan teruji dengan HTTP palsu (satu foto, beberapa foto, token ditolak). Album (beberapa foto) dan token ditolak belum dites di Page asli |
+| Publikasi Story (foto) ke Facebook Page | Terpasang dan teruji dengan HTTP palsu (`/photo_stories`); **belum dites di Page asli**. Video Story, Reels, dan video Feed untuk Facebook belum ada |
 | Pilih akun tujuan lewat kartu (Instagram dulu, lalu Facebook; foto profil, nama, logo platform) | Jalan |
 | Potong video Story lebih dari 60 detik (pilih rentang di form, dipotong ffmpeg di server saat simpan) | Terpasang dan teruji dengan ffmpeg palsu; **belum dicoba dengan ffmpeg asli** |
 | Pratinjau per platform (Instagram Feed/Story/Reels, Facebook Feed) dengan foto akun, dan pratinjau layar penuh di ponsel | Jalan; tampilan ponsel belum diperiksa di perangkat nyata |
@@ -57,7 +58,7 @@ Aplikasi memakai Laravel 13 dengan modul (`nwidart/laravel-modules`), Livewire, 
    - **Feed**: satu foto memakai `image_url` + caption; lebih dari satu memakai carousel (container anak dibuat dulu; induk baru dibuat setelah semua anak `FINISHED`).
    - **Story**: satu container `STORIES` per item (foto atau video), **tanpa caption**, masing-masing diterbitkan sendiri.
    - **Reels**: satu container `REELS` dengan `video_url`, caption, dan `share_to_feed`.
-   Akun **Facebook** dijalankan oleh `FacebookPublicationRunner` (job yang sama memilihnya menurut `social_accounts.platform`), hanya format Feed: satu foto lewat `POST /{page-id}/photos` (file diunggah langsung dari server, tanpa URL publik); beberapa foto diunggah `published=false` lalu digabung lewat satu `POST /{page-id}/feed` dengan `attached_media`. Hasilnya langsung jadi, jadi tidak pernah "menunggu". Kemajuan disimpan di `state` dengan bentuk yang sama (ID foto per foto, ID postingan segera setelah terbit), jadi pemanggilan ulang tidak mengunggah ulang foto atau menerbitkan dua kali.
+   Akun **Facebook** dijalankan oleh `FacebookPublicationRunner` (job yang sama memilihnya menurut `social_accounts.platform`), format Feed dan Story (foto): satu foto lewat `POST /{page-id}/photos` (file diunggah langsung dari server, tanpa URL publik); beberapa foto diunggah `published=false` lalu digabung lewat satu `POST /{page-id}/feed` dengan `attached_media`. **Story**: tiap foto diunggah `published=false`, lalu diterbitkan satu per satu lewat `POST /{page-id}/photo_stories` (`photo_id`), tanpa caption; `container_id` menyimpan ID foto dan `published_id` ID Story per item, jadi pemanggilan ulang tidak mengunggah atau menerbitkan ulang yang sudah selesai. Hasilnya langsung jadi, jadi tidak pernah "menunggu". Kemajuan disimpan di `state` dengan bentuk yang sama (ID foto per foto, ID postingan segera setelah terbit), jadi pemanggilan ulang tidak mengunggah ulang foto atau menerbitkan dua kali.
 4. Instagram memproses video dalam hitungan menit. Runner mengembalikan "menunggu" dan job **melepas diri** (`release`, jeda `SCHEDULER_VIDEO_POLL_SECONDS`, bawaan 30 detik) tanpa menahan worker; batas total 10 menit, lewat itu format dinyatakan gagal. Foto dicek berkala di dalam satu pemanggilan.
 5. Setelah semua format selesai, status jadwal ditetapkan sekali: semua terbit menjadi `published`; sebagian menjadi `partial`; semua gagal menjadi `failed`. Email dikirim sekali (berhasil, atau gagal/sebagian berisi galat per format).
 6. Tidak ada percobaan ulang otomatis. **Jadwalkan Ulang** hanya mengulang format yang gagal: item Story yang sudah terbit tidak diterbitkan lagi, container lama dilepas (bisa sudah kedaluwarsa), dan format yang sudah terbit terkunci (media dan formatnya tidak bisa diubah).
@@ -78,7 +79,7 @@ Video disimpan apa adanya di `storage/app/public/scheduled-posts/videos/` dan di
 
 **Batas unggahan**: video hingga 300MB butuh `upload_max_filesize` >= 320M, `post_max_size` >= 512M, `max_execution_time` >= 120, dan `client_max_body_size` (Nginx) >= 512M. Bila total melebihi `post_max_size`, form menampilkan pesan batas server, bukan error 413 mentah. Di Herd lokal batasnya masih 10M.
 
-Aturan per platform: **Instagram** menerima Feed, Story, dan Reels, dan Feed dipaksa rasio 4:5 sampai 1,91:1. **Facebook** hanya Feed (foto): rasio bebas, sedangkan jenis file (JPEG), ukuran (8 MB), jumlah (10 foto), dan panjang caption (2200 karakter) masih memakai batas Instagram, lebih ketat dari yang Facebook perlukan. Validasi server menolak Story atau Reels untuk akun Facebook (`ValidatesPostFormats`), dan form menonaktifkan pilihannya.
+Aturan per platform: **Instagram** menerima Feed, Story, dan Reels, dan Feed dipaksa rasio 4:5 sampai 1,91:1. **Facebook** hanya Feed dan Story, dua-duanya foto saja: rasio bebas, sedangkan jenis file (JPEG), ukuran (8 MB), jumlah (10 foto), dan panjang caption (2200 karakter) masih memakai batas Instagram, lebih ketat dari yang Facebook perlukan. Validasi server menolak Reels dan video Story untuk akun Facebook (`ValidatesPostFormats`, `FormatMedia` dengan `photosOnly`), dan form menonaktifkan Reels serta hanya menerima JPEG untuk Story Facebook.
 
 ### Potong video Story
 Video Story lebih dari 60 detik tidak ditolak bila ffmpeg tersedia: panel "Pilih bagian yang ditayangkan" muncul dengan pemutar dan dua pegangan geser (rentang 3-60 detik). Form mengirim `trim_story[N][start|end]` (N = urutan file di `media_story[]`).
@@ -153,7 +154,7 @@ Halaman `/admin/social-accounts` berisi satu kartu per platform: Instagram dan F
 - Form manual (`/admin/social-accounts/create`) tidak lagi ditautkan dari halaman ini tetapi masih bisa dibuka lewat URL.
 
 ### Form jadwal dan pratinjau
-**Akun tujuan** dipilih lewat kartu (bukan dropdown): foto profil (cadangan inisial), nama (`@username` untuk Instagram, nama Page untuk Facebook), logo platform, urutan Instagram dulu lalu Facebook. Satu jadwal tetap satu akun. Memilih akun Facebook mengembalikan format ke Feed saja dan menonaktifkan Story dan Reels. Kolom Caption hilang bila hanya Story yang dipilih.
+**Akun tujuan** dipilih lewat kartu (bukan dropdown): foto profil (cadangan inisial), nama (`@username` untuk Instagram, nama Page untuk Facebook), logo platform, urutan Instagram dulu lalu Facebook. Satu jadwal tetap satu akun. Memilih akun Facebook membuang Reels dan menonaktifkannya; Feed dan Story (foto saja) tetap bisa dipilih. Kolom Caption hilang bila hanya Story yang dipilih.
 
 **Pratinjau** ada di komponen `<x-scheduler::post-preview>` (`Modules/Scheduler/resources/views/components/post-preview.blade.php`), dipakai halaman buat dan ubah. Komponen membaca state Alpine dari elemen induknya (`x-data` "postComposer" di `composer-script.blade.php`), jadi harus berada di dalamnya. Satu prop Blade: `username`; nama, foto, dan platform akun dibaca reaktif dari `accounts` yang dikirim form, mengikuti kartu akun yang dipilih.
 - **Instagram**: bingkai ponsel dengan Feed, Story, dan Reels; foto profil lewat `<x-scheduler::account-avatar>`. Video Story dan Reels bisa diputar (klik putar/jeda, tombol suara, batang progres); semua video pratinjau (`data-preview-video`) dijeda dan dikembalikan ke awal (atau awal rentang potong) saat format, item, atau media berganti (`stopPlayback()`). Video yang dipotong diputar hanya pada rentangnya.
@@ -285,8 +286,8 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 - Jalankan manual tes B sampai F di server.
 
 ### Facebook: langkah berikutnya
-1. ~~Tes publikasi Feed foto ke Page sungguhan~~ berhasil (foto tunggal; ini juga memenuhi panggilan API `pages_manage_posts` untuk App Review). Tinggal tes album (beberapa foto) di Page **Tio**.
-2. Sebelum membangun video, Story, dan Reels untuk Page: baca dokumentasi Meta untuk endpoint dan permission-nya. `publish_video` disebut di dokumentasi Pages API tetapi belum ada di kasus penggunaan app; apakah perlu ditambahkan belum dicek.
+1. ~~Tes publikasi Feed foto ke Page sungguhan~~ berhasil (foto tunggal; ini juga memenuhi panggilan API `pages_manage_posts` untuk App Review). Tinggal tes album (beberapa foto) dan **Story foto** (`/photo_stories`; izin `pages_manage_posts` diperkirakan cukup, belum dikonfirmasi) di Page **Tio**.
+2. Sebelum membangun video dan Reels untuk Page (Story video juga): baca dokumentasi Meta untuk endpoint dan permission-nya. `publish_video` disebut di dokumentasi Pages API tetapi belum ada di kasus penggunaan app; apakah perlu ditambahkan belum dicek.
 3. ~~Penanganan token kedaluwarsa atau dicabut untuk akun Facebook~~ selesai (kode 190 menandai akun `expired` dan mengirim email hubungkan ulang). Belum dites dengan token asli.
 4. Gunakan Page **Tio** untuk tes; jangan memakai dua Page "Tio Dwi Satrio" yang batal diterbitkan.
 5. Longgarkan aturan foto dan caption untuk Facebook setelah membaca batas resminya (bagian 9 nomor 10).
@@ -313,7 +314,7 @@ Rencana: shared hosting dulu sampai sekitar 10 client.
 
 ### Facebook (Page)
 
-Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dibangun, masuk form penjadwalan, dan berhasil dites ke Page asli oleh pengembang (foto tunggal; album belum).** Story, Reels, dan video untuk Facebook belum ada: form menonaktifkan pilihan itu bila akun Facebook dipilih, dan validasi menolaknya.
+Status per 2026-10-10: **connect Facebook jalan; publikasi Feed (foto) sudah dibangun, masuk form penjadwalan, dan berhasil dites ke Page asli oleh pengembang (foto tunggal; album belum).** Story foto sudah dibangun (teruji HTTP palsu, belum di Page asli). Reels dan video untuk Facebook belum ada: form menonaktifkan Reels bila akun Facebook dipilih, dan validasi menolaknya beserta video Story.
 
 - Publikasi: `FacebookPublicationRunner` (dipilih `PublishPublicationJob` menurut platform akun) dan `FacebookPublisher`. Satu foto: `POST /{page-id}/photos` dengan file diunggah langsung dari server (tanpa URL publik). Beberapa foto: tiap foto diunggah `published=false`, lalu satu `POST /{page-id}/feed` dengan `attached_media`. Hasil langsung jadi, tanpa container yang ditunggu. ID postingan disimpan di kolom `ig_media_id` (nama kolom warisan Instagram).
 - Token ditolak (kode 190) menandai akun `expired` dan mengirim email hubungkan ulang, sama seperti Instagram.

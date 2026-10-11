@@ -164,11 +164,18 @@ trait ValidatesPostFormats
             'caption' => [in_array(ScheduledPost::FORMAT_FEED, $this->selectedFormats(), true) ? 'required' : 'nullable', 'string', 'max:2200'],
         ];
 
+        $isFacebook = $this->selectedPlatform() === SocialAccount::PLATFORM_FACEBOOK;
+
         foreach (self::LIMITS as $format => $limit) {
             $field = $limit['field'];
             $rules[$field] = ['nullable', 'array', 'max:'.$limit['max']];
             $rules["{$field}.*"] = in_array($format, $editable, true)
-                ? ['bail', 'file', new FormatMedia($format, enforceFeedRatio: $this->selectedPlatform() !== SocialAccount::PLATFORM_FACEBOOK, trims: $this->trimInput($format))]
+                ? ['bail', 'file', new FormatMedia(
+                    $format,
+                    enforceFeedRatio: ! $isFacebook,
+                    trims: $this->trimInput($format),
+                    photosOnly: $isFacebook && $format === ScheduledPost::FORMAT_STORY,
+                )]
                 : ['prohibited'];
         }
 
@@ -178,12 +185,12 @@ trait ValidatesPostFormats
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            // Facebook baru mendukung Feed (foto). Story dan Reels hanya untuk Instagram.
+            // Facebook baru mendukung Feed dan Story (foto). Reels hanya untuk Instagram.
             $platform = $this->selectedPlatform();
 
             if ($platform === SocialAccount::PLATFORM_FACEBOOK
-                && array_diff($this->selectedFormats(), [ScheduledPost::FORMAT_FEED]) !== []) {
-                $validator->errors()->add('formats', 'Akun Facebook baru mendukung format Feed. Hapus Story atau Reels, atau pilih akun Instagram.');
+                && array_diff($this->selectedFormats(), [ScheduledPost::FORMAT_FEED, ScheduledPost::FORMAT_STORY]) !== []) {
+                $validator->errors()->add('formats', 'Akun Facebook baru mendukung format Feed dan Story. Hapus Reels, atau pilih akun Instagram.');
             }
 
             foreach ($this->editableFormats() as $format) {

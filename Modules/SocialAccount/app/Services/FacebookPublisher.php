@@ -66,6 +66,20 @@ class FacebookPublisher
         return (string) $this->data($response, 'id');
     }
 
+    /**
+     * Menerbitkan satu foto yang sudah diunggah (published=false) sebagai Story Page.
+     *
+     * @return string ID postingan Story
+     */
+    public function publishPhotoStory(SocialAccount $account, string $photoId): string
+    {
+        $response = $this->request($account)
+            ->asForm()
+            ->post("/{$account->provider_account_id}/photo_stories", ['photo_id' => $photoId]);
+
+        return (string) $this->data($response, 'post_id');
+    }
+
     private function data(Response $response, string $key): mixed
     {
         if ($response->failed()) {

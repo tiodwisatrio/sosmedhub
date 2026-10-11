@@ -36,8 +36,8 @@
             <span>11:18</span>
             <div class="flex items-center gap-1.5"><svg class="h-3.5 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M1 16h2V9H1v7Zm4 0h2V6H5v10Zm4 0h2V3H9v13Zm4 0h2V1h-2v15Zm4 0h2V0h-2v16Z"/></svg><svg class="h-3.5 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M3 9.5a13.5 13.5 0 0 1 18 0M6.5 13a8.5 8.5 0 0 1 11 0M10 16.5a3.5 3.5 0 0 1 4 0"/></svg><span class="h-2.5 w-5 rounded-sm border border-slate-700 p-px"><span class="block h-full w-3 rounded-[1px] bg-slate-800"></span></span></div>
         </div>
-            {{-- ===== Instagram (Feed, Story, Reels) ===== --}}
-            <div x-show="! isFacebook">
+            {{-- ===== Instagram (Feed, Story, Reels); layar Story dipakai juga oleh Facebook ===== --}}
+            <div x-show="! isFacebook || active === 'story'">
             {{-- ===== Feed ===== --}}
             <div x-show="active === 'feed'">
             <div class="flex h-10 items-center justify-between border-b border-border/70 px-4 text-slate-900 sm:h-12"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg><p class="text-base font-semibold">Postingan</p><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Zm6.5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3Z"/></svg></div>
@@ -225,7 +225,7 @@
             </div>
 
             {{-- ===== Facebook (Feed) ===== --}}
-            <div x-show="isFacebook" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100"
+            <div x-show="isFacebook && active !== 'story'" x-cloak class="absolute inset-x-0 top-8 bottom-0 overflow-hidden bg-slate-100"
                 :class="fullPreview ? '!top-[env(safe-area-inset-top)] !overflow-y-auto' : ''">
                 <div class="flex h-11 items-center justify-between bg-white px-4">
                     <p class="text-[22px] font-bold leading-none tracking-tight text-[#1877f2]">facebook</p>

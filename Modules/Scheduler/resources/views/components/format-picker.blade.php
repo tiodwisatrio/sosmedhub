@@ -36,6 +36,9 @@
                     <span class="block text-sm font-semibold text-slate-800">{{ $option['label'] }}</span>
                     <span class="hidden text-xs leading-snug text-slate-500 sm:block">{{ $option['hint'] }}</span>
                     <span x-show="unsupported('{{ $key }}')" x-cloak class="mt-1 block text-[11px] font-medium text-slate-400">Belum untuk Facebook</span>
+                    @if ($key === 'story')
+                        <span x-show="isFacebook" x-cloak class="mt-1 block text-[11px] font-medium text-slate-400">Facebook: hanya foto</span>
+                    @endif
                     <span x-show="isLocked('{{ $key }}')" x-cloak class="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-success-text">
                         <x-heroicon-o-check-circle class="h-3.5 w-3.5" /> Sudah terbit
                     </span>
