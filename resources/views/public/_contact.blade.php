@@ -3,5 +3,5 @@
 @if ($contactEmail)
     <a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a>
 @else
-    <span class="text-amber-300">[email kontak belum diisi di Pengaturan Situs]</span>
+    <span class="text-amber-700">[email kontak belum diisi di Pengaturan Situs]</span>
 @endif

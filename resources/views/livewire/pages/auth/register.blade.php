@@ -9,7 +9,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 use Spatie\Permission\Models\Role;
 
-new #[Layout('layouts.guest')] class extends Component
+new #[Layout('layouts.auth')] class extends Component
 {
     public string $name = '';
 
@@ -51,40 +51,50 @@ new #[Layout('layouts.guest')] class extends Component
     }
 }; ?>
 
-<div>
-    <form wire:submit="register">
+<div class="w-full">
+    <h1 class="font-display text-3xl font-bold">{{ __('Register') }}</h1>
+
+    <form wire:submit="register" class="mt-8 space-y-4">
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input wire:model="name" id="name" class="block mt-1 w-full" type="text" name="name" required autofocus autocomplete="name" />
+            <label for="name" class="sr-only">{{ __('Name') }}</label>
+            <input wire:model="name" id="name" type="text" name="name" required autofocus autocomplete="name"
+                placeholder="{{ __('Name') }}"
+                class="block w-full rounded-lg border border-slate-300 px-4 py-3.5 text-base placeholder:text-slate-400 focus:border-[#1c1c1c] focus:ring-2 focus:ring-[#1c1c1c]/10">
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" name="email" required autocomplete="username" />
+        <div>
+            <label for="email" class="sr-only">{{ __('Email') }}</label>
+            <input wire:model="email" id="email" type="email" name="email" required autocomplete="username"
+                placeholder="{{ __('Email') }}"
+                class="block w-full rounded-lg border border-slate-300 px-4 py-3.5 text-base placeholder:text-slate-400 focus:border-[#1c1c1c] focus:ring-2 focus:ring-[#1c1c1c]/10">
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input wire:model="password" id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+        <div>
+            <label for="password" class="sr-only">{{ __('Password') }}</label>
+            <input wire:model="password" id="password" type="password" name="password" required autocomplete="new-password"
+                placeholder="{{ __('Password') }}"
+                class="block w-full rounded-lg border border-slate-300 px-4 py-3.5 text-base placeholder:text-slate-400 focus:border-[#1c1c1c] focus:ring-2 focus:ring-[#1c1c1c]/10">
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input wire:model="password_confirmation" id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
+        <div>
+            <label for="password_confirmation" class="sr-only">{{ __('Confirm Password') }}</label>
+            <input wire:model="password_confirmation" id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password"
+                placeholder="{{ __('Confirm Password') }}"
+                class="block w-full rounded-lg border border-slate-300 px-4 py-3.5 text-base placeholder:text-slate-400 focus:border-[#1c1c1c] focus:ring-2 focus:ring-[#1c1c1c]/10">
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}" wire:navigate>
-                {{ __('Already registered?') }}
-            </a>
-
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
-        </div>
+        <button type="submit" wire:loading.attr="disabled"
+            class="w-full rounded-lg bg-[#1c1c1c] px-4 py-3.5 text-base font-semibold text-white transition hover:bg-black disabled:opacity-60">
+            {{ __('Register') }}
+        </button>
     </form>
+
+    <p class="mt-6 text-center text-sm text-slate-600">
+        {{ __('Sudah Memiliki Akun?') }}
+        <a href="{{ route('login') }}" wire:navigate class="font-semibold text-[#1c1c1c] underline underline-offset-4">{{ __('Masuk') }}</a>
+    </p>
 </div>

@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Terjadi Kesalahan — {{ config('app.name') }}</title>
     <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Kanit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f1dfd5;
+            color: #1c1c1c;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -22,19 +23,20 @@
             font-size: 10px;
             letter-spacing: 0.32em;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(28, 28, 28, 0.4);
             margin-bottom: 1rem;
         }
         h1 {
+            font-family: Kanit, sans-serif;
             font-size: 2.75rem;
             line-height: 1.2;
-            font-weight: 400;
+            font-weight: 700;
         }
         @media (min-width: 768px) {
             h1 { font-size: 4.5rem; }
         }
         p {
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(28, 28, 28, 0.6);
             margin-top: 1.5rem;
             max-width: 28rem;
             margin-left: auto;
@@ -45,16 +47,14 @@
             display: inline-block;
             margin-top: 2.5rem;
             padding: 0.75rem 2rem;
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #1c1c1c;
             color: #fff;
             text-decoration: none;
             font-size: 0.875rem;
             font-weight: 500;
         }
         a.button:hover {
-            background: rgba(255, 255, 255, 0.18);
+            background: #000;
         }
     </style>
 </head>

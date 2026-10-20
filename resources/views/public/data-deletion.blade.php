@@ -4,11 +4,12 @@
 @section('description', 'Cara memutus akun Instagram dan Halaman Facebook serta meminta penghapusan data Anda dari Sosmedhub.')
 
 @section('content')
-    <article class="px-6 pb-24 pt-36 md:pt-44">
-        <div class="mx-auto max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Terakhir diperbarui 11 Oktober 2026</p>
-            <h1 class="mt-4 text-5xl md:text-6xl" style="font-family: 'Instrument Serif', serif;">Penghapusan Data</h1>
-            <p class="mt-6 leading-relaxed text-white/60">
+    <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
+        <div class="mx-auto max-w-7xl">
+            <div class="max-w-3xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Terakhir diperbarui 11 Oktober 2026</p>
+            <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Penghapusan Data</h1>
+            <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 Anda bisa menghentikan akses Sosmedhub ke akun Instagram dan Halaman Facebook Anda, dan meminta seluruh data Anda dihapus. Ada tiga cara, dari yang paling cepat.
             </p>
 
@@ -49,7 +50,8 @@
                 <h2>Yang tidak dihapus</h2>
                 <p>Postingan yang sudah terbit di Instagram atau Halaman Facebook tetap ada di akun Anda dan dikelola sendiri oleh Anda lewat platform tersebut. Sosmedhub tidak menghapusnya.</p>
 
-                <p class="mt-10 border-t border-white/10 pt-6">Cara kami mengumpulkan dan memakai data dijelaskan di <a href="{{ route('privacy') }}">kebijakan privasi</a>.</p>
+                <p class="mt-10 border-t border-[#1c1c1c]/10 pt-6">Cara kami mengumpulkan dan memakai data dijelaskan di <a href="{{ route('privacy') }}">kebijakan privasi</a>.</p>
+            </div>
             </div>
         </div>
     </article>

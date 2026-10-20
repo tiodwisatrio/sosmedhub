@@ -4,11 +4,12 @@
 @section('description', 'Data apa yang dikumpulkan Sosmedhub dari akun Instagram dan Halaman Facebook Anda, untuk apa dipakai, dan bagaimana Anda bisa menghapusnya.')
 
 @section('content')
-    <article class="px-6 pb-24 pt-36 md:pt-44">
-        <div class="mx-auto max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Terakhir diperbarui 11 Oktober 2026</p>
-            <h1 class="mt-4 text-5xl md:text-6xl" style="font-family: 'Instrument Serif', serif;">Kebijakan Privasi</h1>
-            <p class="mt-6 leading-relaxed text-white/60">
+    <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
+        <div class="mx-auto max-w-7xl">
+            <div class="max-w-3xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Terakhir diperbarui 11 Oktober 2026</p>
+            <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Kebijakan Privasi</h1>
+            <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 Sosmedhub adalah layanan untuk menjadwalkan dan menerbitkan postingan ke akun Instagram dan Halaman (Page) Facebook. Halaman ini menjelaskan data yang kami kumpulkan saat Anda memakainya, untuk apa data itu dipakai, dan hak Anda atas data tersebut.
             </p>
 
@@ -65,6 +66,7 @@
 
                 <h2>Kontak</h2>
                 <p>Pertanyaan tentang privasi dapat dikirim ke @include('public._contact').</p>
+            </div>
             </div>
         </div>
     </article>

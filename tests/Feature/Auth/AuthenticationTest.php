@@ -98,3 +98,45 @@ test('users can logout', function () {
 
     $this->assertGuest();
 });
+
+test('login is locked for one minute after five wrong attempts', function () {
+    $user = User::factory()->create();
+
+    $component = Volt::test('pages.auth.login')
+        ->set('form.email', $user->email)
+        ->set('form.password', 'wrong-password');
+
+    foreach (range(1, 4) as $attempt) {
+        $component->call('login')->assertHasErrors('form.email');
+    }
+
+    $component->call('login');
+
+    $component->set('form.password', 'password')->call('login')
+        ->assertHasErrors('form.email')
+        ->assertNoRedirect();
+    $this->assertGuest();
+
+    $this->travel(61)->seconds();
+
+    $component->call('login')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
+    $this->assertAuthenticated();
+});
+
+test('wrong attempts below the limit do not lock the login', function () {
+    $user = User::factory()->create();
+
+    $component = Volt::test('pages.auth.login')
+        ->set('form.email', $user->email)
+        ->set('form.password', 'wrong-password');
+
+    foreach (range(1, 4) as $attempt) {
+        $component->call('login');
+    }
+
+    $component->set('form.password', 'password')->call('login')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
+});

@@ -4,11 +4,12 @@
 @section('description', 'What data Sosmedhub collects from your Instagram account and Facebook Pages, what it is used for, and how you can delete it.')
 
 @section('content')
-    <article class="px-6 pb-24 pt-36 md:pt-44">
-        <div class="mx-auto max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Last updated October 11, 2026</p>
-            <h1 class="mt-4 text-5xl md:text-6xl" style="font-family: 'Instrument Serif', serif;">Privacy Policy</h1>
-            <p class="mt-6 leading-relaxed text-white/60">
+    <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
+        <div class="mx-auto max-w-7xl">
+            <div class="max-w-3xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 11, 2026</p>
+            <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Privacy Policy</h1>
+            <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 Sosmedhub is a service for scheduling and publishing posts to Instagram accounts and Facebook Pages. This page explains the data we collect when you use it, what that data is used for, and your rights over it.
             </p>
 
@@ -65,6 +66,7 @@
 
                 <h2>Contact</h2>
                 <p>Questions about privacy can be sent to @include('public._contact').</p>
+            </div>
             </div>
         </div>
     </article>

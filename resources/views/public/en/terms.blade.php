@@ -4,11 +4,12 @@
 @section('description', 'The rules for using Sosmedhub with Instagram and Facebook Pages: accounts, content, automatic publishing, and service limits.')
 
 @section('content')
-    <article class="px-6 pb-24 pt-36 md:pt-44">
-        <div class="mx-auto max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Last updated October 11, 2026</p>
-            <h1 class="mt-4 text-5xl md:text-6xl" style="font-family: 'Instrument Serif', serif;">Terms of Service</h1>
-            <p class="mt-6 leading-relaxed text-white/60">
+    <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
+        <div class="mx-auto max-w-7xl">
+            <div class="max-w-3xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 11, 2026</p>
+            <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Terms of Service</h1>
+            <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 By registering for and using Sosmedhub, you agree to the following terms. If you do not agree, please do not use this service.
             </p>
 
@@ -63,6 +64,7 @@
 
                 <h2>Contact</h2>
                 <p>Questions about these terms can be sent to @include('public._contact'). How we handle your data is described in the <a href="{{ route('privacy') }}">privacy policy</a>.</p>
+            </div>
             </div>
         </div>
     </article>

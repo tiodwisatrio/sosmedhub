@@ -4,11 +4,12 @@
 @section('description', 'How to disconnect your Instagram account and Facebook Pages and request deletion of your data from Sosmedhub.')
 
 @section('content')
-    <article class="px-6 pb-24 pt-36 md:pt-44">
-        <div class="mx-auto max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-white/40">Last updated October 11, 2026</p>
-            <h1 class="mt-4 text-5xl md:text-6xl" style="font-family: 'Instrument Serif', serif;">Data Deletion</h1>
-            <p class="mt-6 leading-relaxed text-white/60">
+    <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
+        <div class="mx-auto max-w-7xl">
+            <div class="max-w-3xl">
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 11, 2026</p>
+            <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Data Deletion</h1>
+            <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 You can stop Sosmedhub's access to your Instagram account and Facebook Pages, and ask for all of your data to be deleted. There are three ways, from the fastest.
             </p>
 
@@ -49,7 +50,8 @@
                 <h2>What is not deleted</h2>
                 <p>Posts that have already been published on Instagram or your Facebook Page remain on your account and are managed by you through that platform. Sosmedhub does not delete them.</p>
 
-                <p class="mt-10 border-t border-white/10 pt-6">How we collect and use data is described in the <a href="{{ route('privacy') }}">privacy policy</a>.</p>
+                <p class="mt-10 border-t border-[#1c1c1c]/10 pt-6">How we collect and use data is described in the <a href="{{ route('privacy') }}">privacy policy</a>.</p>
+            </div>
             </div>
         </div>
     </article>

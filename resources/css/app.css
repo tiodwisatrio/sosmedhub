@@ -5,14 +5,14 @@
 [x-cloak] { display: none !important; }
 
 @layer components {
-    .legal { @apply leading-relaxed text-white/70; }
-    .legal h2 { font-family: 'Instrument Serif', serif; @apply mb-3 mt-14 text-3xl font-normal text-white; }
+    .legal { @apply leading-relaxed text-[#1c1c1c]/75; }
+    .legal h2 { @apply mb-3 mt-14 font-display text-3xl font-bold text-[#1c1c1c]; }
     .legal p { @apply mt-3; }
-    .legal ul { @apply mt-3 list-disc space-y-2 pl-5 marker:text-white/30; }
-    .legal ol { @apply mt-3 list-decimal space-y-2 pl-5 marker:text-white/40; }
-    .legal strong { @apply font-medium text-white; }
-    .legal a { @apply text-white underline decoration-white/30 underline-offset-4 transition hover:decoration-white; }
-    .legal code { @apply rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] text-white; }
+    .legal ul { @apply mt-3 list-disc space-y-2 pl-5 marker:text-[#1c1c1c]/40; }
+    .legal ol { @apply mt-3 list-decimal space-y-2 pl-5 marker:text-[#1c1c1c]/50; }
+    .legal strong { @apply font-semibold text-[#1c1c1c]; }
+    .legal a { @apply text-[#1c1c1c] underline decoration-[#1c1c1c]/30 underline-offset-4 transition hover:decoration-[#1c1c1c]; }
+    .legal code { @apply rounded bg-[#1c1c1c]/10 px-1.5 py-0.5 text-[0.85em] text-[#1c1c1c]; }
 }
 
 .liquid-glass {
@@ -45,4 +45,28 @@
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
+}
+
+.hero-bg {
+    background-image: url('../images/bg_hero.png');
+}
+
+.rotator-word {
+    opacity: 0;
+    transform: translateY(0.35em);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.rotator-word[data-state='active'] {
+    opacity: 1;
+    transform: none;
+}
+
+.rotator-word[data-state='leaving'] {
+    opacity: 0;
+    transform: translateY(-0.35em);
+}
+
+.auth-bg {
+    background-image: url('../images/bg_auth.jpeg');
 }

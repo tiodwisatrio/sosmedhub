@@ -27,12 +27,12 @@ test('reset password link can be requested', function () {
     Notification::assertSentTo($user, ResetPassword::class);
 });
 
-test('reset password link request is rate limited after too many attempts from the same ip', function () {
+test('reset password link request blocks the ip for 30 minutes after five requests in a minute', function () {
     Notification::fake();
 
-    $users = User::factory()->count(7)->create();
+    $users = User::factory()->count(6)->create();
 
-    foreach ($users->take(6) as $user) {
+    foreach ($users->take(5) as $user) {
         Volt::test('pages.auth.forgot-password')
             ->set('email', $user->email)
             ->call('sendPasswordResetLink')
@@ -46,7 +46,56 @@ test('reset password link request is rate limited after too many attempts from t
         ->call('sendPasswordResetLink')
         ->assertHasErrors('email');
 
+    $this->travel(29)->minutes();
+
+    Volt::test('pages.auth.forgot-password')
+        ->set('email', $blockedUser->email)
+        ->call('sendPasswordResetLink')
+        ->assertHasErrors('email');
+
+    $this->travel(2)->minutes();
+
+    Volt::test('pages.auth.forgot-password')
+        ->set('email', $blockedUser->email)
+        ->call('sendPasswordResetLink')
+        ->assertHasNoErrors();
+
     Notification::assertSentTimes(ResetPassword::class, 6);
+});
+
+test('requests spread over more than a minute do not block the ip', function () {
+    Notification::fake();
+
+    foreach (User::factory()->count(6)->create() as $user) {
+        Volt::test('pages.auth.forgot-password')
+            ->set('email', $user->email)
+            ->call('sendPasswordResetLink')
+            ->assertHasNoErrors();
+
+        $this->travel(20)->seconds();
+    }
+});
+
+test('password reset submissions share the same ip block as link requests', function () {
+    foreach (range(1, 5) as $_) {
+        Volt::test('pages.auth.reset-password', ['token' => 'invalid-token'])
+            ->set('email', 'someone@example.com')
+            ->set('password', 'new-password-123')
+            ->set('password_confirmation', 'new-password-123')
+            ->call('resetPassword');
+    }
+
+    Volt::test('pages.auth.forgot-password')
+        ->set('email', 'someone@example.com')
+        ->call('sendPasswordResetLink')
+        ->assertHasErrors('email');
+
+    Volt::test('pages.auth.reset-password', ['token' => 'invalid-token'])
+        ->set('email', 'someone@example.com')
+        ->set('password', 'new-password-123')
+        ->set('password_confirmation', 'new-password-123')
+        ->call('resetPassword')
+        ->assertHasErrors('email');
 });
 
 test('reset password screen can be rendered', function () {

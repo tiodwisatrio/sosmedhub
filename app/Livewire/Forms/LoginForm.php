@@ -12,6 +12,10 @@ use Livewire\Form;
 
 class LoginForm extends Form
 {
+    private const MAX_ATTEMPTS = 5;
+
+    private const DECAY_SECONDS = 60;
+
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -34,10 +38,10 @@ class LoginForm extends Form
         $credentials['status'] = 1;
 
         if (! Auth::attempt($credentials, $this->remember)) {
-            RateLimiter::hit($this->throttleKey());
+            $this->recordFailedAttempt();
 
             throw ValidationException::withMessages([
-                'form.email' => trans('auth.failed'),
+                'form.email' => __('Email atau Kata Sandi salah.'),
             ]);
         }
 
@@ -45,17 +49,30 @@ class LoginForm extends Form
     }
 
     /**
-     * Ensure the authentication request is not rate limited.
+     * Count a failed attempt. On the fifth failure within a minute the login is locked for a full minute.
+     */
+    protected function recordFailedAttempt(): void
+    {
+        $attempts = RateLimiter::hit($this->throttleKey(), self::DECAY_SECONDS);
+
+        if ($attempts >= self::MAX_ATTEMPTS) {
+            RateLimiter::hit($this->lockoutKey(), self::DECAY_SECONDS);
+            RateLimiter::clear($this->throttleKey());
+        }
+    }
+
+    /**
+     * Ensure the authentication request is not locked out.
      */
     protected function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->lockoutKey(), 1)) {
             return;
         }
 
         event(new Lockout(request()));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn($this->lockoutKey());
 
         throw ValidationException::withMessages([
             'form.email' => trans('auth.throttle', [
@@ -71,5 +88,10 @@ class LoginForm extends Form
     protected function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+    }
+
+    protected function lockoutKey(): string
+    {
+        return $this->throttleKey().'|lockout';
     }
 }

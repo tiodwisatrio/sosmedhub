@@ -17,6 +17,7 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                display: ['Kanit', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 primary: {
