@@ -7,9 +7,15 @@
 @endsection
 
 @section('content')
-    <div>
+    <div class="space-y-6">
         <div class="bg-card rounded-xl shadow-card border border-border p-6">
             <livewire:profile.update-profile-information-form />
         </div>
+
+        @unless (auth()->user()->isDeveloper())
+            <div class="bg-card rounded-xl shadow-card border border-border p-6">
+                <livewire:profile.delete-user-form />
+            </div>
+        @endunless
     </div>
 @endsection

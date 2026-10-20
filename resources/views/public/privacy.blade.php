@@ -7,7 +7,7 @@
     <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
         <div class="mx-auto max-w-7xl">
             <div class="max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Terakhir diperbarui 11 Oktober 2026</p>
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Terakhir diperbarui 20 Oktober 2026</p>
             <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Kebijakan Privasi</h1>
             <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 Sosmedhub adalah layanan untuk menjadwalkan dan menerbitkan postingan ke akun Instagram dan Halaman (Page) Facebook. Halaman ini menjelaskan data yang kami kumpulkan saat Anda memakainya, untuk apa data itu dipakai, dan hak Anda atas data tersebut.
@@ -56,7 +56,7 @@
                 <p>Token akses Instagram dan token Halaman Facebook disimpan dalam bentuk terenkripsi dan tidak ditampilkan di antarmuka maupun catatan kesalahan. Akses ke aplikasi memerlukan login.@unless (config('sosmedhub.registration.auto_approve')) Akun baru harus disetujui admin sebelum dapat dipakai.@endunless Tidak ada sistem yang sepenuhnya bebas risiko, tetapi kami berupaya menjaga data Anda dengan wajar.</p>
 
                 <h2>Berapa lama data disimpan</h2>
-                <p>Data disimpan selama akun Anda aktif. Foto dan video yang diunggah untuk diterbitkan dihapus {{ config('scheduler.media.publish_retention_days', 30) }} hari setelah postingan terbit; yang tetap disimpan hanya versi kecil foto untuk riwayat. Saat Anda memutus akun Instagram atau Halaman Facebook, token akses langsung dihapus dan postingan terjadwal untuk akun itu tidak akan terbit. Anda dapat meminta penghapusan seluruh data kapan saja, dengan cara yang dijelaskan di <a href="{{ route('data-deletion') }}">halaman penghapusan data</a>.</p>
+                <p>Data disimpan selama akun Anda aktif. Foto dan video yang diunggah untuk diterbitkan dihapus {{ config('scheduler.media.publish_retention_days', 30) }} hari setelah postingan terbit; yang tetap disimpan hanya versi kecil foto untuk riwayat. Saat Anda memutus akun Instagram atau Halaman Facebook, token akses langsung dihapus dan postingan terjadwal untuk akun itu tidak akan terbit. Anda dapat menghapus akun sendiri kapan saja lewat menu Profil Saya, dan seluruh data Anda langsung dihapus permanen. Bila tidak bisa masuk, Anda dapat meminta penghapusan lewat email, dengan cara yang dijelaskan di <a href="{{ route('data-deletion') }}">halaman penghapusan data</a>.</p>
 
                 <h2>Hak Anda</h2>
                 <p>Anda berhak mengetahui data apa yang kami simpan, meminta perbaikan, dan meminta penghapusan data pribadi Anda, sesuai peraturan perlindungan data pribadi yang berlaku di Indonesia. Anda juga dapat mencabut izin Sosmedhub kapan saja lewat pengaturan Instagram atau Facebook.</p>

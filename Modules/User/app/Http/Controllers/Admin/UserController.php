@@ -4,6 +4,7 @@ namespace Modules\User\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\UserDataEraser;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Modules\User\Http\Requests\StoreUserRequest;
@@ -89,7 +90,7 @@ class UserController extends Controller implements HasMiddleware
         abort_if($user->hasRole('developer'), 403);
         abort_if($user->id === auth()->id(), 403, __('Tidak dapat menghapus akun sendiri.'));
 
-        $user->delete();
+        app(UserDataEraser::class)->erase($user);
 
         return redirect()->route('admin.users.index')
             ->with('success', __('Pengguna berhasil dihapus.'));

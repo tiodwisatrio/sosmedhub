@@ -412,5 +412,9 @@
     "Coba Demo": "Try Demo",
     "Sudah Memiliki Akun?": "Already have an account?",
     "Email atau Kata Sandi salah.": "Incorrect email or password.",
-    "Terlalu banyak permintaan. Coba lagi dalam :minutes menit.": "Too many requests. Try again in :minutes minutes."
+    "Terlalu banyak permintaan. Coba lagi dalam :minutes menit.": "Too many requests. Try again in :minutes minutes.",
+    "Hapus Akun": "Delete Account",
+    "Menghapus akun akan menghapus permanen semua data Anda: akun Instagram dan Facebook yang terhubung, jadwal postingan, serta foto dan video yang Anda unggah. Postingan yang sudah terbit di Instagram atau Facebook tidak ikut terhapus.": "Deleting your account permanently removes all your data: connected Instagram and Facebook accounts, scheduled posts, and the photos and videos you uploaded. Posts already published on Instagram or Facebook are not deleted.",
+    "Yakin ingin menghapus akun?": "Are you sure you want to delete your account?",
+    "Tindakan ini tidak bisa dibatalkan. Masukkan kata sandi untuk mengonfirmasi penghapusan akun secara permanen.": "This cannot be undone. Enter your password to confirm permanent deletion of your account."
 }

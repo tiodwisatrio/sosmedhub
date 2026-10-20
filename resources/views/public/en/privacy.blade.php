@@ -7,7 +7,7 @@
     <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
         <div class="mx-auto max-w-7xl">
             <div class="max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 11, 2026</p>
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 20, 2026</p>
             <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Privacy Policy</h1>
             <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
                 Sosmedhub is a service for scheduling and publishing posts to Instagram accounts and Facebook Pages. This page explains the data we collect when you use it, what that data is used for, and your rights over it.
@@ -56,7 +56,7 @@
                 <p>Instagram access tokens and Facebook Page tokens are stored encrypted and are never shown in the interface or in error logs. Access to the application requires signing in.@unless (config('sosmedhub.registration.auto_approve')) New accounts must be approved by an administrator before they can be used.@endunless No system is completely free of risk, but we make reasonable efforts to protect your data.</p>
 
                 <h2>How long data is kept</h2>
-                <p>Data is kept for as long as your account is active. Photos and videos uploaded for publishing are deleted {{ config('scheduler.media.publish_retention_days', 30) }} days after the post is published; only a small version of each photo is kept for the history. When you disconnect an Instagram account or Facebook Page, its access token is deleted immediately and scheduled posts for that account will not be published. You can ask for all of your data to be deleted at any time, as described on the <a href="{{ route('data-deletion') }}">data deletion page</a>.</p>
+                <p>Data is kept for as long as your account is active. Photos and videos uploaded for publishing are deleted {{ config('scheduler.media.publish_retention_days', 30) }} days after the post is published; only a small version of each photo is kept for the history. When you disconnect an Instagram account or Facebook Page, its access token is deleted immediately and scheduled posts for that account will not be published. You can delete your account yourself at any time from My Profile, and all of your data is permanently deleted right away. If you cannot sign in, you can request deletion by email, as described on the <a href="{{ route('data-deletion') }}">data deletion page</a>.</p>
 
                 <h2>Your rights</h2>
                 <p>You have the right to know what data we hold, to request corrections, and to request deletion of your personal data, in accordance with the personal data protection regulations applicable in Indonesia. You can also revoke Sosmedhub's permissions at any time through your Instagram or Facebook settings.</p>

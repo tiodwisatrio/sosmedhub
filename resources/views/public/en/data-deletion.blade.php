@@ -7,10 +7,10 @@
     <article class="px-5 pb-24 pt-36 sm:px-6 md:pt-44 lg:px-24">
         <div class="mx-auto max-w-7xl">
             <div class="max-w-3xl">
-            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 11, 2026</p>
+            <p class="text-[10px] uppercase tracking-[0.32em] text-[#1c1c1c]/40">Last updated October 20, 2026</p>
             <h1 class="mt-4 text-5xl md:text-6xl font-display font-bold">Data Deletion</h1>
             <p class="mt-6 leading-relaxed text-[#1c1c1c]/60">
-                You can stop Sosmedhub's access to your Instagram account and Facebook Pages, and ask for all of your data to be deleted. There are three ways, from the fastest.
+                You can stop Sosmedhub's access to your Instagram account and Facebook Pages, and ask for all of your data to be deleted. There are four ways, from the fastest.
             </p>
 
             <div class="legal mt-4">
@@ -37,8 +37,15 @@
                 </ol>
                 <p>The account's access token is deleted from our system immediately, and scheduled posts for that account will not be published.</p>
 
-                <h2>3. Request deletion of all your data</h2>
-                <p>Send a request to @include('public._contact') from the email address you used to register, with the subject <strong>Delete Sosmedhub Data</strong>. Include the Instagram username or Facebook Page name you connected, if any.</p>
+                <h2>3. Delete your account in Sosmedhub</h2>
+                <ol>
+                    <li>Sign in to Sosmedhub and open <strong>My Profile</strong>.</li>
+                    <li>In the <strong>Delete Account</strong> section, choose <strong>Delete Account</strong> and enter your password to confirm.</li>
+                </ol>
+                <p>Your account and all of your data are permanently deleted right away: the data and access tokens of the connected Instagram accounts and Facebook Pages, all scheduled posts, captions, and the photos and videos you uploaded.</p>
+
+                <h2>4. Request deletion by email</h2>
+                <p>If you cannot sign in to your account, send a request to @include('public._contact') from the email address you used to register, with the subject <strong>Delete Sosmedhub Data</strong>. Include the Instagram username or Facebook Page name you connected, if any.</p>
                 <p>We will verify that the request comes from the account owner, then delete:</p>
                 <ul>
                     <li>your Sosmedhub account (name, email, phone number);</li>
