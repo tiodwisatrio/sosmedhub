@@ -2,7 +2,7 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
 // Warna latar sidebar. Teks menu aktif memakai warna yang sama, jadi cukup ubah di sini.
-const sidebarBg = '#704ef8';
+const sidebarBg = '#0D9488';
 
 /** @type {import('tailwindcss').Config} */
 export default {
